@@ -62,6 +62,29 @@ UNWIND(	.fnend)
 END_FUNC arm_cl2_lockallways
 
 /*
+ * void arm_cl2_unlockallways(vaddr_t base)
+ *
+ * lock all L2 caches ways for data and instruction
+ */
+FUNC arm_cl2_unlockallways , :
+UNWIND(	.fnstart)
+	add r1, r0, #PL310_DCACHE_LOCKDOWN_BASE
+	ldr r2, [r0, #PL310_AUX_CTRL]
+	tst r2, #PL310_AUX_16WAY_BIT
+	mov r0, #PL310_LOCKDOWN_NBREGS
+	mov r2, #0x00           /* 8 ways mask */
+	orrne r2, #0x0000	/* 16 ways mask */
+1:
+	str r2, [r1], #PL310_LOCKDOWN_SZREG
+	str r2, [r1], #PL310_LOCKDOWN_SZREG
+	subs r0, r0, #1
+	bne 1b
+
+	mov pc, lr
+UNWIND(	.fnend)
+END_FUNC arm_cl2_unlockallways
+
+/*
  * Set sync operation mask according to ways associativity.
  * Preserve r0 = pl310 iomem base address
  */

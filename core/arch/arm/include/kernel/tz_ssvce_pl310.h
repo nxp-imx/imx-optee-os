@@ -43,5 +43,7 @@ void arm_cl2_cleanbyway(vaddr_t pl310_base);
 void arm_cl2_cleanbypa(vaddr_t pl310_base, paddr_t start, paddr_t end);
 void arm_cl2_invbypa(vaddr_t pl310_base, paddr_t start, paddr_t end);
 void arm_cl2_cleaninvbypa(vaddr_t pl310_base, paddr_t start, paddr_t end);
+void arm_cl2_lockallways(vaddr_t pl310_base);
+void arm_cl2_unlockallways(vaddr_t pl310_base);
 
 #endif /* TZ_SSVCE_PL310_H */
