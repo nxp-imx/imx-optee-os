@@ -35,10 +35,10 @@
  * and with ARM registers R0, R1, R2, R3 being scratchable.
  */
 
-#include <arm32.h>
 #include <arm32_macros.S>
 #include <arm32_macros_cortex_a9.S>
 #include <asm.S>
+#include <arm.h>
 #include <kernel/tz_ssvce_def.h>
 #include <kernel/unwind.h>
 #include <platform_config.h>
@@ -110,7 +110,7 @@ UNWIND(	.fnstart)
 	 *   (keep WFLZ low. Will be set once outer L2 is ready)
 	 *
 	 * NSACR = 0x00020C00
-	 * - NSec cannot change ACTRL.SMP (NS_SMP bit18=0)
+	 * - NSec can change ACTRL.SMP (NS_SMP bit18=0)
 	 * - Nsec can lockdown TLB (TL bit17=1)
 	 * - NSec cannot access PLE (PLE bit16=0)
 	 * - NSec can use SIMD/VFP (CP10/CP11) (bit15:14=2b00, bit11:10=2b11)
@@ -128,7 +128,7 @@ UNWIND(	.fnstart)
 #endif
 	write_actlr r0
 
-	mov_imm r0, 0x00020C00
+	mov_imm r0, 0x00060C00
 	write_nsacr r0
 
 	read_pcr r0
