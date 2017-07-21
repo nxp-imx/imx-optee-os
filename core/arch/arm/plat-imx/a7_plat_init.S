@@ -11,9 +11,9 @@
  * and with ARM registers R0, R1, R2, R3 being scratchable.
  */
 
-#include <arm32.h>
 #include <arm32_macros.S>
 #include <asm.S>
+#include <arm.h>
 #include <kernel/unwind.h>
 #include <platform_config.h>
 
@@ -37,6 +37,12 @@ UNWIND(	.fnstart)
 
 	mov_imm r0, 0x00040C00
 	write_nsacr r0
+
+	read_sctlr r0
+	bic	r0, r0, #SCTLR_WXN
+	bic	r0, r0, #SCTLR_UWXN
+	write_sctlr r0
+	isb
 
 	bx	lr
 UNWIND(	.fnend)
