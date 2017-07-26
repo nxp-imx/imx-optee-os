@@ -6,6 +6,7 @@
 #define __IMX7_REGS_H__
 #include <registers/imx7-gpc_regs.h>
 #include <registers/imx7-src_regs.h>
+#include <registers/imx7-iomux_regs.h>
 #include <registers/imx7-ddrc_regs.h>
 
 #define GIC_BASE		0x31000000
@@ -27,6 +28,7 @@
 #define CCM_BASE		0x30380000
 #define SRC_BASE		0x30390000
 #define GPC_BASE		0x303A0000
+#define TZASC_BASE		0x30780000
 #define DDRC_PHY_BASE		0x30790000
 #define MMDC_P0_BASE		0x307A0000
 #define DDRC_BASE		0x307A0000

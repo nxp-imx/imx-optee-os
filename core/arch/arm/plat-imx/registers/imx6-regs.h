@@ -29,9 +29,12 @@
 #ifndef __IMX6_REGS_H__
 #define __IMX6_REGS_H__
 #include <registers/imx6-src_regs.h>
+#include <registers/imx6-iomux_regs.h>
 #include <registers/imx6-mmdc_regs.h>
 
 #define UART1_BASE		0x02020000
+#define IOMUXC_BASE		0x020E0000
+#define IOMUXC_GPR_BASE		0x020E4000
 #define SRC_BASE		0x020D8000
 #define ANATOP_BASE		0x020C8000
 #define SNVS_BASE		0x020CC000
@@ -40,6 +43,8 @@
 #define UART4_BASE		0x021F0000
 #define UART5_BASE		0x021F4000
 #define MMDC_P0_BASE		0x021B0000
+#define TZASC_BASE		0x21D0000
+#define TZASC2_BASE		0x21D4000
 #define SCU_BASE		0x00A00000
 #define PL310_BASE		0x00A02000
 #define GIC_BASE		0x00A00000
@@ -49,6 +54,24 @@
 #define GICC_OFFSET		0x2000
 #else
 #define GICC_OFFSET		0x100
+#endif
+
+#if defined(CFG_MX6UL) || defined(CFG_MX6ULL)
+/* 128K OCRAM */
+#define TRUSTZONE_OCRAM_START		0x918000
+#elif defined(CFG_MX6DL)
+#define TRUSTZONE_OCRAM_START		0x918000
+#elif defined(CFG_MX6QP)
+#define TRUSTZONE_OCRAM_START		0x938000
+#elif defined(CFG_MX6SX)
+#define TRUSTZONE_OCRAM_START		0x8f8000
+#elif defined(CFG_MX6SL)
+#define TRUSTZONE_OCRAM_START		0x918000
+#elif defined(CFG_MX6SLL)
+#define TRUSTZONE_OCRAM_START		0x918000
+#else
+/* 256K OCRAM */
+#define TRUSTZONE_OCRAM_START		0x938000
 #endif
 
 /* Central Security Unit register values */
