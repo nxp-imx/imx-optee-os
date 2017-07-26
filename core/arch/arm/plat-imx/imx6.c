@@ -30,8 +30,10 @@
 
 #include <compiler.h>
 #include <drivers/gic.h>
+#include <imx.h>
 #include <io.h>
 #include <kernel/generic_boot.h>
+#include <drivers/tzc380.h>
 #include <kernel/misc.h>
 #include <kernel/tz_ssvce_pl310.h>
 #include <mm/core_memprot.h>
@@ -71,13 +73,36 @@ void plat_cpu_reset_late(void)
 		/* first grant all peripherals */
 		for (addr = CSU_BASE + CSU_CSL_START;
 			 addr != CSU_BASE + CSU_CSL_END;
-			 addr += 4)
+			 addr += 4) {
+			/*
+			 * This is to protect TZASC, OCRAM and CAAM
+			 * leave them in default value.
+			 * when set once, when set once, TZASC2 seems
+			 * buggy to change
+			 */
+			if (addr == (CSU_BASE + CSU_CSL16))
+				continue;
+			if (addr == (CSU_BASE + CSU_CSL15)) {
+				write32(0xFF0033, addr);
+				continue;
+			}
 			write32(CSU_ACCESS_ALL, addr);
+		}
 
+		/*
+		 * Protect OCRAM. let CAAM be accessible from N-TZ ARM.
+		 */
+		write32(0xFF0033, CSU_BASE + 26 * 4);
+
+		dsb();
 		/* lock the settings */
 		for (addr = CSU_BASE + CSU_CSL_START;
 			 addr != CSU_BASE + CSU_CSL_END;
 			 addr += 4)
 			write32(read32(addr) | CSU_SETTING_LOCK, addr);
+#ifdef CFG_TZC380
+	tzasc_init();
+#endif
+
 	}
 }

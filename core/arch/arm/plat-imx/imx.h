@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <tee_api_types.h>
 
 #define SOC_MX6SL	0x60
 #define SOC_MX6DL	0x61
@@ -32,4 +33,6 @@ uint32_t imx_soc_type(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);
 void imx_gpcv2_set_core1_pup_by_software(void);
 void imx_gpcv2_set_core_pgc(bool enable, uint32_t offset);
+int board_imx_tzasc_configure(vaddr_t addr);
+TEE_Result tzasc_init(void);
 #endif
