@@ -19,16 +19,17 @@
 #if defined(CFG_MX7)
 #include <config/config_imx7.h>
 
-#elif defined(CFG_MX6SX)
-#include <config/config_imx6sx.h>
-
 /* For i.MX 6UltraLite and 6ULL EVK board */
 #elif defined(CFG_MX6UL) || defined(CFG_MX6ULL)
 #include <config/config_imx6ul.h>
 
+/* For i.MX 6SX */
+#elif defined(CFG_MX6SX)
+#include <config/config_imx6sx.h>
+
 /* For i.MX6 Quad SABRE Lite and Smart Device board */
-#elif defined(CFG_MX6Q) || defined(CFG_MX6D) || defined(CFG_MX6DL) || \
-	defined(CFG_MX6S)
+#elif defined(CFG_MX6QP) || defined(CFG_MX6Q) || defined(CFG_MX6D) || \
+	defined(CFG_MX6DL) || defined(CFG_MX6S)
 #include <config/config_imx6q.h>
 #else
 #error "Unknown platform flavor"

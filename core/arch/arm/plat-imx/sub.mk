@@ -1,9 +1,11 @@
 global-incdirs-y += .
 global-incdirs-y += registers
 
-srcs-y += main.c imx-common.c
+ifneq (,$(filter y, $(CFG_MX6) $(CFG_MX7)))
+srcs-y += main.c
+endif
 
-srcs-$(CFG_MX6)$(CFG_MX7) += mmdc.c
+srcs-$(CFG_MX6)$(CFG_MX7) += imx-common.c mmdc.c
 
 srcs-$(CFG_PL310) += imx_pl310.c
 ifeq ($(CFG_PSCI_ARM32),y)
@@ -18,8 +20,8 @@ endif
 
 cflags-pm/psci.c-y += -Wno-suggest-attribute=noreturn
 
-ifneq (,$(filter y, $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) $(CFG_MX6S) \
-       $(CFG_MX6SX)))
+ifneq (,$(filter y, $(CFG_MX6SX) $(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6QP) \
+	$(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL)))
 srcs-y += a9_plat_init.S
 endif
 

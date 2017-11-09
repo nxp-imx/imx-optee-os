@@ -23,8 +23,10 @@
 #error "pager not supported"
 #endif
 
+
 #if (defined(PLATFORM_FLAVOR_mx6qpsabresd) \
 	|| defined(PLATFORM_FLAVOR_mx6qsabresd) \
+	|| defined(PLATFORM_FLAVOR_mx6qsabrelite) \
 	|| defined(PLATFORM_FLAVOR_mx6dlsabresd))
 static int board_imx_tzasc_configure(vaddr_t addr)
 {

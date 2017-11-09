@@ -11,22 +11,32 @@
 #if defined(PLATFORM_FLAVOR_mx6qsabrelite)
 #define CONSOLE_UART_BASE		UART2_BASE
 #endif
-#if defined(PLATFORM_FLAVOR_mx6qsabresd)
-#define CONSOLE_UART_BASE		UART1_BASE
+#if defined(PLATFORM_FLAVOR_mx6qpsabreauto) || \
+	defined(PLATFORM_FLAVOR_mx6qsabreauto) || \
+	defined(PLATFORM_FLAVOR_mx6dlsabreauto)
+#define CONSOLE_UART_BASE		UART4_BASE
 #endif
-#if defined(PLATFORM_FLAVOR_mx6dlsabresd)
+#ifndef CONSOLE_UART_BASE
 #define CONSOLE_UART_BASE		UART1_BASE
 #endif
 
 /* Board specific RAM size */
 #if defined(PLATFORM_FLAVOR_mx6qsabrelite) || \
 	defined(PLATFORM_FLAVOR_mx6qsabresd) || \
-	defined(PLATFORM_FLAVOR_mx6dlsabresd)
+	defined(PLATFORM_FLAVOR_mx6qsabrelite) || \
+	defined(PLATFORM_FLAVOR_mx6dlsabresd) || \
+	defined(PLATFORM_FLAVOR_mx6qpsabresd)
 #define DRAM0_SIZE			0x40000000
 #endif
 
+#if defined(PLATFORM_FLAVOR_mx6qpsabreauto) || \
+	defined(PLATFORM_FLAVOR_mx6qsabreauto) || \
+	defined(PLATFORM_FLAVOR_mx6dlsabreauto)
+#define DRAM0_SIZE			0x80000000
+#endif
+
 /* Core number depends of SoC version. */
-#if defined(CFG_MX6Q)
+#if defined(CFG_MX6QP) || defined(CFG_MX6Q)
 #define CFG_TEE_CORE_NB_CORE		4
 #endif
 #if defined(CFG_MX6D) || defined(CFG_MX6DL)
@@ -91,7 +101,7 @@
  * Full Line Zero (FLZ) disabled (bit0=0)
  */
 #ifndef PL310_AUX_CTRL_INIT
-#if defined(CFG_MX6Q) || defined(CFG_MX6D)
+#if defined(CFG_MX6QP) || defined(CFG_MX6Q) || defined(CFG_MX6D)
 #define PL310_AUX_CTRL_INIT		0x3C470800
 #else
 #define PL310_AUX_CTRL_INIT		0x3C440800
@@ -178,7 +188,7 @@
 
 #define TZDRAM_BASE			(CFG_DDR_TEETZ_RESERVED_START)
 #define TZDRAM_SIZE			(CFG_DDR_TEETZ_RESERVED_SIZE - \
-				CFG_PUB_RAM_SIZE)
+					CFG_PUB_RAM_SIZE)
 
 #define CFG_TA_RAM_START		TZDRAM_BASE
 #define CFG_TA_RAM_SIZE			TZDRAM_SIZE
@@ -202,26 +212,27 @@
  *  TA_RAM  : all what is left
  */
 
-#define CFG_DDR_TEETZ_RESERVED_START	0x4E000000
 #define CFG_DDR_TEETZ_RESERVED_SIZE	0x02000000
+#define CFG_DDR_TEETZ_RESERVED_START	(DRAM0_BASE + DRAM0_SIZE - \
+						CFG_DDR_TEETZ_RESERVED_SIZE)
 
 #define CFG_PUB_RAM_SIZE		(2 * 1024 * 1024)
 #define CFG_TEE_RAM_PH_SIZE		(1 * 1024 * 1024)
 
 #define TZDRAM_BASE			(CFG_DDR_TEETZ_RESERVED_START)
 #define TZDRAM_SIZE			(CFG_DDR_TEETZ_RESERVED_SIZE - \
-				CFG_PUB_RAM_SIZE)
+						CFG_PUB_RAM_SIZE)
 
 #define CFG_TA_RAM_START		(CFG_DDR_TEETZ_RESERVED_START + \
-				CFG_TEE_RAM_PH_SIZE)
+						CFG_TEE_RAM_PH_SIZE)
 #define CFG_TA_RAM_SIZE			(CFG_DDR_TEETZ_RESERVED_SIZE - \
-				CFG_TEE_RAM_PH_SIZE - \
-				CFG_PUB_RAM_SIZE)
+						CFG_TEE_RAM_PH_SIZE - \
+						CFG_PUB_RAM_SIZE)
 
 #endif /* CFG_WITH_PAGER */
 
 #define CFG_SHMEM_START			(CFG_DDR_TEETZ_RESERVED_START + \
-				TZDRAM_SIZE)
+						TZDRAM_SIZE)
 #define CFG_SHMEM_SIZE			CFG_PUB_RAM_SIZE
 
 #define CFG_TEE_RAM_START		TZDRAM_BASE

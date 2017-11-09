@@ -14,14 +14,13 @@
 #error "LPAE not supported for now"
 #endif
 
-#define CFG_TEE_CORE_NB_CORE		1
-
-#define DDR_PHYS_START			DRAM0_BASE
+#define DRAM0_SIZE		CFG_DDR_SIZE
 #define DDR_SIZE			DRAM0_SIZE
-
+#define DDR_PHYS_START			DRAM0_BASE
 #define CFG_DDR_START			DDR_PHYS_START
-#ifndef CFG_DDR_SIZE
-#define CFG_DDR_SIZE			DDR_SIZE
+
+#if defined(PLATFORM_FLAVOR_mx6ul9x9evk)
+#define CFG_DDR_TEETZ_RESERVED_START	0x8E000000
 #endif
 
 #ifndef CFG_DDR_TEETZ_RESERVED_START

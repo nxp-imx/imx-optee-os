@@ -69,6 +69,12 @@ static TEE_Result imx_wdog_init(void)
 		"/soc/aips-bus@30000000/wdog@302a0000",
 		"/soc/aips-bus@30000000/wdog@302b0000",
 	};
+#elif defined CFG_MX6SX
+	static const char * const wdog_path[] = {
+		"/soc/aips-bus@02000000/wdog@020bc000",
+		"/soc/aips-bus@02000000/wdog@020c0000",
+		"/soc/aips-bus@02200000/wdog@02288000",
+	};
 #else
 	static const char * const wdog_path[] = {
 		"/soc/aips-bus@02000000/wdog@020bc000",
