@@ -23,9 +23,10 @@
 #error "pager not supported"
 #endif
 
-#if (defined(PLATFORM_FLAVOR_mx6qsabresd) \
+#if (defined(PLATFORM_FLAVOR_mx6qpsabresd) \
+	|| defined(PLATFORM_FLAVOR_mx6qsabresd) \
 	|| defined(PLATFORM_FLAVOR_mx6dlsabresd))
-int board_imx_tzasc_configure(vaddr_t addr)
+static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
@@ -61,8 +62,38 @@ int board_imx_tzasc_configure(vaddr_t addr)
 
 	return 0;
 }
+#elif (defined(PLATFORM_FLAVOR_mx6qpsabreauto) \
+	|| defined(PLATFORM_FLAVOR_mx6qsabreauto) \
+	|| defined(PLATFORM_FLAVOR_mx6dlsabreauto))
+static int board_imx_tzasc_configure(vaddr_t addr)
+{
+	tzc_init(addr);
+
+	/*
+	 * Note, this is not a good way, because we split the regions
+	 * to fit into tzc380 region size rules. Also, we try
+	 * to pass DDR/TEE memory to build script from user, but hard
+	 * to fit into tzasc. So hack code here.
+	 */
+	tzc_configure_region(0, 0x00000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(1, 0x80000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
+	tzc_configure_region(5, 0x8e000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
+	tzc_configure_region(6, 0x8fe00000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+
+	tzc_dump_state();
+
+	return 0;
+}
 #elif defined(PLATFORM_FLAVOR_mx6ulevk)
-int board_imx_tzasc_configure(vaddr_t addr)
+static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
@@ -76,6 +107,28 @@ int board_imx_tzasc_configure(vaddr_t addr)
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
 	tzc_configure_region(3, 0x9fe00000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+
+	tzc_dump_state();
+
+	return 0;
+}
+#elif defined(PLATFORM_FLAVOR_mx6ul9x9evk)
+static int board_imx_tzasc_configure(vaddr_t addr)
+{
+	tzc_init(addr);
+
+	tzc_configure_region(0, 0x00000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(1, 0x80000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
+	tzc_configure_region(2, 0x8e000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
+	tzc_configure_region(3, 0x8fe00000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -84,7 +137,7 @@ int board_imx_tzasc_configure(vaddr_t addr)
 	return 0;
 }
 #elif defined(PLATFORM_FLAVOR_mx6ullevk)
-int board_imx_tzasc_configure(vaddr_t addr)
+static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
@@ -105,8 +158,97 @@ int board_imx_tzasc_configure(vaddr_t addr)
 
 	return 0;
 }
+#elif defined(PLATFORM_FLAVOR_mx6sxsabresd)
+static int board_imx_tzasc_configure(vaddr_t addr)
+{
+	tzc_init(addr);
+
+	tzc_configure_region(0, 0x00000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(1, 0x80000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
+	tzc_configure_region(2, 0xbe000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
+	tzc_configure_region(3, 0xbfe00000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+
+	tzc_dump_state();
+
+	return 0;
+}
+#elif defined(PLATFORM_FLAVOR_mx6sxsabreauto)
+static int board_imx_tzasc_configure(vaddr_t addr)
+{
+	tzc_init(addr);
+
+	tzc_configure_region(0, 0x00000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(1, 0x80000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
+	tzc_configure_region(2, 0xfe000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
+	tzc_configure_region(3, 0xffe00000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+
+	tzc_dump_state();
+
+	return 0;
+}
+#elif defined(PLATFORM_FLAVOR_mx6slevk)
+static int board_imx_tzasc_configure(vaddr_t addr)
+{
+	tzc_init(addr);
+
+	tzc_configure_region(0, 0x00000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(1, 0x80000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
+	tzc_configure_region(2, 0x9e000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
+	tzc_configure_region(3, 0x9fe00000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+
+	tzc_dump_state();
+
+	return 0;
+}
+
+#elif defined(PLATFORM_FLAVOR_mx6sllevk)
+static int board_imx_tzasc_configure(vaddr_t addr)
+{
+	tzc_init(addr);
+
+	tzc_configure_region(0, 0x00000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(1, 0x80000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
+	tzc_configure_region(2, 0xfe000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
+	tzc_configure_region(3, 0xffe00000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+
+	tzc_dump_state();
+
+	return 0;
+}
 #elif defined(PLATFORM_FLAVOR_mx7dsabresd)
-int board_imx_tzasc_configure(vaddr_t addr)
+static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
