@@ -19,6 +19,7 @@ ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6UL,y)
 $(call force,CFG_IMX_UART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_IMX_OCRAM,y)
 CFG_TEE_CORE_NB_CORE ?= 1
 
@@ -33,6 +34,7 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6qp-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6QP,y)
 $(call force,CFG_IMX_UART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_IMX_OCRAM,y)
 $(call force,CFG_TZC380,n)
 CFG_TEE_CORE_NB_CORE ?= 4
@@ -41,6 +43,7 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6q-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6Q,y)
 $(call force,CFG_IMX_UART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_IMX_OCRAM,y)
 CFG_TEE_CORE_NB_CORE ?= 4
 
@@ -48,6 +51,7 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6d-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6D,y)
 $(call force,CFG_IMX_UART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_IMX_OCRAM,y)
 CFG_TEE_CORE_NB_CORE ?= 2
 
@@ -55,6 +59,7 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6dl-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6DL,y)
 $(call force,CFG_IMX_UART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_IMX_OCRAM,y)
 CFG_TEE_CORE_NB_CORE ?= 2
 
@@ -62,6 +67,7 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6s-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6S,y)
 $(call force,CFG_IMX_UART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_IMX_OCRAM,y)
 CFG_TEE_CORE_NB_CORE ?= 1
 
@@ -69,6 +75,7 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6sx-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6SX,y)
 $(call force,CFG_IMX_UART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_IMX_OCRAM,y)
 CFG_TEE_CORE_NB_CORE ?= 1
 
@@ -89,6 +96,7 @@ CFG_TEE_CORE_NB_CORE ?= 1
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7-flavorlist)))
 $(call force,CFG_MX7,y)
 $(call force,CFG_IMX_UART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_IMX_OCRAM,y)
 # TODO: Fix this is not correct 7s is a single core
 CFG_TEE_CORE_NB_CORE ?= 2
