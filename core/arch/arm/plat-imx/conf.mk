@@ -73,6 +73,7 @@ ifneq (,$(filter y, $(CFG_MX6UL) $(CFG_MX6ULL)))
 include core/arch/arm/cpu/cortex-a7.mk
 CFG_IMX_UART ?= y
 CFG_CSU ?= y
+CFG_IMX_CAAM ?= y
 $(call force,CFG_BOOT_SYNC_CPU,n)
 $(call force,CFG_BOOT_SECONDARY_REQUEST,n)
 endif
@@ -88,6 +89,7 @@ CFG_SCU ?= y
 CFG_BOOT_SYNC_CPU ?= y
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_ENABLE_SCTLR_RR ?= y
+CFG_IMX_CAAM ?= y
 endif
 
 # i.MX7 specific config
@@ -95,6 +97,7 @@ ifeq ($(filter y, $(CFG_MX7)), y)
 include core/arch/arm/cpu/cortex-a7.mk
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_INIT_CNTVOFF ?= y
+CFG_IMX_CAAM ?= y
 endif
 
 CFG_MMAP_REGIONS ?= 24
