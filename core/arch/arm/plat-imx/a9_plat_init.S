@@ -23,6 +23,19 @@
 #include <kernel/unwind.h>
 #include <platform_config.h>
 
+/*
+ * Local variable to store the DTB physical address
+ * This variable is needed if DTB must be read
+ * before the virtual DTB address is setup during
+ * the C generic boot
+ * Better will be to have a init platform function
+ * called by the C generic boot
+ */
+.section .data
+.align 2
+phys_dt_addr:
+.word 0
+
 .section .text
 .balign 4
 .code 32
@@ -82,6 +95,24 @@ UNWIND(	.fnstart)
 	orr r0, r0, #0x1
 	write_pcr r0
 
+	/* based on kernel/generic_entry_a32.S
+	 * r6 contains the DT physicall address
+	 * Store it in the global variable phys_fdt_addr
+	 * instantiated in data area above
+	 */
+	ldr	r0, =phys_dt_addr
+	str	r6, [r0]
+
 	mov pc, lr
 UNWIND(	.fnend)
 END_FUNC plat_cpu_reset_early
+
+FUNC plat_get_dt_phys , :
+UNWIND( .fnstart)
+	/* Return the physical DT address */
+	ldr	r0, =phys_dt_addr
+	ldr r0, [r0]
+	bx  lr
+UNWIND( .fnend)
+END_FUNC plat_get_dt_phys
+

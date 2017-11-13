@@ -46,7 +46,7 @@ $(call force,CFG_GIC,y)
 $(call force,CFG_IMX_UART,y)
 $(call force,CFG_PM_STUBS,y)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
-
+CFG_DT ?= y
 CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 CFG_WITH_STACK_CANARIES ?= y
 
@@ -69,7 +69,7 @@ $(call force,CFG_MX6,y)
 $(call force,CFG_PL310,y)
 $(call force,CFG_PL310_LOCKED,y)
 $(call force,CFG_SECURE_TIME_SOURCE_REE,y)
-
+CFG_DT ?= y
 CFG_BOOT_SYNC_CPU ?= n
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_ENABLE_SCTLR_RR ?= y

@@ -24,15 +24,23 @@
 uint32_t imx_get_src_gpr(int cpu);
 void imx_set_src_gpr(int cpu, uint32_t val);
 
+bool soc_is_imx6(void);
+bool soc_is_imx6sll(void);
+bool soc_is_imx6sl(void);
+bool soc_is_imx6sx(void);
 bool soc_is_imx6ul(void);
 bool soc_is_imx6ull(void);
 bool soc_is_imx6sdl(void);
 bool soc_is_imx6dq(void);
 bool soc_is_imx6dqp(void);
 bool soc_is_imx7ds(void);
-uint32_t imx_soc_type(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);
 void imx_gpcv2_set_core1_pup_by_software(void);
 int board_imx_tzasc_configure(vaddr_t addr);
 TEE_Result tzasc_init(void);
+#if defined(CFG_BOOT_SYNC_CPU)
+void pcsi_boot_allcpus(void);
+#endif
+
+void *plat_get_dt_phys(void);
 #endif
