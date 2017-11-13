@@ -43,7 +43,9 @@
 #define DDR_SIZE			DRAM0_SIZE
 
 #define CFG_DDR_START			DDR_PHYS_START
+#ifndef CFG_DDR_SIZE
 #define CFG_DDR_SIZE			DDR_SIZE
+#endif
 
 /*
  * PL310 TAG RAM Control Register

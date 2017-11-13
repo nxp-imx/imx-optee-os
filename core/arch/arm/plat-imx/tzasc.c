@@ -164,17 +164,18 @@ TEE_Result tzasc_init(void)
 
 	DMSG("Initializing TZC380\n");
 
-	if (soc_is_imx6ul() || soc_is_imx6ull())
+	if (soc_is_imx6ul() || soc_is_imx6ull() || soc_is_imx6sx()) {
 		iomuxc_gpr = core_mmu_get_va(IOMUXC_GPR_BASE, MEM_AREA_IO_SEC);
-	else
+	} else {
 		iomuxc_gpr = core_mmu_get_va(IOMUXC_BASE, MEM_AREA_IO_SEC);
+	}
 
-	val = read32(iomuxc_gpr + IOMUXC_GPR9_OFFSET);
+	val = read32(iomuxc_gpr + IOMUX_GPRx_OFFSET(IOMUX_GPR_TZASC_ID));
 
-	if (soc_is_imx6dqp() ||	soc_is_imx6dq() ||
-		soc_is_imx6dqp() || soc_is_imx6sdl()) {
+	if (soc_is_imx6dqp() || soc_is_imx6dq() || soc_is_imx6sdl()) {
 		DMSG("TZC2\n");
-		if ((val & 2) != 2) {
+		if ((val & BM_IOMUX_GPR_TZASC2_MUX_CTRL) !=
+			 BM_IOMUX_GPR_TZASC2_MUX_CTRL) {
 			EMSG("TZASC2 not set\n");
 			panic();
 		}
@@ -185,7 +186,8 @@ TEE_Result tzasc_init(void)
 
 	DMSG("TZC1\n");
 
-	if ((val & 1) != 1) {
+	if ((val & BM_IOMUX_GPR_TZASC1_MUX_CTRL) !=
+		 BM_IOMUX_GPR_TZASC1_MUX_CTRL) {
 		EMSG("TZASC1 not set\n");
 		panic();
 	}
@@ -194,35 +196,43 @@ TEE_Result tzasc_init(void)
 	board_imx_tzasc_configure(va1);
 
 	/* Configure OCRAM to be splited into secure/non-secure */
-	if (soc_is_imx6dqp() ||	soc_is_imx6dq() ||
-		soc_is_imx6sdl()) {
+	if (soc_is_imx6dqp() || soc_is_imx6dq() || soc_is_imx6sdl()) {
 		DMSG("------------------\n");
-		val = read32(iomuxc_gpr + IOMUXC_GPR10_OFFSET);
+		val = read32(iomuxc_gpr +
+			IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
+		val &= ~BM_IOMUX_GPR_OCRAM_TZ_ADDR;
 		val |= ((TRUSTZONE_OCRAM_START >> 12) <<
-			IOMUXC_GPR10_OCRAM_TZ_ADDR_OFFSET) &
-			IOMUXC_GPR10_OCRAM_TZ_ADDR_MASK;
-		val |= IOMUXC_GPR10_OCRAM_TZ_EN_MASK;
-		write32(val, iomuxc_gpr + IOMUXC_GPR10_OFFSET);
+			BP_IOMUX_GPR_OCRAM_TZ_ADDR) &
+			BM_IOMUX_GPR_OCRAM_TZ_ADDR;
+		val |= BM_IOMUX_GPR_OCRAM_TZ_EN;
+		write32(val, iomuxc_gpr +
+			IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
 		dsb();
 
 		/* lock bits and other bits can not be set once */
-		val |= IOMUXC_GPR10_OCRAM_TZ_EN_LOCK_OFFSET;
-		val |= IOMUXC_GPR10_OCRAM_TZ_ADDR_LOCK_MASK;
-		write32(val, iomuxc_gpr + IOMUXC_GPR10_OFFSET);
+		val |= IOMUX_GPR_OCRAM_LOCK(BM_IOMUX_GPR_OCRAM_TZ_ADDR |
+						BM_IOMUX_GPR_OCRAM_TZ_EN);
+		write32(val, iomuxc_gpr +
+			IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
 		dsb();
 	} else if (soc_is_imx6ul() || soc_is_imx6ull()) {
-		val = read32(iomuxc_gpr + IOMUXC_GPR10_OFFSET);
+		val = read32(iomuxc_gpr +
+			IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
+		val &= ~BM_IOMUX_GPR_OCRAM_TZ_ADDR_6UL;
 		val |= ((TRUSTZONE_OCRAM_START >> 12) <<
-			IOMUXC_GPR10_OCRAM_TZ_ADDR_OFFSET_6UL) &
-			IOMUXC_GPR10_OCRAM_TZ_ADDR_MASK_6UL;
-		val |= IOMUXC_GPR10_OCRAM_TZ_EN_MASK_6UL;
-		write32(val, iomuxc_gpr + IOMUXC_GPR10_OFFSET);
+			BP_IOMUX_GPR_OCRAM_TZ_ADDR_6UL) &
+			BM_IOMUX_GPR_OCRAM_TZ_ADDR_6UL;
+		val |= BM_IOMUX_GPR_OCRAM_TZ_EN_6UL;
+		write32(val, iomuxc_gpr +
+			IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
 		dsb();
 
 		/* lock bits and other bits can not be set once */
-		val |= IOMUXC_GPR10_OCRAM_TZ_EN_LOCK_OFFSET_6UL;
-		val |= IOMUXC_GPR10_OCRAM_TZ_ADDR_LOCK_MASK_6UL;
-		write32(val, iomuxc_gpr + IOMUXC_GPR10_OFFSET);
+		val |= IOMUX_GPR_OCRAM_LOCK(BM_IOMUX_GPR_OCRAM_TZ_ADDR_6UL|
+						BM_IOMUX_GPR_OCRAM_TZ_EN_6UL);
+
+		write32(val, iomuxc_gpr +
+			IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
 		dsb();
 	}
 
@@ -240,7 +250,7 @@ TEE_Result tzasc_init(void)
 	va = core_mmu_get_va(TZASC_BASE, MEM_AREA_IO_SEC);
 
 	iomuxc_gpr = core_mmu_get_va(IOMUXC_GPR_BASE, MEM_AREA_IO_SEC);
-	val = read32(iomuxc_gpr + IOMUXC_GPR9_OFFSET);
+	val = read32(iomuxc_gpr + IOMUX_GPRx_OFFSET(IOMUX_GPR_TZASC_ID));
 	if (val != 1) {
 		EMSG("TZASC1_MUX_CONTROL not set\n");
 		panic();
@@ -249,22 +259,23 @@ TEE_Result tzasc_init(void)
 	board_imx_tzasc_configure(va);
 
 	/* Configure OCRAM_S only accessible in security side */
-	val = read32(iomuxc_gpr + IOMUXC_GPR11_OFFSET);
-	val |= IOMUXC_GPR11_OCRAM_S_TZ_EN_MASK;
+	val = read32(iomuxc_gpr + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
+	val &= ~BM_IOMUX_GPR_OCRAM_TZ_ADDR;
+	val |= BM_IOMUX_GPR_OCRAM_S_TZ_EN;
 	/*
 	 * starts from ocram_s offset 0
 	 */
-	val |= ((0 >> 12) << IOMUXC_GPR11_OCRAM_S_TZ_ADDR_OFFSET) &
-		IOMUXC_GPR11_OCRAM_S_TZ_ADDR_MASK;
-	write32(val, iomuxc_gpr + IOMUXC_GPR11_OFFSET);
+	val |= ((0 >> 12) << BP_IOMUX_GPR_OCRAM_S_TZ_ADDR) &
+		BM_IOMUX_GPR_OCRAM_S_TZ_ADDR;
+	write32(val, iomuxc_gpr + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
 	dsb();
 	/*
 	 * Can not write all the bits once, seems lock bits
 	 * set first, then not able to set other bits
 	 */
-	val |= IOMUXC_GPR11_OCRAM_S_TZ_EN_LOCK_MASK;
-	val |= IOMUXC_GPR11_OCRAM_S_TZ_ADDR_LOCK_OFFSET;
-	write32(val, iomuxc_gpr + IOMUXC_GPR11_OFFSET);
+	val |= IOMUX_GPR_OCRAM_LOCK(BM_IOMUX_GPR_OCRAM_S_TZ_EN |
+					BM_IOMUX_GPR_OCRAM_S_TZ_ADDR);
+	write32(val, iomuxc_gpr + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
 
 	return TEE_SUCCESS;
 }
