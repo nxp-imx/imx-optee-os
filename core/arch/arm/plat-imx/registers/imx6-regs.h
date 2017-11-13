@@ -2,8 +2,7 @@
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * Copyright (c) 2016, Wind River Systems.
- * All rights reserved.
- * Copyright 2018 NXP
+ * Copyright 2017-2018 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -27,55 +26,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef __IMX6_REGS_H__
+#define __IMX6_REGS_H__
+#include <registers/imx6-src_regs.h>
+#include <registers/imx6-mmdc_regs.h>
 
-#ifndef PLATFORM_CONFIG_H
-#define PLATFORM_CONFIG_H
+#define UART1_BASE		0x02020000
+#define SRC_BASE		0x020D8000
+#define ANATOP_BASE		0x020C8000
+#define SNVS_BASE		0x020CC000
+#define UART2_BASE		0x021E8000
+#define MMDC_P0_BASE		0x021B0000
+#define SCU_BASE		0x00A00000
+#define PL310_BASE		0x00A02000
+#define GIC_BASE		0x00A00000
+#define GICD_OFFSET		0x1000
 
-#include <registers/imx-regs.h>
-
-#define STACK_ALIGNMENT			64
-
-#ifndef CFG_DDR_SIZE
-#error "CFG_DDR_SIZE not defined"
-#endif
-
-#if defined(CFG_MX7)
-/* For i.MX7D/S platforms */
-#include <config/imx7.h>
-#elif defined(CFG_MX6SX)
-#include <config/imx6sx.h>
-#elif defined(CFG_MX6UL) || defined(CFG_MX6ULL)
-/* For i.MX 6UltraLite and 6ULL EVK board */
-#include <config/imx6ul.h>
-#elif defined(CFG_MX6QP) || defined(CFG_MX6Q) || defined(CFG_MX6D) || \
-	defined(CFG_MX6DL) || defined(CFG_MX6S)
-/* For i.MX6 Quad SABRE Lite and Smart Device board */
-#include <config/imx6qdlsolo.h>
+#if defined(CFG_MX6UL) || defined(CFG_MX6ULL)
+#define GICC_OFFSET		0x2000
 #else
-#error "Unknown platform flavor"
+#define GICC_OFFSET		0x100
 #endif
 
+/* Central Security Unit register values */
+#define CSU_BASE		0x021C0000
+#define CSU_CSL_START		0x0
+#define CSU_CSL_END		0xA0
+#define CSU_ACCESS_ALL		0x00FF00FF
+#define CSU_SETTING_LOCK	0x01000100
 
-#ifndef CFG_TEE_RESERVED_SIZE
-#define CFG_TEE_RESERVED_SIZE 0x02000000
-#endif
-
-#ifndef CFG_TZDRAM_START
-#define  CFG_TZDRAM_START (DRAM0_BASE + CFG_DDR_SIZE - CFG_TEE_RESERVED_SIZE)
-#endif
-
-#ifndef CFG_SHMEM_SIZE
-#define  CFG_SHMEM_SIZE 0x100000
-#endif
-
-#ifndef CFG_TZDRAM_SIZE
-#define  CFG_TZDRAM_SIZE  (CFG_TEE_RESERVED_SIZE - CFG_SHMEM_SIZE)
-#endif
-
-#ifndef CFG_SHMEM_START
-#define  CFG_SHMEM_START (CFG_TZDRAM_START + CFG_TZDRAM_SIZE)
-#endif
-
-#include <mm/generic_ram_layout.h>
-
-#endif /*PLATFORM_CONFIG_H*/
+#endif /* __IMX6_REGS_H__ */
