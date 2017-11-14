@@ -30,7 +30,6 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6s-flavorlist)))
 $(call force,CFG_MX6S,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6sx-flavorlist)))
-$(call force,CFG_MX6,y)
 $(call force,CFG_MX6SX,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7d-flavorlist)))
@@ -50,6 +49,7 @@ $(call force,CFG_IMX_UART,y)
 $(call force,CFG_PM_STUBS,y)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
 $(call force,CFG_SECURE_TIME_SOURCE_REE,y)
+CFG_CSU ?= y
 CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 CFG_WITH_STACK_CANARIES ?= y
 
