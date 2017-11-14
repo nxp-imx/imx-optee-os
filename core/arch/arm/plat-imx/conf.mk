@@ -361,5 +361,6 @@ endif
 ifeq ($(filter y, $(CFG_PSCI_ARM32)), y)
 CFG_HWSUPP_MEM_PERM_WXN = n
 CFG_IMX_WDOG ?= y
+$(call force,CFG_IMX_OCRAM,y)
 endif
 

@@ -25,3 +25,4 @@ subdirs-$(CFG_PSCI_ARM32) += pm
 srcs-$(CFG_TZC380) += tzasc.c
 srcs-$(CFG_CSU) += imx_csu.c
 srcs-$(CFG_SCU) += imx_scu.c
+srcs-$(CFG_IMX_OCRAM) += imx_ocram.c
