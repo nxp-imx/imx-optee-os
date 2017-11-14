@@ -92,9 +92,6 @@
 #define CSU_BASE			0x021C0000
 #define CSU_CSL_START		0x0
 #define CSU_CSL_END			0xA0
-#define CSU_CSL5			0x14
-#define CSU_CSL15			0x3C
-#define CSU_CSL16			0x40
 #define	CSU_ACCESS_ALL		0x00FF00FF
 #define CSU_SETTING_LOCK	0x01000100
 

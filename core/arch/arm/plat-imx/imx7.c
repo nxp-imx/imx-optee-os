@@ -50,40 +50,15 @@
 
 void plat_cpu_reset_late(void)
 {
-	uintptr_t addr;
-	uint32_t val;
 
 	if (get_core_pos() != 0)
 		return;
 
-	/*
-	 * Configure imx7 CSU, first grant all peripherals
-	 * TODO: fine tune the permissions
-	 */
-	for (addr = CSU_CSL_START; addr != CSU_CSL_END; addr += 4)
-		write32(CSU_ACCESS_ALL, core_mmu_get_va(addr, MEM_AREA_IO_SEC));
+#ifdef CFG_CSU
+	csu_init();
+#endif
 
-	dsb();
-	/* Protect OCRAM_S */
-	write32(0x003300FF, core_mmu_get_va(CSU_CSL_59, MEM_AREA_IO_SEC));
-	/* Proect TZASC */
-	write32(0x00FF0033, core_mmu_get_va(CSU_CSL_28, MEM_AREA_IO_SEC));
-	/*
-	 * Proect CSU
-	 * Note: Ater this settings, CSU seems still can be read,
-	 * in non-secure world but can not be written.
-	 */
-	write32(0x00FF0033, core_mmu_get_va(CSU_CSL_15, MEM_AREA_IO_SEC));
-	/*
-	 * Protect SRC
-	 * write32(0x003300FF, core_mmu_get_va(CSU_CSL_12, MEM_AREA_IO_SEC));
-	 */
-	dsb();
-
-	/* lock the settings */
-	for (addr = CSU_CSL_START; addr != CSU_CSL_END; addr += 4) {
-		val = read32(core_mmu_get_va(addr, MEM_AREA_IO_SEC));
-		write32(val | CSU_SETTING_LOCK,
-			core_mmu_get_va(addr, MEM_AREA_IO_SEC));
-	}
+ #ifdef CFG_TZC380
+	tzasc_init();
+#endif	
 }

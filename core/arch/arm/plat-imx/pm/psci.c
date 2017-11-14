@@ -147,6 +147,20 @@ void psci_system_reset(void)
 	imx_wdog_restart();
 }
 
+#if defined(CFG_BOOT_SYNC_CPU)
+void pcsi_boot_allcpus(void)
+{
+	vaddr_t src_base = core_mmu_get_va(SRC_BASE, MEM_AREA_TEE_COHERENT);
+
+	/* set secondary entry address and release core */
+	write32(CFG_TEE_LOAD_ADDR, src_base + SRC_GPR1 + 8);
+	write32(CFG_TEE_LOAD_ADDR, src_base + SRC_GPR1 + 16);
+	write32(CFG_TEE_LOAD_ADDR, src_base + SRC_GPR1 + 24);
+
+	write32(SRC_SCR_CPU_ENABLE_ALL, src_base + SRC_SCR);
+}
+#endif
+
 __weak int imx7_cpu_suspend(uint32_t power_state __unused,
 			    uintptr_t entry __unused,
 			    uint32_t context_id __unused,
