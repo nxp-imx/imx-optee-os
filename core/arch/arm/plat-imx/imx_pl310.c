@@ -4,7 +4,7 @@
  * All rights reserved.
  * Copyright 2017 NXP
  */
-#include <arm32.h>
+#include <arm.h>
 #include <io.h>
 #include <kernel/generic_boot.h>
 #include <kernel/tz_ssvce_def.h>
@@ -29,6 +29,11 @@ void arm_cl2_config(vaddr_t pl310_base)
 
 	/* invalidate all cache ways */
 	arm_cl2_invbyway(pl310_base);
+}
+
+bool arm_cl2_enabled(vaddr_t pl310_base)
+{
+	return read32(pl310_base + PL310_CTRL) & 1;
 }
 
 void arm_cl2_enable(vaddr_t pl310_base)
