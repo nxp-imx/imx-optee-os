@@ -21,8 +21,6 @@
 #include <sm/psci.h>
 #include <stdint.h>
 
-static int suspended_init;
-
 int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		     uint32_t context_id __unused, struct sm_nsec_ctx *nsec)
 {
@@ -31,11 +29,6 @@ int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 						      MEM_AREA_TEE_COHERENT);
 	struct imx7_pm_info *p = (struct imx7_pm_info *)suspend_ocram_base;
 	int ret;
-
-	if (!suspended_init) {
-		imx7_suspend_init();
-		suspended_init = 1;
-	}
 
 	/* Store non-sec ctx regs */
 	sm_save_modes_regs(&nsec->mode_regs);

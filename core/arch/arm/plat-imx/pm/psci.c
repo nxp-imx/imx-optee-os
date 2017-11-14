@@ -161,6 +161,54 @@ void pcsi_boot_allcpus(void)
 }
 #endif
 
+__weak int imx6ul_lowpower_idle(uint32_t power_state __unused,
+				uintptr_t entry __unused,
+				uint32_t context_id __unused,
+				struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx6sx_lowpower_idle(uint32_t power_state __unused,
+				uintptr_t entry __unused,
+				uint32_t context_id __unused,
+				struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx6sl_lowpower_idle(uint32_t power_state __unused,
+				uintptr_t entry __unused,
+				uint32_t context_id __unused,
+				struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx6sll_lowpower_idle(uint32_t power_state __unused,
+				uintptr_t entry __unused,
+				uint32_t context_id __unused,
+				struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx6_cpu_suspend(uint32_t power_state __unused,
+			    uintptr_t entry __unused,
+			    uint32_t context_id __unused,
+			    struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx7d_lowpower_idle(uint32_t power_state __unused,
+			uintptr_t entry __unused,
+			uint32_t context_id __unused,
+			struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
 __weak int imx7_cpu_suspend(uint32_t power_state __unused,
 			    uintptr_t entry __unused,
 			    uint32_t context_id __unused,
@@ -191,19 +239,128 @@ int psci_cpu_suspend(uint32_t power_state,
 	 * ID 1 means low power idle
 	 * TODO: follow PSCI StateID sample encoding.
 	 */
-	DMSG("ID = %d\n", id);
+	DMSG("id = %d\n", id);
+#ifdef CFG_MX7ULP
 	if (id == 1) {
-		/* Not supported now */
-		return ret;
+		EMSG("Not supported now\n");
+	} else if (id == 0) {
+		return imx7ulp_cpu_suspend(power_state, entry,
+					   context_id, nsec);
+	}
+#else
+	/*
+	 * For i.MX6SL, the cpuidle need the state of LDO 2P5 and
+	 * the busfreq mode. these info is packed in the power_state,
+	 * when doing 'id' check, the LDO 2P5 and busfreq mode info need
+	 * to be removed from 'id'.
+	 */
+	if (soc_is_imx6sl())
+		id &= ~(0x6);
+
+	if (id == 1) {
+		if (soc_is_imx6ul() || soc_is_imx6ull())
+			return imx6ul_lowpower_idle(power_state, entry,
+						    context_id, nsec);
+		else if (soc_is_imx7ds())
+			return imx7d_lowpower_idle(power_state, entry,
+						   context_id, nsec);
+		else if (soc_is_imx6sx())
+			return imx6sx_lowpower_idle(power_state, entry,
+						    context_id, nsec);
+		else if (soc_is_imx6sl())
+			return imx6sl_lowpower_idle(power_state, entry,
+						    context_id, nsec);
+		else if (soc_is_imx6sll())
+			return imx6sll_lowpower_idle(power_state, entry,
+						    context_id, nsec);
 	} else if (id == 0) {
 		if (soc_is_imx7ds()) {
 			return imx7_cpu_suspend(power_state, entry,
 						context_id, nsec);
 		}
-		return ret;
+		return imx6_cpu_suspend(power_state, entry, context_id, nsec);
 	}
+#endif
 
 	DMSG("ID %d not supported\n", id);
 
 	return ret;
 }
+
+/* Weak functions because files are not all built */
+__weak int imx6ul_cpuidle_init(void)
+{
+	return 0;
+}
+
+__weak int imx6sx_cpuidle_init(void)
+{
+	return 0;
+}
+
+__weak int imx6sll_cpuidle_init(void)
+{
+	return 0;
+}
+
+__weak int imx6_suspend_init(void)
+{
+	return 0;
+}
+
+__weak int imx7d_cpuidle_init(void)
+{
+	return 0;
+}
+
+__weak int imx7_suspend_init(void)
+{
+	return 0;
+}
+
+__weak int imx7ulp_suspend_init(void)
+{
+	return 0;
+}
+
+static TEE_Result init_psci(void)
+{
+	TEE_Result ret = TEE_SUCCESS;
+	int err = 0;
+
+	/*
+	 * Initialize the power management data.
+	 * It must be done after the OCRAM initialization.
+	 */
+#ifdef CFG_MX7ULP
+	err = imx7ulp_suspend_init();
+#else
+	if (soc_is_imx6ul() || soc_is_imx6ull()) {
+		err = imx6ul_cpuidle_init();
+	} else if (soc_is_imx6sx()) {
+		err = imx6sx_cpuidle_init();
+	} else if (soc_is_imx6sll()) {
+		err = imx6sll_cpuidle_init();
+	} else if (soc_is_imx7ds()) {
+		err = imx7d_cpuidle_init();
+	}
+
+	if (!err) {
+		if (soc_is_imx6()) {
+			err = imx6_suspend_init();
+		} else {
+			if (soc_is_imx7ds()) {
+				err = imx7_suspend_init();
+			}
+		}
+	}
+#endif
+
+	if (err) {
+		ret = TEE_ERROR_GENERIC;
+	}
+
+	return ret;
+}
+
+service_init(init_psci);
