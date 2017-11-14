@@ -49,7 +49,7 @@ $(call force,CFG_WITH_SOFTWARE_PRNG,y)
 CFG_DT ?= y
 CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 CFG_WITH_STACK_CANARIES ?= y
-
+$(call force,CFG_IMX_OCRAM,y)
 
 # i.MX6UL/ULL specific config
 ifneq (,$(filter y, $(CFG_MX6UL) $(CFG_MX6ULL)))

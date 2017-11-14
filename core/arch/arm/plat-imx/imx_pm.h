@@ -54,6 +54,11 @@
 #define SUSPEND_OCRAM_OFFSET		0x0
 #define LOWPOWER_IDLE_OCRAM_OFFSET	0x1000
 
+/*
+ * Except i.MX6SX only 16KB ocram_s available, others use 16KB offset.
+ */
+#define IRAM_TBL_OFFSET			0x4000
+
 #ifndef ASM
 #include <sm/sm.h>
 
@@ -114,7 +119,6 @@ void imx7_suspend(struct imx7_pm_info *info);
 void imx7_resume(void);
 void ca7_cpu_resume(void);
 int imx7_suspend_init(void);
-int pm_imx7_iram_tbl_init(void);
 int imx7_cpu_suspend(uint32_t power_state, uintptr_t entry,
 		     uint32_t context_id, struct sm_nsec_ctx *nsec);
 #endif

@@ -22,8 +22,6 @@
 #include <sm/sm.h>
 #include <string.h>
 
-paddr_t iram_tbl_phys_addr = -1UL;
-void *iram_tbl_virt_addr;
 
 #define READ_DATA_FROM_HARDWARE		0
 
@@ -87,57 +85,6 @@ static struct imx7_pm_data imx7d_pm_data_ddr3 = {
 	.ddrc_phy_offset = imx7d_ddrc_phy_ddr3_setting,
 };
 
-paddr_t phys_addr[] = {
-	AIPS1_BASE, AIPS2_BASE, AIPS3_BASE
-};
-
-int pm_imx7_iram_tbl_init(void)
-{
-	uint32_t i;
-	struct tee_mmap_region map;
-
-	/* iram mmu translation table already initialized */
-	if (iram_tbl_phys_addr != (-1UL))
-		return 0;
-
-	iram_tbl_phys_addr = TRUSTZONE_OCRAM_START + 16 * 1024;
-	iram_tbl_virt_addr = phys_to_virt(iram_tbl_phys_addr,
-					  MEM_AREA_TEE_COHERENT);
-
-	/* 16KB */
-	memset(iram_tbl_virt_addr, 0, 16 * 1024);
-
-	for (i = 0; i < ARRAY_SIZE(phys_addr); i++) {
-		map.pa = phys_addr[i];
-		map.va = (vaddr_t)phys_to_virt(phys_addr[i], MEM_AREA_IO_SEC);
-		map.region_size = CORE_MMU_PGDIR_SIZE;
-		map.size = AIPS1_SIZE; /* 4M for AIPS1/2/3 */
-		map.type = MEM_AREA_IO_SEC;
-		map.attr = TEE_MATTR_VALID_BLOCK | TEE_MATTR_PRW |
-			   TEE_MATTR_SECURE |
-			   (TEE_MATTR_CACHE_NONCACHE << TEE_MATTR_CACHE_SHIFT);
-		map_memarea_sections(&map, (uint32_t *)iram_tbl_virt_addr);
-	}
-
-	/* Note IRAM_S_BASE is not 1M aligned, so take care */
-	map.pa = ROUNDDOWN(IRAM_S_BASE, CORE_MMU_PGDIR_SIZE);
-	map.va = (vaddr_t)phys_to_virt(map.pa, MEM_AREA_TEE_COHERENT);
-	map.region_size = CORE_MMU_PGDIR_SIZE;
-	map.size = CORE_MMU_DEVICE_SIZE;
-	map.type = MEM_AREA_TEE_COHERENT;
-	map.attr = TEE_MATTR_VALID_BLOCK | TEE_MATTR_PRWX | TEE_MATTR_SECURE;
-	map_memarea_sections(&map, (uint32_t *)iram_tbl_virt_addr);
-
-	map.pa = GIC_BASE;
-	map.va = (vaddr_t)phys_to_virt((paddr_t)GIC_BASE, MEM_AREA_IO_SEC);
-	map.region_size = CORE_MMU_PGDIR_SIZE;
-	map.size = CORE_MMU_DEVICE_SIZE;
-	map.type = MEM_AREA_TEE_COHERENT;
-	map.attr = TEE_MATTR_VALID_BLOCK | TEE_MATTR_PRW | TEE_MATTR_SECURE;
-	map_memarea_sections(&map, (uint32_t *)iram_tbl_virt_addr);
-
-	return 0;
-}
 
 int imx7_suspend_init(void)
 {
@@ -149,8 +96,6 @@ int imx7_suspend_init(void)
 						      MEM_AREA_TEE_COHERENT);
 	struct imx7_pm_info *p = (struct imx7_pm_info *)suspend_ocram_base;
 	struct imx7_pm_data *pm_data;
-
-	pm_imx7_iram_tbl_init();
 
 	dcache_op_level1(DCACHE_OP_CLEAN_INV);
 
