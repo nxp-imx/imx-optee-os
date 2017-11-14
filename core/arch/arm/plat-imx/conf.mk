@@ -67,8 +67,8 @@ include core/arch/arm/cpu/cortex-a9.mk
 
 $(call force,CFG_MX6,y)
 $(call force,CFG_PL310,y)
-
 CFG_PL310_LOCKED ?= y
+CFG_SCU ?= y
 CFG_BOOT_SYNC_CPU ?= y
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_ENABLE_SCTLR_RR ?= y
