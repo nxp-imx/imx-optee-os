@@ -13,6 +13,7 @@
 #include <drivers/gic.h>
 #include <drivers/imx_uart.h>
 #include <io.h>
+#include <imx.h>
 #include <kernel/generic_boot.h>
 #include <kernel/misc.h>
 #include <kernel/panic.h>
@@ -24,6 +25,7 @@
 #include <sm/optee_smc.h>
 #include <tee/entry_fast.h>
 #include <tee/entry_std.h>
+#include <kernel/cache_helpers.h>
 
 
 static void main_fiq(void);
@@ -123,3 +125,49 @@ void main_secondary_init_gic(void)
 	gic_cpu_init(&gic_data);
 }
 #endif
+
+/*
+ * Platform CPU reset late function executed with MMU
+ * OFF. The CSU must be initialized here to allow
+ * access to Non-Secure Memory from Secure code without
+ * aborting
+ */
+void plat_cpu_reset_late(void)
+{
+	if (get_core_pos() == 0) {
+#if defined(CFG_BOOT_SYNC_CPU)
+		boot_allcpus();
+#endif
+
+#ifdef CFG_SCU
+		scu_init();
+#endif
+
+#ifdef CFG_CSU
+		csu_init();
+#endif
+
+#ifdef CFG_TZC380
+		tzasc_init();
+#endif
+	}
+}
+
+/*
+ * Platform Wakeup late function executed with MMU
+ * ON after suspend.
+ */
+void plat_cpu_wakeup_late(void)
+{
+#ifdef CFG_SCU
+	scu_init();
+	dcache_op_all(DCACHE_OP_CLEAN_INV);
+#endif
+
+#ifdef CFG_TZC380
+	tzasc_init();
+#endif
+}
+
+
+

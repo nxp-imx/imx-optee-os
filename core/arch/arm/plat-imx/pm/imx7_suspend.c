@@ -51,10 +51,14 @@ int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		return 0;
 	}
 
-	plat_cpu_reset_late();
-
 	/* Restore register of different mode in secure world */
 	sm_restore_modes_regs(&nsec->mode_regs);
+
+	/*
+	 * Call the Wakeup Late function to restore some
+	 * HW configuration (e.g. TZASC)
+	 */
+	plat_cpu_wakeup_late();
 
 	/* Set entry for back to Linux */
 	nsec->mon_lr = (uint32_t)entry;
