@@ -5,7 +5,6 @@
  */
 
 #include <arm.h>
-#include <arm32.h>
 #include <console.h>
 #include <io.h>
 #include <imx.h>
@@ -24,6 +23,63 @@
 
 
 #define READ_DATA_FROM_HARDWARE		0
+
+static uint32_t imx7d_ddrc_lpddr3_setting[][2] = {
+	{ 0x0, READ_DATA_FROM_HARDWARE },
+	{ 0x1a0, READ_DATA_FROM_HARDWARE },
+	{ 0x1a4, READ_DATA_FROM_HARDWARE },
+	{ 0x1a8, READ_DATA_FROM_HARDWARE },
+	{ 0x64, READ_DATA_FROM_HARDWARE },
+	{ 0xd0, READ_DATA_FROM_HARDWARE },
+	{ 0xdc, READ_DATA_FROM_HARDWARE },
+	{ 0xe0, READ_DATA_FROM_HARDWARE },
+	{ 0xe4, READ_DATA_FROM_HARDWARE },
+	{ 0xf4, READ_DATA_FROM_HARDWARE },
+	{ 0x100, READ_DATA_FROM_HARDWARE },
+	{ 0x104, READ_DATA_FROM_HARDWARE },
+	{ 0x108, READ_DATA_FROM_HARDWARE },
+	{ 0x10c, READ_DATA_FROM_HARDWARE },
+	{ 0x110, READ_DATA_FROM_HARDWARE },
+	{ 0x114, READ_DATA_FROM_HARDWARE },
+	{ 0x118, READ_DATA_FROM_HARDWARE },
+	{ 0x120, READ_DATA_FROM_HARDWARE },
+	{ 0x11c, READ_DATA_FROM_HARDWARE },
+	{ 0x180, READ_DATA_FROM_HARDWARE },
+	{ 0x184, READ_DATA_FROM_HARDWARE },
+	{ 0x190, READ_DATA_FROM_HARDWARE },
+	{ 0x194, READ_DATA_FROM_HARDWARE },
+	{ 0x200, READ_DATA_FROM_HARDWARE },
+	{ 0x204, READ_DATA_FROM_HARDWARE },
+	{ 0x210, READ_DATA_FROM_HARDWARE },
+	{ 0x214, READ_DATA_FROM_HARDWARE },
+	{ 0x218, READ_DATA_FROM_HARDWARE },
+	{ 0x240, READ_DATA_FROM_HARDWARE },
+	{ 0x244, READ_DATA_FROM_HARDWARE },
+};
+
+static uint32_t imx7d_ddrc_phy_lpddr3_setting[][2] = {
+	{ 0x0, READ_DATA_FROM_HARDWARE },
+	{ 0x4, READ_DATA_FROM_HARDWARE },
+	{ 0x8, READ_DATA_FROM_HARDWARE },
+	{ 0x10, READ_DATA_FROM_HARDWARE },
+	{ 0xb0, READ_DATA_FROM_HARDWARE },
+	{ 0x1c, READ_DATA_FROM_HARDWARE },
+	{ 0x9c, READ_DATA_FROM_HARDWARE },
+	{ 0x7c, READ_DATA_FROM_HARDWARE },
+	{ 0x80, READ_DATA_FROM_HARDWARE },
+	{ 0x84, READ_DATA_FROM_HARDWARE },
+	{ 0x88, READ_DATA_FROM_HARDWARE },
+	{ 0x6c, READ_DATA_FROM_HARDWARE },
+	{ 0x20, READ_DATA_FROM_HARDWARE },
+	{ 0x30, READ_DATA_FROM_HARDWARE },
+	{ 0x50, 0x01000008 },
+	{ 0x50, 0x00000008 },
+	{ 0xc0, 0x0e407304 },
+	{ 0xc0, 0x0e447304 },
+	{ 0xc0, 0x0e447306 },
+	{ 0xc0, 0x0e4c7304 },
+	{ 0xc0, 0x0e487306 },
+};
 
 static uint32_t imx7d_ddrc_ddr3_setting[][2] = {
 	{ 0x0, READ_DATA_FROM_HARDWARE },
@@ -78,6 +134,14 @@ static uint32_t imx7d_ddrc_phy_ddr3_setting[][2] = {
 	{ 0xc0, 0x0e407306 },
 };
 
+static struct imx7_pm_data imx7d_pm_data_lpddr3 = {
+	.ddrc_num = ARRAY_SIZE(imx7d_ddrc_lpddr3_setting),
+	.ddrc_offset = imx7d_ddrc_lpddr3_setting,
+	.ddrc_phy_num = ARRAY_SIZE(imx7d_ddrc_phy_lpddr3_setting),
+	.ddrc_phy_offset = imx7d_ddrc_phy_lpddr3_setting,
+};
+
+
 static struct imx7_pm_data imx7d_pm_data_ddr3 = {
 	.ddrc_num = ARRAY_SIZE(imx7d_ddrc_ddr3_setting),
 	.ddrc_offset = imx7d_ddrc_ddr3_setting,
@@ -85,6 +149,7 @@ static struct imx7_pm_data imx7d_pm_data_ddr3 = {
 	.ddrc_phy_offset = imx7d_ddrc_phy_ddr3_setting,
 };
 
+struct imx7_pm_info *pm_info;
 
 int imx7_suspend_init(void)
 {
@@ -97,7 +162,11 @@ int imx7_suspend_init(void)
 	struct imx7_pm_info *p = (struct imx7_pm_info *)suspend_ocram_base;
 	struct imx7_pm_data *pm_data;
 
+	pm_info = p;
+
 	dcache_op_level1(DCACHE_OP_CLEAN_INV);
+
+	DMSG("%x %x\n", suspend_ocram_base, sizeof(*p));
 
 	p->pa_base = TRUSTZONE_OCRAM_START + SUSPEND_OCRAM_OFFSET;
 	p->tee_resume = virt_to_phys((void *)(vaddr_t)ca7_cpu_resume);
@@ -131,6 +200,9 @@ int imx7_suspend_init(void)
 	switch (p->ddr_type) {
 	case IMX_DDR_TYPE_DDR3:
 		pm_data = &imx7d_pm_data_ddr3;
+		break;
+	case IMX_DDR_TYPE_LPDDR3:
+		pm_data = &imx7d_pm_data_lpddr3;
 		break;
 	default:
 		panic("Not supported ddr type\n");

@@ -4,7 +4,6 @@
  *
  */
 #include <arm.h>
-#include <arm32.h>
 #include <console.h>
 #include <drivers/imx_uart.h>
 #include <io.h>

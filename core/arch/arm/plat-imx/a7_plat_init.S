@@ -69,6 +69,15 @@ UNWIND(	.fnstart)
 UNWIND(	.fnend)
 END_FUNC plat_cpu_reset_early
 
+FUNC get_core_pos , :
+UNWIND(	.fnstart)
+	read_mpidr r0
+	/* Calculate CorePos = (ClusterId * 4) + CoreId */
+	and	r0, r0, #MPIDR_CPU_MASK
+	bx	lr
+UNWIND(	.fnend)
+END_FUNC get_core_pos
+
 FUNC plat_get_dt_phys , :
 UNWIND( .fnstart)
 	/* Return the physical DT address */
