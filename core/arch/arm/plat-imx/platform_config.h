@@ -42,11 +42,6 @@
 #if defined(CFG_MX7)
 /* For i.MX7D/S platforms */
 #include <config/imx7.h>
-#elif defined(CFG_MX6SX)
-#include <config/imx6sx.h>
-#elif defined(CFG_MX6UL) || defined(CFG_MX6ULL)
-/* For i.MX 6UltraLite and 6ULL EVK board */
-#include <config/imx6ul.h>
 #elif defined(CFG_MX6QP) || defined(CFG_MX6Q) || defined(CFG_MX6D) || \
 	defined(CFG_MX6DL) || defined(CFG_MX6S)
 /* For i.MX6 Quad SABRE Lite and Smart Device board */
@@ -54,6 +49,14 @@
 /* For i.MX 6SL */
 #elif defined(CFG_MX6SL)
 #include <config/imx6sl.h>
+/* For i.MX 6SLL */
+#elif defined(CFG_MX6SLL)
+#include <config/imx6sll.h>
+#elif defined(CFG_MX6SX)
+#include <config/imx6sx.h>
+#elif defined(CFG_MX6UL) || defined(CFG_MX6ULL)
+/* For i.MX 6UltraLite and 6ULL EVK board */
+#include <config/imx6ul.h>
 #else
 #error "Unknown platform flavor"
 #endif
