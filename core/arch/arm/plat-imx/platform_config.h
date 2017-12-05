@@ -51,6 +51,9 @@
 	defined(CFG_MX6DL) || defined(CFG_MX6S)
 /* For i.MX6 Quad SABRE Lite and Smart Device board */
 #include <config/imx6qdlsolo.h>
+/* For i.MX 6SL */
+#elif defined(CFG_MX6SL)
+#include <config/imx6sl.h>
 #else
 #error "Unknown platform flavor"
 #endif
