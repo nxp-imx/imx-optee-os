@@ -308,6 +308,8 @@ struct imx7_pm_data {
 
 extern struct imx6_pm_data imx6ul_pm_data;
 extern uint32_t imx6ul_mmdc_io_offset[];
+extern struct imx6_pm_data imx6sl_pm_data;
+extern uint32_t imx6sl_mmdc_io_offset[];
 
 /* IMX6 Power initialization functions */
 int imx6_suspend_init(void);
@@ -320,6 +322,7 @@ void imx6_suspend(struct imx6_pm_info *info);
 void imx6ul_low_power_idle(struct imx6_pm_info *info);
 void imx6ull_low_power_idle(struct imx6_pm_info *info);
 void imx6sx_low_power_idle(struct imx6sx_cpuidle_pm_info *info);
+void imx6sl_low_power_idle(struct imx6_pm_info *info);
 void imx6_resume(void);
 void v7_cpu_resume(void);
 
