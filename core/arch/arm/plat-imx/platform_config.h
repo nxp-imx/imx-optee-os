@@ -35,12 +35,16 @@
 
 #define STACK_ALIGNMENT			64
 
+
 #ifndef CFG_DDR_SIZE
 #error "CFG_DDR_SIZE not defined"
 #endif
 
-#if defined(CFG_MX7)
+/* For i.MX8M platforms */
+#if defined(CFG_MX8M)
+#include <config/imx8m.h>
 /* For i.MX7D/S platforms */
+#elif defined(CFG_MX7)
 #include <config/imx7.h>
 /* For i.MX7ULP platforms */
 #elif defined(CFG_MX7ULP)

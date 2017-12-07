@@ -14,6 +14,7 @@ mx6ull-flavorlist = mx6ullevk
 mx7d-flavorlist = mx7dsabresd
 mx7s-flavorlist = mx7swarp7
 mx7ulp-flavorlist = mx7ulpevk
+mx8m-flavorlist = mx8mqevk
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
@@ -71,18 +72,43 @@ $(call force,CFG_MX7ULP,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
 $(call force,CFG_TZC380,n)
 $(call force,CFG_CSU,n)
+else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8m-flavorlist)))
+$(call force,CFG_MX8M,y)
+$(call force,CFG_ARM64_core,y)
+$(call force,CFG_TEE_CORE_NB_CORE,4)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
 
 # Generic IMX functionality
 $(call force,CFG_GENERIC_BOOT,y)
-$(call force,CFG_GIC,y)
 $(call force,CFG_PM_STUBS,y)
+$(call force,CFG_GIC,y)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
-$(call force,CFG_SECURE_TIME_SOURCE_REE,y)
 CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 CFG_WITH_STACK_CANARIES ?= y
+CFG_MMAP_REGIONS ?= 24
+
+ifeq ($(CFG_ARM64_core),y)
+# arm-v8 platforms
+include core/arch/arm/cpu/cortex-armv8-0.mk
+$(call force,CFG_WITH_LPAE,y)
+$(call force,CFG_WITH_ARM_TRUSTED_FW,y)
+$(call force,CFG_ARM_GICV3,y)
+$(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)
+ta-targets = ta_arm64
+CFG_CRYPTO_WITH_CE ?= y
+
+CFG_IMX_WDOG = n
+CFG_TZC380 ?= y
+CFG_IMX_UART ?= y
+else
+# arm-v7 platforms Common definition
+ta-targets = ta_arm32
+
+$(call force,CFG_SECURE_TIME_SOURCE_REE,y)
+CFG_TZC380 ?= y
+CFG_CSU ?= y
 
 # i.MX6UL/ULL specific config
 ifneq (,$(filter y, $(CFG_MX6UL) $(CFG_MX6ULL)))
@@ -135,9 +161,8 @@ CFG_IMX_CAAM ?= y
 $(call force,CFG_IMX_UART,n)
 endif
 
-CFG_MMAP_REGIONS ?= 24
-
 ta-targets = ta_arm32
+endif
 
 # Default Board configuration
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx6ulevk))
@@ -327,6 +352,10 @@ CFG_SHMEM_SIZE ?= 0x00200000
 CFG_PSCI_ARM32 ?= n
 CFG_BOOT_SYNC_CPU = n
 CFG_BOOT_SECONDARY_REQUEST = n
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mqevk))
+CFG_DDR_SIZE ?= 0xC0000000
 endif
 
 ifeq ($(filter y, $(CFG_PSCI_ARM32)), y)
