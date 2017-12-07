@@ -146,7 +146,7 @@ static uint32_t addr_high(vaddr_t addr __maybe_unused)
  * `tzc_configure_region` is used to program regions into the TrustZone
  * controller.
  */
-void tzc_configure_region(uint8_t region, vaddr_t region_base, uint32_t attr)
+void tzc_configure_region(uint8_t region, vaddr_t region_base, size_t attr)
 {
 	assert(tzc.base);
 

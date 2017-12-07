@@ -1,7 +1,7 @@
 global-incdirs-y += .
 global-incdirs-y += registers
 
-ifneq (,$(filter y, $(CFG_MX6) $(CFG_MX7)))
+ifneq (,$(filter y, $(CFG_MX6) $(CFG_MX7) $(CFG_MX8M)))
 srcs-y += main.c
 endif
 
