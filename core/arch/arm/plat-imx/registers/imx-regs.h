@@ -35,6 +35,8 @@
 #include <registers/imx6-regs.h>
 #elif defined(CFG_MX7)
 #include <registers/imx7-regs.h>
+#elif defined(CFG_MX7ULP)
+#include <registers/imx7ulp-regs.h>
 #else
 #error "PLATFORM not defined"
 #endif

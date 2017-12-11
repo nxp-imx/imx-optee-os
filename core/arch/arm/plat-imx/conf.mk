@@ -13,6 +13,7 @@ mx6ul-flavorlist = mx6ulevk mx6ul9x9evk
 mx6ull-flavorlist = mx6ullevk
 mx7d-flavorlist = mx7dsabresd
 mx7s-flavorlist = mx7swarp7
+mx7ulp-flavorlist = mx7ulpevk
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
@@ -22,6 +23,7 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ull-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6ULL,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
+$(call force,CFG_IMX_CAAM,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6q-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6Q,y)
@@ -30,6 +32,8 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6qp-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6QP,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
+# Currently there is a board rework to enable TZASC on i.MX6QP
+$(call force,CFG_TZC380,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6d-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6D,y)
@@ -50,16 +54,23 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6sl-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6SL,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
+$(call force,CFG_IMX_CAAM,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6sll-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6SLL,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
+$(call force,CFG_IMX_CAAM,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7d-flavorlist)))
 $(call force,CFG_MX7,y)
 $(call force,CFG_TEE_CORE_NB_CORE,2)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7s-flavorlist)))
 $(call force,CFG_MX7,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
+else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7ulp-flavorlist)))
+$(call force,CFG_MX7ULP,y)
+$(call force,CFG_TEE_CORE_NB_CORE,1)
+$(call force,CFG_TZC380,n)
+$(call force,CFG_CSU,n)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -67,12 +78,9 @@ endif
 # Generic IMX functionality
 $(call force,CFG_GENERIC_BOOT,y)
 $(call force,CFG_GIC,y)
-$(call force,CFG_IMX_UART,y)
 $(call force,CFG_PM_STUBS,y)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
 $(call force,CFG_SECURE_TIME_SOURCE_REE,y)
-CFG_TZC380 ?= y
-CFG_CSU ?= y
 CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 CFG_WITH_STACK_CANARIES ?= y
 
@@ -80,10 +88,12 @@ CFG_WITH_STACK_CANARIES ?= y
 ifneq (,$(filter y, $(CFG_MX6UL) $(CFG_MX6ULL)))
 include core/arch/arm/cpu/cortex-a7.mk
 CFG_IMX_UART ?= y
+CFG_TZC380 ?= y
 CFG_CSU ?= y
 CFG_IMX_CAAM ?= y
 $(call force,CFG_BOOT_SYNC_CPU,n)
 $(call force,CFG_BOOT_SECONDARY_REQUEST,n)
+$(call force,CFG_IMX_LPUART,n)
 endif
 
 # i.MX6 Solo/SL/SLL/SoloX/DualLite/Dual/Quad specific config
@@ -93,11 +103,15 @@ include core/arch/arm/cpu/cortex-a9.mk
 $(call force,CFG_MX6,y)
 $(call force,CFG_PL310,y)
 CFG_PL310_LOCKED ?= y
+CFG_IMX_UART ?= y
+CFG_TZC380 ?= y
+CFG_CSU ?= y
 CFG_SCU ?= y
 CFG_BOOT_SYNC_CPU ?= y
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_ENABLE_SCTLR_RR ?= y
 CFG_IMX_CAAM ?= y
+$(call force,CFG_IMX_LPUART,n)
 endif
 
 # i.MX7 specific config
@@ -105,7 +119,20 @@ ifeq ($(filter y, $(CFG_MX7)), y)
 include core/arch/arm/cpu/cortex-a7.mk
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_INIT_CNTVOFF ?= y
+CFG_IMX_UART ?= y
+CFG_TZC380 ?= y
+CFG_CSU ?= y
 CFG_IMX_CAAM ?= y
+$(call force,CFG_IMX_LPUART,n)
+endif
+
+# i.MX7ulp specific config
+ifeq ($(filter y, $(CFG_MX7ULP)), y)
+include core/arch/arm/cpu/cortex-a7.mk
+CFG_IMX_LPUART ?= y
+$(call force,CFG_BOOT_SECONDARY_REQUEST,n)
+CFG_IMX_CAAM ?= y
+$(call force,CFG_IMX_UART,n)
 endif
 
 CFG_MMAP_REGIONS ?= 24
@@ -210,8 +237,6 @@ CFG_SHMEM_SIZE ?= 0x00100000
 CFG_PSCI_ARM32 ?= y
 CFG_BOOT_SYNC_CPU = n
 CFG_BOOT_SECONDARY_REQUEST = y
-# Currently there is a board rework to enable TZASC on i.MX6QP
-CFG_TZC380 = n
 endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx6qpsabreauto))
@@ -291,6 +316,17 @@ CFG_DT ?= y
 CFG_PSCI_ARM32 ?= y
 # TZASC config is not defined for the warp board
 CFG_TZC380 = n
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx7ulpevk))
+CFG_DT ?= y
+CFG_NS_ENTRY_ADDR ?= 0x60800000
+CFG_DT_ADDR ?= 0x63000000
+CFG_DDR_SIZE ?= 0x40000000
+CFG_SHMEM_SIZE ?= 0x00200000
+CFG_PSCI_ARM32 ?= n
+CFG_BOOT_SYNC_CPU = n
+CFG_BOOT_SECONDARY_REQUEST = n
 endif
 
 ifeq ($(filter y, $(CFG_PSCI_ARM32)), y)

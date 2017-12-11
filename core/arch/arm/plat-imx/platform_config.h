@@ -42,6 +42,9 @@
 #if defined(CFG_MX7)
 /* For i.MX7D/S platforms */
 #include <config/imx7.h>
+/* For i.MX7ULP platforms */
+#elif defined(CFG_MX7ULP)
+#include <config/imx7ulp.h>
 #elif defined(CFG_MX6QP) || defined(CFG_MX6Q) || defined(CFG_MX6D) || \
 	defined(CFG_MX6DL) || defined(CFG_MX6S)
 /* For i.MX6 Quad SABRE Lite and Smart Device board */
