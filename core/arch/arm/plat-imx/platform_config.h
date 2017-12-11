@@ -19,6 +19,10 @@
 #if defined(CFG_MX7)
 #include <config/config_imx7.h>
 
+/* For i.MX7ULP platforms */
+#elif defined(CFG_MX7ULP)
+#include <config/config_imx7ulp.h>
+
 /* For i.MX 6UltraLite and 6ULL EVK board */
 #elif defined(CFG_MX6UL) || defined(CFG_MX6ULL)
 #include <config/config_imx6ul.h>

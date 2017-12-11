@@ -81,6 +81,30 @@
 #define MX7_DDRC_NUM			32
 #define MX7_DDRC_PHY_NUM		16
 
+#define PM_INFO_MX7ULP_M4_RESERVE0_OFF		0x0
+#define PM_INFO_MX7ULP_M4_RESERVE1_OFF		0x4
+#define PM_INFO_MX7ULP_M4_RESERVE2_OFF		0x8
+#define PM_INFO_MX7ULP_PBASE_OFF		0xc
+#define PM_INFO_MX7ULP_RESUME_ADDR_OFF		0x10
+#define PM_INFO_MX7ULP_SIZE_OFF			0x14
+#define PM_INFO_MX7ULP_SIM_VBASE_OFF		0x18
+#define PM_INFO_MX7ULP_SCG1_VBASE_OFF		0x1c
+#define PM_INFO_MX7ULP_MMDC_VBASE_OFF		0x20
+#define PM_INFO_MX7ULP_MMDC_IO_VBASE_OFF	0x24
+#define PM_INFO_MX7ULP_SMC1_VBASE_OFF		0x28
+#define PM_INFO_MX7ULP_SCG1_VAL_OFF		0x2c
+#define PM_INFO_MX7ULP_TTBR0_V_OFF		0x6c
+#define PM_INFO_MX7ULP_TTBR1_V_OFF		0x70
+#define PM_INFO_MX7ULP_GPIO_REG_OFF		0x74
+#define PM_INFO_MX7ULP_IOMUX_NUM_OFF		0x94
+#define PM_INFO_MX7ULP_IOMUX_VAL_OFF		0x98
+#define PM_INFO_MX7ULP_SELECT_INPUT_NUM_OFF	0x268
+#define PM_INFO_MX7ULP_SELECT_INPUT_VAL_OFF	0x26c
+#define PM_INFO_MX7ULP_MMDC_IO_NUM_OFF		0x3a4
+#define PM_INFO_MX7ULP_MMDC_IO_VAL_OFF		0x3a8
+/* below offsets depends on MX7ULP_MAX_MMDC_IO_NUM(36) definition */
+#define PM_INFO_MX7ULP_MMDC_NUM_OFF		0x4c8
+#define PM_INFO_MX7ULP_MMDC_VAL_OFF		0x4cc
 
 #define SUSPEND_OCRAM_SIZE		0x1000
 #define LOWPOWER_IDLE_OCRAM_SIZE	0x1000
@@ -327,6 +351,21 @@ int imx7_cpu_suspend(uint32_t power_state, uintptr_t entry,
 int imx7d_lowpower_idle(uint32_t power_state, uintptr_t entry,
 			uint32_t context_id, struct sm_nsec_ctx *nsec);
 void imx7d_low_power_idle(struct imx7_cpuidle_pm_info *info);
+
+int imx7ulp_cpu_suspend(uint32_t power_state, uintptr_t entry,
+			uint32_t context_id, struct sm_nsec_ctx *nsec);
+void imx7ulp_suspend(struct imx7ulp_pm_info *info);
+
+enum imx7ulp_sys_pwr_mode {
+	HSRUN,
+	RUN,
+	VLPR,
+	WAIT,
+	VLPW,
+	STOP,
+	VLPS,
+	VLLS,
+};
+#endif
 #endif
 
-#endif

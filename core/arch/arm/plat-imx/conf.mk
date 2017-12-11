@@ -10,6 +10,7 @@ mx6s-flavorlist =
 mx6qp-flavorlist = mx6qpsabresd mx6qpsabreauto
 mx6sx-flavorlist = mx6sxsabresd mx6sxsabreauto
 mx7-flavorlist = mx7dsabresd
+mx7ulp-flavorlist = mx7ulpevk
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
@@ -74,6 +75,17 @@ $(call force,CFG_IMX_UART,y)
 $(call force,CFG_IMX_OCRAM,y)
 # TODO: Fix this is not correct 7s is a single core
 CFG_TEE_CORE_NB_CORE ?= 2
+
+else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7ulp-flavorlist)))
+$(call force,CFG_MX7ULP,y)
+$(call force,CFG_GIC,y)
+$(call force,CFG_IMX_LPUART,y)
+$(call force,CFG_TZC380,n)
+$(call force,CFG_CSU,n)
+$(call force,CFG_IMX_OCRAM,y)
+$(call force,CFG_BOOT_SECONDARY_REQUEST,n)
+CFG_TEE_CORE_NB_CORE ?= 1
+
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -123,6 +135,11 @@ endif
 ifeq ($(filter y, $(CFG_MX7)), y)
 include core/arch/arm/cpu/cortex-a7.mk
 CFG_INIT_CNTVOFF ?= y
+endif
+
+# i.MX7ulp specific config
+ifeq ($(filter y, $(CFG_MX7ULP)), y)
+include core/arch/arm/cpu/cortex-a7.mk
 endif
 
 # default DDR Config
@@ -201,6 +218,12 @@ endif
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx7dsabresd))
 CFG_NS_ENTRY_ADDR ?= 0x80800000
 CFG_DT_ADDR ?= 0x83000000
+CFG_DDR_SIZE ?= 0x40000000
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx7ulpevk))
+CFG_NS_ENTRY_ADDR ?= 0x60800000
+CFG_DT_ADDR ?= 0x63000000
 CFG_DDR_SIZE ?= 0x40000000
 endif
 
