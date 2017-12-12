@@ -95,6 +95,73 @@
 
 #ifndef ASM
 #include <sm/sm.h>
+/* This structure will be used for suspend/resume and low power idle */
+struct imx6_pm_info {
+	paddr_t		pa_base;	/* pa of pm_info */
+	uintptr_t	entry;
+	paddr_t		tee_resume;
+	uint32_t	ddr_type;
+	uint32_t	pm_info_size;
+	paddr_t		mmdc0_pa_base;
+	vaddr_t		mmdc0_va_base;
+	paddr_t		mmdc1_pa_base;
+	vaddr_t		mmdc1_va_base;
+	paddr_t		src_pa_base;
+	vaddr_t		src_va_base;
+	paddr_t		iomuxc_pa_base;
+	vaddr_t		iomuxc_va_base;
+	paddr_t		ccm_pa_base;
+	vaddr_t		ccm_va_base;
+	paddr_t		gpc_pa_base;
+	vaddr_t		gpc_va_base;
+	paddr_t		pl310_pa_base;
+	vaddr_t		pl310_va_base;
+	paddr_t		anatop_pa_base;
+	vaddr_t		anatop_va_base;
+	uint32_t	ttbr0;
+	uint32_t	ttbr1;
+	uint32_t	diagnostic;
+	uint32_t	idle_state;
+	uint32_t	mmdc_io_num;
+	uint32_t	mmdc_io_val[MX6_MAX_MMDC_IO_NUM][3];
+	uint32_t	mmdc_num;
+	uint32_t	mmdc_val[MX6_MAX_MMDC_NUM][2];
+} __aligned(8);
+
+struct imx6sx_cpuidle_pm_info {
+	paddr_t		pa_base;	/* pa of pm_info */
+	paddr_t		tee_resume;
+	uint32_t	pm_info_size;
+	uint32_t	ttbr0;
+	uint32_t	ttbr1;
+	paddr_t		mmdc0_pa_base;
+	vaddr_t		mmdc0_va_base;
+	paddr_t		iomuxc_pa_base;
+	vaddr_t		iomuxc_va_base;
+	paddr_t		ccm_pa_base;
+	vaddr_t		ccm_va_base;
+	paddr_t		gpc_pa_base;
+	vaddr_t		gpc_va_base;
+	paddr_t		pl310_pa_base;
+	vaddr_t		pl310_va_base;
+	paddr_t		anatop_pa_base;
+	vaddr_t		anatop_va_base;
+	paddr_t		src_pa_base;
+	vaddr_t		src_va_base;
+	paddr_t		sema4_pa_base;
+	vaddr_t		sema4_va_base;
+	uint32_t	diagnostic;
+	uint32_t	mmdc_io_num;
+	uint32_t	mmdc_io_val[MX6_MAX_MMDC_IO_NUM][2];
+} __aligned(8);
+
+struct imx6_pm_data {
+	uint32_t ddr_type;
+	uint32_t mmdc_io_num;
+	void	*mmdc_io_offset;
+	uint32_t mmdc_num;
+	void	*mmdc_offset;
+};
 
 struct imx7_pm_info {
 	uint32_t	m4_reserve0;
@@ -214,6 +281,10 @@ struct imx7_pm_data {
 	uint32_t ddrc_phy_num;
 	uint32_t (*ddrc_phy_offset)[2];
 };
+
+extern struct imx6_pm_data imx6ul_pm_data;
+extern uint32_t imx6ul_mmdc_io_offset[];
+
 /* IMX6 Power initialization functions */
 int imx6_suspend_init(void);
 int imx6sx_cpuidle_init(void);
@@ -221,6 +292,11 @@ int imx6ul_cpuidle_init(void);
 int imx6sl_cpuidle_init(void);
 int imx6sll_cpuidle_init(void);
 
+void imx6_suspend(struct imx6_pm_info *info);
+void imx6ul_low_power_idle(struct imx6_pm_info *info);
+void imx6ull_low_power_idle(struct imx6_pm_info *info);
+void imx6sx_low_power_idle(struct imx6sx_cpuidle_pm_info *info);
+void imx6_resume(void);
 void v7_cpu_resume(void);
 
 int imx6ul_lowpower_idle(uint32_t power_state, uintptr_t entry,
