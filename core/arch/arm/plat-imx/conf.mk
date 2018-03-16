@@ -103,8 +103,8 @@ CFG_TEE_CORE_NB_CORE ?= 2
 
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7ulp-flavorlist)))
 $(call force,CFG_MX7ULP,y)
-$(call force,CFG_GIC,y)
 $(call force,CFG_IMX_LPUART,y)
+$(call force,CFG_IMX_CAAM,y)
 $(call force,CFG_TZC380,n)
 $(call force,CFG_CSU,n)
 $(call force,CFG_IMX_OCRAM,y)

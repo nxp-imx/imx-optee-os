@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  */
 
@@ -32,10 +32,11 @@ static const char *dt_ctrl_match_table = {
 	"fsl,sec-v4.0-ctrl",
 };
 
-static void caam_clock_enable(unsigned char enable)
+static void caam_clock_enable(unsigned char enable __maybe_unused)
 {
+#if !defined(CFG_MX7ULP)
 	vaddr_t  ccm_base = (vaddr_t)phys_to_virt(CCM_BASE, MEM_AREA_IO_SEC);
-
+#endif
 #if defined(CFG_MX6) || defined(CFG_MX6UL)
 	uint32_t reg;
 	uint32_t mask;

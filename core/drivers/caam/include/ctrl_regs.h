@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  */
 #ifndef __CTRL_REGS_H__
@@ -56,20 +56,21 @@
 #define SCFGR_PRIBLOB_NORMAL			(0x3)
 
 /* Job Ring x MID */
-#define JRxMIDR_SIZE		(0x8)
+#define JRxMIDR_SIZE			(0x8)
 #define JR0MIDR_MS			(0x0010)
 #define JR0MIDR_LS			(0x0014)
-#define JRxMIDR_MS(idx)		(JR0MIDR_MS + (idx * JRxMIDR_SIZE))
-#define JRxMIDR_LS(idx)		(JR0MIDR_LS + (idx * JRxMIDR_SIZE))
+#define JRxMIDR_MS(idx)			(JR0MIDR_MS + (idx * JRxMIDR_SIZE))
+#define JRxMIDR_LS(idx)			(JR0MIDR_LS + (idx * JRxMIDR_SIZE))
 
-#define BS_JRxMIDR_MS_LMID			(31)
-#define BM_JRxMIDR_MS_LMID			(1 << BS_JRxMIDR_MS_LMID)
-#define BS_JRxMIDR_MS_LAMTD			(17)
-#define BM_JRxMIDR_MS_LAMTD			(1 << BS_JRxMIDR_MS_LAMTD)
-#define BS_JRxMIDR_MS_AMTD			(16)
-#define BM_JRxMIDR_MS_AMTD			(1 << BS_JRxMIDR_MS_AMTD)
-#define BS_JRxMIDR_MS_TZ			(15)
-#define BM_JRxMIDR_MS_TZ			(1 << BS_JRxMIDR_MS_TZ)
+#define BS_JRxMIDR_MS_LMID		(31)
+#define BM_JRxMIDR_MS_LMID		(1 << BS_JRxMIDR_MS_LMID)
+#define BS_JRxMIDR_MS_LAMTD		(17)
+#define BM_JRxMIDR_MS_LAMTD		(1 << BS_JRxMIDR_MS_LAMTD)
+#define BS_JRxMIDR_MS_AMTD		(16)
+#define BM_JRxMIDR_MS_AMTD		(1 << BS_JRxMIDR_MS_AMTD)
+#define BS_JRxMIDR_MS_TZ		(15)
+#define BM_JRxMIDR_MS_TZ		(1 << BS_JRxMIDR_MS_TZ)
+#if !defined(CFG_MX7ULP)
 #define BS_JRxMIDR_MS_SDID_MS		(4)
 #define BM_JRxMIDR_MS_SDID_MS		(0xFF << BS_JRxMIDR_MS_SDID_MS)
 #define BS_JRxMIDR_MS_JROWN_NS		(3)
@@ -99,6 +100,50 @@
 #define MSTRID_NS_ARM	(MSTRID_ARM  | BM_JRxMIDR_MS_JROWN_NS)
 #define MSTRID_NS_CAAM	(MSTRID_CAAM | BM_JRxMIDR_MS_JROWN_NS)
 #define MSTRID_NS_SDMA	(MSTRID_SDMA | BM_JRxMIDR_MS_JROWN_NS)
+
+#else
+
+#define BS_JRxMIDR_MS_SDID_MS		(5)
+#define BM_JRxMIDR_MS_SDID_MS		(0x7F << BS_JRxMIDR_MS_SDID_MS)
+#define BS_JRxMIDR_MS_JROWN_NS		(4)
+#define BM_JRxMIDR_MS_JROWN_NS		(0x1 << BS_JRxMIDR_MS_JROWN_NS)
+#define BS_JRxMIDR_MS_JROWN_MID		(0)
+#define BM_JRxMIDR_MS_JROWN_MID		(0xF << BS_JRxMIDR_MS_JROWN_MID)
+
+#define BS_JRxMIDR_LS_NONSEQ_NS		(20)
+#define BM_JRxMIDR_LS_NONSEQ_NS		(0x1 << BS_JRxMIDR_LS_NONSEQ_NS)
+#define BS_JRxMIDR_LS_NONSEQ_MID	(16)
+#define BM_JRxMIDR_LS_NONSEQ_MID	(0xF << BS_JRxMIDR_LS_NONSEQ_MID)
+#define BS_JRxMIDR_LS_SEQ_NS		(4)
+#define BM_JRxMIDR_LS_SEQ_NS		(0x1 << BS_JRxMIDR_LS_SEQ_NS)
+#define BS_JRxMIDR_LS_SEQ_MID		(0)
+#define BM_JRxMIDR_LS_SEQ_MID		(0xF << BS_JRxMIDR_LS_SEQ_MID)
+
+#define MSTRID_CM4	0x0
+#define MSTRID_CM4DAP	0x1
+#define MSTRID_DMA0	0x2
+#define MSTRID_ETR	0x3
+#define MSTRID_CA7	0x4
+#define MSTRID_DSI	0x5
+#define MSTRID_GPU3D	0x6
+#define MSTRID_GPU2D	0x7
+#define MSTRID_DMA1	0x8
+#define MSTRID_CAAM	0x9
+#define MSTRID_USB	0xA
+#define MSTRID_VIU	0xB
+#define MSTRID_uSDHC0	0xC
+#define MSTRID_uSDHC1	0xD
+#define MSTRID_RSV1	0xE
+#define MSTRID_RSV2	0xF
+
+
+#define MSTRID_S_ARM	(MSTRID_CA7)
+#define MSTRID_S_CAAM	(MSTRID_CAAM)
+
+#define MSTRID_NS_ARM	(MSTRID_CA7  | BM_JRxMIDR_MS_JROWN_NS)
+#define MSTRID_NS_CAAM	(MSTRID_CAAM | BM_JRxMIDR_MS_JROWN_NS)
+	
+#endif
 
 /* Debug Control */
 #define DEBUGCTL			(0x0058)
