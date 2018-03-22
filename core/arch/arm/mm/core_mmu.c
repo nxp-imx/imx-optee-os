@@ -405,7 +405,11 @@ struct mobj **core_sdp_mem_create_mobjs(void)
 	for (mem = &__start_phys_sdp_mem_section, mobj = mobj_base;
 	     mem < &__end_phys_sdp_mem_section; mem++, mobj++) {
 		*mobj = mobj_phys_alloc(mem->addr, mem->size,
+#ifdef CFG_TEE_SDP_NONCACHE
+					TEE_MATTR_CACHE_NONCACHE,
+#else
 					TEE_MATTR_CACHE_CACHED,
+#endif
 					CORE_MEM_SDP_MEM);
 		if (!*mobj)
 			panic("can't create SDP physical memory object");
