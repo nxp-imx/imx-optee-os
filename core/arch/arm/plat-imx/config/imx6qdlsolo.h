@@ -35,11 +35,11 @@
 /* Board specific console UART */
 #if defined(PLATFORM_FLAVOR_mx6qsabrelite)
 #define CFG_UART_BASE		UART2_BASE
-#endif
-#if defined(PLATFORM_FLAVOR_mx6qsabresd)
-#define CFG_UART_BASE		UART1_BASE
-#endif
-#if defined(PLATFORM_FLAVOR_mx6dlsabresd)
+#elif defined(PLATFORM_FLAVOR_mx6qpsabreauto) || \
+	defined(PLATFORM_FLAVOR_mx6qsabreauto) || \
+	defined(PLATFORM_FLAVOR_mx6dlsabreauto)
+#define CFG_UART_BASE		UART4_BASE
+#else
 #define CFG_UART_BASE		UART1_BASE
 #endif
 #endif
@@ -47,7 +47,7 @@
 #define DRAM0_BASE		0x10000000
 #define DRAM0_SIZE		CFG_DDR_SIZE
 
-#define CONSOLE_UART_BASE	(CFG_UART_BASE)
+#define CONSOLE_UART_BASE	CFG_UART_BASE
 
 /*
  * PL310 TAG RAM Control Register

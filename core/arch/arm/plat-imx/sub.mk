@@ -11,7 +11,7 @@ $(call force,CFG_PM_ARM32,y)
 asm-defines-y += imx_pm_asm_defines.c
 endif
 
-ifneq (,$(filter y, $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) $(CFG_MX6S) \
+ifneq (,$(filter y, $(CFG_MX6Q) $(CFG_MX6QP) $(CFG_MX6D) $(CFG_MX6DL) $(CFG_MX6S) \
        $(CFG_MX6SX)))
 srcs-y += a9_plat_init.S
 srcs-$(CFG_SM_PLATFORM_HANDLER) += sm_platform_handler.c
