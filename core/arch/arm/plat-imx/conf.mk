@@ -268,7 +268,7 @@ endif
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx6slevk))
 CFG_NS_ENTRY_ADDR ?= 0x80800000
 CFG_DT_ADDR ?= 0x83000000
-CFG_DDR_SIZE ?= 0x20000000
+CFG_DDR_SIZE ?= 0x40000000
 endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx6sllevk))
