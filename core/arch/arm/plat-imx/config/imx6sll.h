@@ -20,59 +20,56 @@
  * PL310 TAG RAM Control Register
  *
  * bit[10:8]:1 - 2 cycle of write accesses latency
- * bit[6:4]:1 - 2 cycle of read accesses latency
- * bit[2:0]:1 - 2 cycle of setup latency
+ * bit[6:4]:3 - 4 cycle of read accesses latency
+ * bit[2:0]:2 - 3 cycle of setup latency
  */
 #ifndef PL310_TAG_RAM_CTRL_INIT
-#define PL310_TAG_RAM_CTRL_INIT		0x00000111
+#define PL310_TAG_RAM_CTRL_INIT		0x00000132
 #endif
 
 /*
  * PL310 DATA RAM Control Register
  *
- * bit[10:8]:2 - 3 cycle of write accesses latency
- * bit[6:4]:2 - 3 cycle of read accesses latency
+ * bit[10:8]:1 - 2 cycle of write accesses latency
+ * bit[6:4]:3 - 4 cycle of read accesses latency
  * bit[2:0]:2 - 3 cycle of setup latency
  */
 #ifndef PL310_DATA_RAM_CTRL_INIT
-#define PL310_DATA_RAM_CTRL_INIT	0x00000222
+#define PL310_DATA_RAM_CTRL_INIT	0x00000132
 #endif
 
 /*
  * PL310 Auxiliary Control Register
  *
+ * Early BRESP enabled (bit30=1)
  * I/Dcache prefetch enabled (bit29:28=2b11)
  * NS can access interrupts (bit27=1)
  * NS can lockown cache lines (bit26=1)
- * Pseudo-random replacement policy (bit25=0)
- * Force write allocated (default)
+ * Pseudo-random replacement policy (bit25=1)
+ * Force write allocated (default) (bit24:23=00)
  * Shared attribute internally ignored (bit22=1, bit13=0)
  * Parity disabled (bit21=0)
  * Event monitor disabled (bit20=0)
- * Platform fmavor specific way config (dual / quad):
- * - 64kb way size (bit19:17=3b011)
- * - 16-way associciativity (bit16=1)
- * Platform fmavor specific way config (dual lite / solo):
- * - 32kb way size (bit19:17=3b010)
- * - no 16-way associciativity (bit16=0)
- * Store buffer device limitation enabled (bit11=1)
+ * 16kb way size (bit19:17=3b001)
+ * 16-way associativity (bit16=1)
+ * Store buffer device limitation enabled (bit11=0)
  * Cacheable accesses have high prio (bit10=0)
- * Full Line Zero (FLZ) disabled (bit0=0)
+ * Full Line Zero (FLZ) enabled (bit0=1)
  */
 #ifndef PL310_AUX_CTRL_INIT
-#define PL310_AUX_CTRL_INIT		0x3C430800
+#define PL310_AUX_CTRL_INIT		0x7E430001
 #endif
 
 /*
  * PL310 Prefetch Control Register
  *
- * Double linefill disabled (bit30=0)
+ * Double linefill enabled (bit30=1)
  * I/D prefetch enabled (bit29:28=2b11)
- * Prefetch drop enabled (bit24=1)
+ * Prefetch drop disabled (bit24=0)
  * Incr double linefill disable (bit23=0)
- * Prefetch offset = 7 (bit4:0)
+ * Prefetch offset = 0xF (bit4:0)
  */
-#define PL310_PREFETCH_CTRL_INIT	0x31000007
+#define PL310_PREFETCH_CTRL_INIT	0x7000000F
 
 /*
  * PL310 Power Register
