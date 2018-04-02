@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (c) 2017, NXP
+ * Copyright 2017-2018 NXP
  *
  * Peng Fan  <peng.fan@nxp.com>
  */
@@ -34,7 +34,7 @@
 FUNC plat_cpu_reset_early , :
 UNWIND(	.fnstart)
 
-	mov_imm r0, 0x00000040
+	mov_imm r0, 0x00006040
 	write_actlr r0
 
 	mov_imm r0, 0x00040C00
