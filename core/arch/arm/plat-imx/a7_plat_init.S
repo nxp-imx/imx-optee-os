@@ -45,7 +45,7 @@ phys_dt_addr:
 FUNC plat_cpu_reset_early , :
 UNWIND(	.fnstart)
 
-	mov_imm r0, 0x00000040
+	mov_imm r0, 0x00006040
 	write_actlr r0
 
 	mov_imm r0, 0x00040C00
