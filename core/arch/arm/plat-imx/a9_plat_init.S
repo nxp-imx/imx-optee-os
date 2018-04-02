@@ -91,7 +91,11 @@ UNWIND(	.fnstart)
 	mov_imm r0, 0x00004000
 	write_sctlr r0
 
-	mov_imm r0, 0x00000041
+#ifdef CFG_MX6SLL
+	mov_imm r0, 0x00000006
+#else
+	mov_imm r0, 0x00000047
+#endif
 	write_actlr r0
 
 	mov_imm r0, 0x00020C00
