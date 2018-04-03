@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -42,23 +42,24 @@
 /*
  * PL310 Auxiliary Control Register
  *
- * Early BRESP enabled (bit31=1)
+ * Early BRESP enabled (bit30=1)
  * I/Dcache prefetch enabled (bit29:28=2b11)
  * NS can access interrupts (bit27=1)
  * NS can lockown cache lines (bit26=1)
- * Pseudo-random replacement policy (bit25=0)
- * Force write allocated (default)
+ * Pseudo-random replacement policy (bit25=1)
+ * Force write allocated (default) (bit24:23=00)
  * Shared attribute internally ignored (bit22=1, bit13=0)
  * Parity disabled (bit21=0)
  * Event monitor disabled (bit20=0)
- * Platform flavor specific way config:
- * - 16kb way size (bit19:17=3b001)
- * - 16-way associativity (bit16=1)
- * Store buffer device limitation enabled (bit11=1)
+ * 16kb way size (bit19:17=3b001)
+ * 16-way associativity (bit16=1)
+ * Store buffer device limitation enabled (bit11=0)
  * Cacheable accesses have high prio (bit10=0)
  * Full Line Zero (FLZ) enabled (bit0=1)
  */
-#define PL310_AUX_CTRL_INIT		0x7E470001
+#ifndef PL310_AUX_CTRL_INIT
+#define PL310_AUX_CTRL_INIT		0x7E430001
+#endif
 
 /*
  * PL310 Prefetch Control Register
