@@ -89,7 +89,7 @@
  * Cacheable accesses have high prio (bit10=0)
  * Full Line Zero (FLZ) enabled (bit0=1)
  */
-#define PL310_AUX_CTRL_INIT		0x7E470001
+#define PL310_AUX_CTRL_INIT		0x7E430001
 
 /*
  * PL310 Prefetch Control Register
