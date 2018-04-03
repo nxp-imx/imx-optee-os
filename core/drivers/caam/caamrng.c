@@ -55,6 +55,15 @@ void kick_trng(vaddr_t ctrl_base, uint32_t ent_delay)
 	/* Put RNG4 into run mode */
 	val &= ~BM_TRNG_MCTL_PRGM;
 	write32(val, ctrl_base + TRNG_MCTL);
+
+	/* Clear the ERR bit in RTMCTL if set. The TRNG error can occur when the
+	 * RNG clock is not within 1/2x to 8x the system clock.
+	 * This error is possible if ROM code does not initialize the system PLLs
+	 * immediately after PoR.
+	 */
+	val = read32(ctrl_base + TRNG_MCTL) | BM_TRNG_MCTL_ERR;
+	write32(val, ctrl_base + TRNG_MCTL);
+
 }
 
 
