@@ -45,10 +45,9 @@
 #define UART7_BASE		0x40a70000
 
 /*
- * Linux use 0x1fffc000, because we need 32K in optee, not 16K as Linux,
- * so we use 0x1fff8000
+ * Use SRAM0 to perform power management functionality.
  */
-#define IRAM_BASE		0x1fff8000
+#define IRAM_BASE		0x2f000000
 #define IRAM_SIZE		0x8000
 #define LP_OCRAM_START		IRAM_BASE
 

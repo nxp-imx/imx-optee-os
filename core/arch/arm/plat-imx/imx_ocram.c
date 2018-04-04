@@ -254,7 +254,7 @@ static TEE_Result init_ocram(void)
 	size_area = AIPS1_SIZE; /* 4M for AIPS1/2/3 */
 #endif
 #ifdef CFG_MX7ULP
-	iram_tlb_phys_addr = LP_OCRAM_START + IRAM_TBL_OFFSET;
+	iram_tlb_phys_addr = LP_OCRAM_START;
 	phys_addr = phys_addr_imx7ulp;
 	size_area = AIPS1_SIZE; /* 8M for AIPS0/1 */
 #endif
