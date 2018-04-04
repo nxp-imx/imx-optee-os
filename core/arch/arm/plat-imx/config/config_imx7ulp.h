@@ -20,11 +20,12 @@
 
 /* Location of trusted dram */
 #define TZDRAM_BASE		(DRAM0_BASE + DRAM0_SIZE - 32 * 1024 * 1024)
-#define TZDRAM_SIZE		(30 * 1024 * 1024)
+#define TZDRAM_SIZE		(28 * 1024 * 1024)
 
 /* Full GlobalPlatform test suite requires CFG_SHMEM_SIZE to be at least 2MB */
 #define CFG_SHMEM_START		(TZDRAM_BASE + TZDRAM_SIZE)
-#define CFG_SHMEM_SIZE		0x200000
+#define CFG_SHMEM_SIZE		0x300000 /* Only 3 MB for the shared memory */
+/* 0x9FF00000- 0xA000000 is allocated to rpmsg */
 
 #define CFG_TEE_RAM_VA_SIZE	(1024 * 1024)
 
