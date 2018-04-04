@@ -27,6 +27,7 @@ const struct csu_setting csu_setting_imx6ul[] = {
 	{13, 0xFF0033},		/* Protect ROMCP */
 	{14, 0x3F00FF},		/* Protect OCOTP */
 	{16, 0x3300FF},		/* Protect TZASC */
+	{39, 0x3300FF},		/* Protect OCRAM */
 	{(-1), 0},
 };
 
@@ -43,6 +44,7 @@ const struct csu_setting csu_setting_imx6sx[] = {
 	{14, 0x3F00FF},		/* Protect OCOTP */
 	{15, 0xFF0033},		/* Protect RDC   */
 	{16, 0x3300FF},		/* Protect TZASC */
+	{34, 0x3300FF},		/* Protect OCRAM */
 	{(-1), 0},
 };
 
@@ -50,7 +52,7 @@ const struct csu_setting csu_setting_imx7ds[] = {
 	{14, 0x3300FF},		/* Protect RDC     */
 	{15, 0xFF0033},		/* Protect CSU     */
 	{28, 0xFF0033},		/* Protect TZASC   */
-	{59, 0xFF0033},		/* Protect OCRAM_S */
+	{59, 0x3300FF},		/* Protect OCRAM_S */
 	{(-1), 0},
 };
 
