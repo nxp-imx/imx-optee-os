@@ -254,40 +254,16 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	/*
-	 * Note, this is not a good way, because we split the regions
-	 * to fit into tzc380 region size rules. Also, we try
-	 * to pass DDR/TEE memory to build script from user, but hard
-	 * to fit into tzasc. So hack code here.
-	 * The script for 7d-sdb revc board:
-	 * `
-	 * make PLATFORM=imx-mx7 ARCH=arm CFG_PAGEABLE_ADDR=0
-	 * CFG_BUILT_IN_ARGS=y CFG_NS_ENTRY_ADDR=0x80800000
-	 * CFG_DT_ADDR=0x83000000 CFG_DT=y CFG_TEE_CORE_LOG_LEVEL=4
-	 * CFG_PSCI_ARM32=y CFG_MX7=y CFG_DDR_SIZE=0x40000000
-	 * CFG_TZDRAM_BASE=0xbe200000 CFG_BOOT_SECONDARY_REQUEST=y
-	 * CFG_TEE_CORE_NB_CORE=2 CFG_TZC380=y
-	 * `
-	 */
 	tzc_configure_region(0, 0x00000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 	tzc_configure_region(1, 0x80000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0xbef00000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_16M) |
+	tzc_configure_region(2, 0xbe000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0xbe700000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_8M) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(4, 0xbe300000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(5, 0xbe200000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_1M) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(5, 0xbe000000,
+	tzc_configure_region(3, 0xbfe00000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
