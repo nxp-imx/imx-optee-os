@@ -11,7 +11,10 @@
 #include <trace.h>
 #include <types_ext.h>
 #include <io.h>
+
+#ifdef CFG_DT
 #include <libfdt.h>
+#endif
 
 #include <imx.h>
 #include <imx-regs.h>
@@ -28,13 +31,15 @@
 #define DRV_TRACE(...)
 #endif
 
+#ifdef CFG_DT
 static const char *dt_ctrl_match_table = {
 	"fsl,sec-v4.0-ctrl",
 };
+#endif
 
 static void caam_clock_enable(unsigned char enable __maybe_unused)
 {
-#if !defined(CFG_MX7ULP)
+#if (!defined(CFG_MX7ULP))
 	vaddr_t  ccm_base = (vaddr_t)phys_to_virt(CCM_BASE, MEM_AREA_IO_SEC);
 #else
 	vaddr_t  pcc2_base = (vaddr_t)phys_to_virt(PCC2_BASE, MEM_AREA_IO_SEC);
@@ -91,13 +96,14 @@ static void caam_clock_enable(unsigned char enable __maybe_unused)
 
 static TEE_Result caam_init(void)
 {
-	TEE_Result ret = TEE_SUCCESS;
-	size_t  size;
-	vaddr_t ctrl_base;
+	TEE_Result ret = TEE_ERROR_GENERIC;
+	vaddr_t  ctrl_base;
 	uint32_t jrnum, idx;
 
-	void *fdt;
-	int  node;
+#ifdef CFG_DT
+	void   *fdt;
+	int    node;
+	size_t size;
 
 	fdt = get_dt_blob();
 	if (!fdt) {
@@ -117,6 +123,24 @@ static TEE_Result caam_init(void)
 		ret = TEE_ERROR_GENERIC;
 		goto probe_exit;
 	}
+#else
+	ctrl_base = (vaddr_t)phys_to_virt(CAAM_BASE, MEM_AREA_IO_SEC);
+
+	if (!ctrl_base) {
+		if (!(core_mmu_add_mapping(MEM_AREA_IO_SEC, CAAM_BASE,
+									CORE_MMU_DEVICE_SIZE))) {
+			EMSG("Unable to map CAAM registers");
+			return TEE_ERROR_GENERIC;
+		}
+
+		ctrl_base = (vaddr_t)phys_to_virt(CAAM_BASE, MEM_AREA_IO_SEC);
+	}
+
+	if (!ctrl_base) {
+		EMSG("Unable to retreive CAAM basae address");
+		return TEE_ERROR_GENERIC;
+	}
+#endif
 
 	/* Enable the CAAM clock - at this stage the OS is not loaded */
 	caam_clock_enable(1);
@@ -156,6 +180,17 @@ static TEE_Result caam_init(void)
 		goto probe_exit;
 	}
 
+	write32(((MSTRID_S_ARM << BS_JRxMIDR_LS_NONSEQ_MID) |
+			 (MSTRID_S_ARM << BS_JRxMIDR_LS_SEQ_MID)),
+			ctrl_base + JRxMIDR_LS(0));
+	write32((MSTRID_S_ARM << BS_JRxMIDR_MS_JROWN_MID),
+			ctrl_base + JRxMIDR_MS(0));
+
+	ret = rng_init(ctrl_base);
+
+	/*
+	 * Release all JRs to Non-Secure
+	 */
 	for (idx = 0; idx < jrnum; idx++) {
 		write32(((MSTRID_NS_ARM << BS_JRxMIDR_LS_NONSEQ_MID) |
 				 (MSTRID_NS_ARM << BS_JRxMIDR_LS_SEQ_MID)),
@@ -170,13 +205,6 @@ static TEE_Result caam_init(void)
 		io_mask32(ctrl_base + JRxMIDR_MS(idx),
 			BM_JRxMIDR_MS_LMID, BM_JRxMIDR_MS_LMID);
 	}
-
-
-	/*
-	 * Configure the TRNG Entropy delay because some soc have no
-	 * access to the TRNG registers in Non-Secure (e.g. 6SX)
-	 */
-	kick_trng(ctrl_base, TRNG_SDCTL_ENT_DLY_MIN);
 
 probe_exit:
 	return ret;
