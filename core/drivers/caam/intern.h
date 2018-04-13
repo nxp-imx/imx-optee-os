@@ -7,7 +7,7 @@
 #ifndef __INTERN_H__
 #define __INTERN_H__
 
-void kick_trng(vaddr_t ctrl_base, uint32_t ent_delay);
+TEE_Result rng_init(vaddr_t ctrl_base);
 
 #endif /* __INTERN_H__ */
 
