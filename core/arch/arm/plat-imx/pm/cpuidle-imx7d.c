@@ -39,18 +39,17 @@
 
 int imx7d_cpuidle_init(void)
 {
-	uint32_t lowpower_idle_ocram_base =
-		core_mmu_get_va(TRUSTZONE_OCRAM_START +
-				LOWPOWER_IDLE_OCRAM_OFFSET,
-				MEM_AREA_TEE_COHERENT,
-				sizeof(struct imx7_pm_info));
+	uint32_t lowpower_idle_ocram_base = (uint32_t)phys_to_virt(
+			imx_get_ocram_tz_start_addr() +
+			LOWPOWER_IDLE_OCRAM_OFFSET, MEM_AREA_TEE_COHERENT,
+			LOWPOWER_IDLE_OCRAM_SIZE);
 	struct imx7_pm_info *p =
 		(struct imx7_pm_info *)lowpower_idle_ocram_base;
 
 	dcache_op_level1(DCACHE_OP_CLEAN_INV);
 
 	p->va_base = lowpower_idle_ocram_base;
-	p->pa_base = TRUSTZONE_OCRAM_START + LOWPOWER_IDLE_OCRAM_OFFSET;
+	p->pa_base = imx_get_ocram_tz_start_addr() + LOWPOWER_IDLE_OCRAM_OFFSET;
 	p->tee_resume = (paddr_t)virt_to_phys((void *)(vaddr_t)v7_cpu_resume);
 	p->pm_info_size = sizeof(*p);
 	p->ddrc_va_base = core_mmu_get_va(DDRC_BASE, MEM_AREA_IO_SEC, 1);
@@ -91,14 +90,13 @@ static int lowpoweridle_init;
 
 static void imx_pen_lock(uint32_t cpu)
 {
-	uint32_t cpuidle_ocram_base;
-	struct imx7_pm_info *p;
-
-	cpuidle_ocram_base = core_mmu_get_va(TRUSTZONE_OCRAM_START +
-					     LOWPOWER_IDLE_OCRAM_OFFSET,
-					     MEM_AREA_TEE_COHERENT,
-					     sizeof(struct imx7_pm_info));
-	p = (struct imx7_pm_info *)cpuidle_ocram_base;
+	uint32_t cpuidle_ocram_base = (uint32_t)phys_to_virt(
+					imx_get_ocram_tz_start_addr() +
+					LOWPOWER_IDLE_OCRAM_OFFSET,
+					MEM_AREA_TEE_COHERENT,
+					LOWPOWER_IDLE_OCRAM_SIZE);
+	struct imx7_pm_info *p =
+		(struct imx7_pm_info *)cpuidle_ocram_base;
 
 	if (cpu == 0) {
 		atomic_store_u32(&p->flag0, 1);
@@ -123,14 +121,13 @@ static void imx_pen_lock(uint32_t cpu)
 
 static void imx_pen_unlock(int cpu)
 {
-	uint32_t cpuidle_ocram_base;
-	struct imx7_pm_info *p;
-
-	cpuidle_ocram_base = core_mmu_get_va(TRUSTZONE_OCRAM_START +
-					     LOWPOWER_IDLE_OCRAM_OFFSET,
-					     MEM_AREA_TEE_COHERENT,
-					     sizeof(struct imx7_pm_info));
-	p = (struct imx7_pm_info *)cpuidle_ocram_base;
+	uint32_t cpuidle_ocram_base = (uint32_t)phys_to_virt(
+					imx_get_ocram_tz_start_addr() +
+					LOWPOWER_IDLE_OCRAM_OFFSET,
+					MEM_AREA_TEE_COHERENT,
+					LOWPOWER_IDLE_OCRAM_SIZE);
+	struct imx7_pm_info *p =
+		(struct imx7_pm_info *)cpuidle_ocram_base;
 
 	dsb();
 	if (cpu == 0)
@@ -154,10 +151,11 @@ int imx7d_lowpower_idle(uint32_t power_state __unused,
 			struct sm_nsec_ctx *nsec)
 {
 	int ret;
-	uint32_t cpuidle_ocram_base = core_mmu_get_va(TRUSTZONE_OCRAM_START +
-					     LOWPOWER_IDLE_OCRAM_OFFSET,
-					     MEM_AREA_TEE_COHERENT,
-					     sizeof(struct imx7_pm_info));
+	uint32_t cpuidle_ocram_base = (uint32_t)phys_to_virt(
+					imx_get_ocram_tz_start_addr() +
+					LOWPOWER_IDLE_OCRAM_OFFSET,
+					MEM_AREA_TEE_COHERENT,
+					LOWPOWER_IDLE_OCRAM_SIZE);
 	struct imx7_pm_info *p =
 			(struct imx7_pm_info *)cpuidle_ocram_base;
 	uint32_t type = (power_state & PSCI_POWER_STATE_TYPE_MASK) >>

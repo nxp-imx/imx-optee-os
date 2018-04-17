@@ -28,8 +28,13 @@
 #define SOC_MX93	0xC1
 
 #ifndef __ASSEMBLER__
+#include <tee_api_types.h>
+#include <io.h>
+
 uint32_t imx_get_src_gpr(int cpu);
 void imx_set_src_gpr(int cpu, uint32_t val);
+paddr_t imx_get_ocram_tz_start_addr(void);
+
 bool soc_is_imx6(void);
 bool soc_is_imx6sx(void);
 bool soc_is_imx6sl(void);
@@ -63,5 +68,10 @@ static inline void plat_cpu_wakeup_late(void)
 }
 #endif
 
+#ifdef CFG_DT
+void dt_debug(const char *node_str, const char *prop);
+void dt_overwrite(const char *node_str, const char *prop_str,
+		  const char *overw_str, uint32_t size_prop);
+#endif
 #endif /* __ASSEMBLER__ */
 #endif

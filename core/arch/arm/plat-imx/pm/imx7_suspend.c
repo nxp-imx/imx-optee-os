@@ -27,12 +27,11 @@ static int suspended_init;
 int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		     uint32_t context_id __unused, struct sm_nsec_ctx *nsec)
 {
-	uint32_t suspend_ocram_base = core_mmu_get_va(TRUSTZONE_OCRAM_START +
-						      SUSPEND_OCRAM_OFFSET,
-						      MEM_AREA_TEE_COHERENT,
-						      sizeof(struct
-						      imx7_pm_info));
-
+	uint32_t suspend_ocram_base = core_mmu_get_va(
+						imx_get_ocram_tz_start_addr() +
+						SUSPEND_OCRAM_OFFSET,
+							MEM_AREA_TEE_COHERENT,
+							SUSPEND_OCRAM_SIZE);
 	struct imx7_pm_info *p = (struct imx7_pm_info *)suspend_ocram_base;
 	int ret;
 
