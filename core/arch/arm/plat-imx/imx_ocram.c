@@ -124,6 +124,12 @@ static TEE_Result init_ocram(void)
 	/* Initialize the Secure OCRAM */
 	init_tz_ocram();
 
+#ifdef CFG_DT
+	/* Move ocram nodes to the OCRAM for Linux */
+	dt_overwrite("fsl,optee-lpm-sram", "reg", "overw_reg", 3);
+	dt_overwrite("fsl,optee-lpm-sram", "clocks", "overw_clock", 3);
+#endif
+
 	if (soc_is_imx6sx()) {
 		iram_base = ROUNDDOWN(IRAM_6SX_S_BASE, CORE_MMU_DEVICE_SIZE);
 		/* First we need to map the Secure RAM */
@@ -247,6 +253,12 @@ static TEE_Result init_ocram(void)
 
 	/* Initialize the Secure OCRAM */
 	init_tz_ocram();
+
+#ifdef CFG_DT
+	/* Move ocram nodes to the OCRAM for Linux */
+	dt_overwrite("fsl,optee-lpm-sram", "reg", "overw_reg", 3);
+	dt_overwrite("fsl,optee-lpm-sram", "clocks", "overw_clock", 3);
+#endif
 
 #ifdef CFG_MX7
 	iram_tlb_phys_addr = TRUSTZONE_OCRAM_START + IRAM_TBL_OFFSET;
