@@ -35,7 +35,10 @@ static void caam_clock_enable(unsigned char enable __maybe_unused)
 {
 #if !defined(CFG_MX7ULP)
 	vaddr_t  ccm_base = (vaddr_t)phys_to_virt(CCM_BASE, MEM_AREA_IO_SEC);
+#else
+	vaddr_t  pcc2_base = (vaddr_t)phys_to_virt(PCC2_BASE, MEM_AREA_IO_SEC);
 #endif
+
 #if defined(CFG_MX6) || defined(CFG_MX6UL)
 	uint32_t reg;
 	uint32_t mask;
@@ -75,6 +78,12 @@ static void caam_clock_enable(unsigned char enable __maybe_unused)
 	} else {
 		write32(CCM_CCGRx_ALWAYS_ON(0),
 			ccm_base + CCM_CCGRx_CLR(CCM_CLOCK_DOMAIN_CAAM));
+	}
+#elif defined(CFG_MX7ULP)
+	if (enable) {
+		write32(PCC_ENABLE_CLOCK, pcc2_base + PCC_CAAM);
+	} else {
+		write32(PCC_DISABLE_CLOCK, pcc2_base + PCC_CAAM);
 	}
 #endif
 }
