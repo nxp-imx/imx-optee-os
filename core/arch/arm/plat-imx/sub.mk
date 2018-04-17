@@ -20,8 +20,8 @@ srcs-y += a7_plat_init.S
 endif
 
 subdirs-$(CFG_PSCI_ARM32) += pm
-
 subdirs-y += drivers
-
 srcs-$(CFG_IMX_OCRAM) += imx_ocram.c
+srcs-$(CFG_DT) += imx_dt.c
+
 

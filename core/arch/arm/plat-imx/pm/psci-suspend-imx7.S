@@ -12,7 +12,6 @@
 #include <kernel/tz_proc_def.h>
 #include <kernel/tz_ssvce_def.h>
 #include <kernel/unwind.h>
-#include <platform_config.h>
 
 #define MX7_SRC_GPR1	0x74
 #define MX7_SRC_GPR2	0x78
