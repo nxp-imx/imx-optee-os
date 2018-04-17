@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <tee_api_types.h>
+#include <io.h>
 
 #define SOC_MX6SL	0x60
 #define SOC_MX6DL	0x61
