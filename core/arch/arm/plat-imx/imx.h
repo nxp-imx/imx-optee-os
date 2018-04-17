@@ -24,6 +24,7 @@
 
 uint32_t imx_get_src_gpr(int cpu);
 void imx_set_src_gpr(int cpu, uint32_t val);
+paddr_t imx_get_ocram_tz_start_addr(void);
 
 bool soc_is_imx6(void);
 bool soc_is_imx6sll(void);
@@ -40,6 +41,12 @@ void imx_gpcv2_set_core1_pdn_by_software(void);
 void imx_gpcv2_set_core1_pup_by_software(void);
 
 void plat_cpu_wakeup_late(void);
+
+#ifdef CFG_DT
+void dt_debug(const char *node_str, const char *prop);
+void dt_overwrite(const char *node_str, const char *prop_str,
+				const char *overw_str, uint32_t size_prop);
+#endif
 
 #ifdef CFG_TZC380
 TEE_Result tzasc_init(void);

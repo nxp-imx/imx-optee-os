@@ -64,6 +64,12 @@ static TEE_Result init_ocram(void)
 	/* Initialize the Secure OCRAM */
 	init_tz_ocram();
 
+#ifdef CFG_DT
+	/* Move ocram nodes to the OCRAM for Linux */
+	dt_overwrite("fsl,optee-lpm-sram", "reg", "overw_reg", 3);
+	dt_overwrite("fsl,optee-lpm-sram", "clocks", "overw_clock", 3);
+#endif
+
 #ifdef CFG_MX7
 	iram_tlb_phys_addr = TRUSTZONE_OCRAM_START + IRAM_TBL_OFFSET;
 	phys_addr = phys_addr_imx7;
