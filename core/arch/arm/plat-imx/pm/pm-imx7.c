@@ -147,10 +147,11 @@ int imx7_suspend_init(void)
 	uint32_t i;
 	uint32_t (*ddrc_offset_array)[2];
 	uint32_t (*ddrc_phy_offset_array)[2];
-	uint32_t suspend_ocram_base =
-		core_mmu_get_va(TRUSTZONE_OCRAM_START + SUSPEND_OCRAM_OFFSET,
-				MEM_AREA_TEE_COHERENT,
-				sizeof(struct imx7_pm_info));
+	uint32_t suspend_ocram_base = core_mmu_get_va(
+						imx_get_ocram_tz_start_addr() +
+						SUSPEND_OCRAM_OFFSET,
+						MEM_AREA_TEE_COHERENT,
+						SUSPEND_OCRAM_SIZE);
 	struct imx7_pm_info *p = (struct imx7_pm_info *)suspend_ocram_base;
 	struct imx7_pm_data *pm_data;
 
@@ -160,7 +161,7 @@ int imx7_suspend_init(void)
 
 	DMSG("%x %x\n", suspend_ocram_base, sizeof(*p));
 
-	p->pa_base = TRUSTZONE_OCRAM_START + SUSPEND_OCRAM_OFFSET;
+	p->pa_base = imx_get_ocram_tz_start_addr() + SUSPEND_OCRAM_OFFSET;
 	p->tee_resume = virt_to_phys((void *)(vaddr_t)ca7_cpu_resume);
 	p->pm_info_size = sizeof(*p);
 	p->ccm_va_base = core_mmu_get_va(CCM_BASE, MEM_AREA_IO_SEC, 1);
