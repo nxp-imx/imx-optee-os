@@ -30,9 +30,10 @@ int imx6_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 {
 	int ret;
 
-	uint32_t suspend_ocram_base = core_mmu_get_va(TRUSTZONE_OCRAM_START +
-						      SUSPEND_OCRAM_OFFSET,
-						      MEM_AREA_TEE_COHERENT);
+	uint32_t suspend_ocram_base = core_mmu_get_va(
+					imx_get_ocram_tz_start_addr() +
+					SUSPEND_OCRAM_OFFSET,
+						MEM_AREA_TEE_COHERENT);
 	struct imx6_pm_info *p = (struct imx6_pm_info *)suspend_ocram_base;
 
 	/* Store non-sec ctx regs */

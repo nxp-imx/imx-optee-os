@@ -10,12 +10,96 @@
 #include <mm/core_memprot.h>
 #include <string.h>
 #include <io.h>
-
 #include <imx.h>
 #include <imx_pm.h>
 #include <imx-regs.h>
+#ifdef CFG_DT
+#include <libfdt.h>
+#include <kernel/generic_boot.h>
+#include <kernel/dt.h>
+#endif /* CFG_DT */
 
 paddr_t iram_tlb_phys_addr = -1UL;
+static paddr_t ocram_tz_start_addr = -1UL;
+
+paddr_t imx_get_ocram_tz_start_addr(void)
+{
+	if (ocram_tz_start_addr != -1UL)
+		return ocram_tz_start_addr;
+	else
+		return TRUSTZONE_OCRAM_START;
+}
+
+#ifdef CFG_DT
+/*
+ * List of nodes to include in the OCRAM TZ space.
+ * The lowest node in the OCRAM will define the ocram_tz_start_addr.
+ * The lowest node must have a 4k aligned address.
+ * If this list is empty, imx_get_ocram_tz_start_addr() will return the
+ * default TRUSTZONE_OCRAM_START.
+ */
+static const char * const tz_ocram_match[] = {
+	"fsl,optee-lpm-sram",
+	NULL,
+};
+
+/*
+ * Find the lowest address among nodes listed in tz_ocram_match[]. The lowest
+ * address will define the start address of the Trustzone protected ocram space.
+ * If something goes wrong during dtb parsing, the system panics.
+ * If tz_ocram_match[] is empty, we return -1UL. In that case,
+ * imx_get_ocram_tz_start_addr() will return TRUSTZONE_OCRAM_START by default.
+ */
+static void dt_find_ocram_tz_addr(void)
+{
+	void *fdt;
+	int offset;
+	paddr_t start_addr = -1UL;
+	paddr_t tmp_addr = 0;
+	uint32_t idx = 0;
+
+	/* Get device tree blob */
+	fdt = get_dt_blob();
+	if (fdt == NULL)
+		panic("No DTB found");
+
+	while (tz_ocram_match[idx] != NULL) {
+		/* Get node */
+		offset = fdt_node_offset_by_compatible(fdt, 0,
+							tz_ocram_match[idx]);
+		if (offset < 0) {
+			EMSG("Cannot find %s node in the device tree",
+							tz_ocram_match[idx]);
+			panic();
+		}
+
+		/* Get address in "reg" property */
+		tmp_addr = _fdt_reg_base_address(fdt, offset);
+		if (!tmp_addr) {
+			EMSG("Cannot get reg property of %s",
+							tz_ocram_match[idx]);
+			panic();
+		}
+
+		/* Addresses must be 4Kbytes aligned to be TZ*/
+		if (tmp_addr & 0xFFF) {
+			EMSG("%s address is not 4Kbytes aligned",
+							tz_ocram_match[idx]);
+			panic();
+		}
+
+		/*
+		 * Get the lowest address among nodes to protect listed in
+		 * tz_ocram_match[].
+		 */
+		if ((tmp_addr < start_addr) || (start_addr == -1UL))
+			start_addr = tmp_addr;
+
+		idx++;
+	}
+	ocram_tz_start_addr = start_addr;
+}
+#endif /* CFG_DT */
 
 #ifdef CFG_MX6
 static const paddr_t phys_addr_imx6ull[] = {
@@ -41,6 +125,10 @@ static void init_tz_ocram(void)
 	uint32_t val;
 	uint32_t lock = 0;
 
+#ifdef CFG_DT
+	dt_find_ocram_tz_addr();
+#endif
+
 	if (soc_is_imx6ul() || soc_is_imx6ull() ||
 		soc_is_imx6sx() || soc_is_imx6sll()) {
 		iomux_base = core_mmu_get_va(IOMUXC_GPR_BASE, MEM_AREA_IO_SEC);
@@ -56,7 +144,7 @@ static void init_tz_ocram(void)
 		soc_is_imx6sl() || soc_is_imx6sll()) {
 		val &= ~BM_IOMUX_GPR_OCRAM_TZ_ADDR_6UL;
 		// Address is 4 Kbytes granularity
-		val |= (((TRUSTZONE_OCRAM_START >> 12) <<
+		val |= (((imx_get_ocram_tz_start_addr() >> 12) <<
 				BP_IOMUX_GPR_OCRAM_TZ_ADDR_6UL) &
 				BM_IOMUX_GPR_OCRAM_TZ_ADDR_6UL);
 		// Enable
@@ -73,7 +161,7 @@ static void init_tz_ocram(void)
 	} else if (soc_is_imx6sdl()) {
 		val &= ~BM_IOMUX_GPR_OCRAM_TZ_ADDR_6DL;
 		// Address is 4 Kbytes granularity
-		val |= (((TRUSTZONE_OCRAM_START >> 12) <<
+		val |= (((imx_get_ocram_tz_start_addr() >> 12) <<
 				BP_IOMUX_GPR_OCRAM_TZ_ADDR_6DL) &
 				BM_IOMUX_GPR_OCRAM_TZ_ADDR_6DL);
 		// Enable
@@ -83,13 +171,22 @@ static void init_tz_ocram(void)
 	} else {
 		val &= ~BM_IOMUX_GPR_OCRAM_TZ_ADDR;
 		// Address is 4 Kbytes granularity
-		val |= (((TRUSTZONE_OCRAM_START >> 12) <<
+		val |= (((imx_get_ocram_tz_start_addr() >> 12) <<
 				BP_IOMUX_GPR_OCRAM_TZ_ADDR) &
 				BM_IOMUX_GPR_OCRAM_TZ_ADDR);
 		// Enable
 		val |= IOMUX_GPR_OCRAM_TZ_ENABLE;
 		lock = BM_IOMUX_GPR_OCRAM_TZ_ADDR |
 			IOMUX_GPR_OCRAM_TZ_ENABLE;
+	}
+
+	/* Check if GPR registers for OCRAM TZ protection are locked */
+	/* Normally the lock bits are not defined for 6UL and 6SX */
+	if (!soc_is_imx6ul() & !soc_is_imx6sx()) {
+		if (IOMUX_GPR_OCRAM_LOCK(lock) & val) {
+			EMSG("GPR Registers for OCRAM TZ Configuration locked");
+			panic();
+		}
 	}
 
 	/* Write the configuration */
@@ -101,10 +198,19 @@ static void init_tz_ocram(void)
 			(iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID)));
 
 	if (soc_is_imx6sx()) {
-		/* Lock the full S_OCRAM and don't use L2 cache as ocram */
-		val = IOMUX_GPR_S_OCRAM_TZ_ENABLE_6SX;
-		write32(val, (iomux_base +
-			IOMUX_GPRx_OFFSET(IOMUX_GPR_S_OCRAM_ID)));
+		val = read32(iomux_base
+				+ IOMUX_GPRx_OFFSET(IOMUX_GPR_S_OCRAM_ID));
+
+		val &= ~BM_IOMUX_GPR_S_OCRAM_TZ_ADDR_6SX;
+		// Address is 4 Kbytes granularity
+		val |= (((imx_get_ocram_tz_start_addr() >> 12) <<
+				BP_IOMUX_GPR_S_OCRAM_TZ_ADDR_6SX) &
+				BM_IOMUX_GPR_S_OCRAM_TZ_ADDR_6SX);
+		// Enable
+		val |= IOMUX_GPR_S_OCRAM_TZ_ENABLE_6SX;
+
+		write32(val, (iomux_base
+				+ IOMUX_GPRx_OFFSET(IOMUX_GPR_S_OCRAM_ID)));
 	}
 }
 
@@ -141,11 +247,12 @@ static TEE_Result init_ocram(void)
 		iram_base = IRAM_BASE;
 	}
 
-#ifdef CFG_MX6SX
-	iram_tlb_phys_addr = TRUSTZONE_OCRAM_START;
-#else
-	iram_tlb_phys_addr = TRUSTZONE_OCRAM_START + IRAM_TBL_OFFSET;
-#endif
+	if (soc_is_imx6sx())
+		iram_tlb_phys_addr = imx_get_ocram_tz_start_addr();
+	else
+		iram_tlb_phys_addr = imx_get_ocram_tz_start_addr()
+							+ IRAM_TBL_OFFSET;
+
 	iram_tlb_vaddr = phys_to_virt(iram_tlb_phys_addr,
 			MEM_AREA_TEE_COHERENT);
 	if (!iram_tlb_vaddr) {
@@ -219,15 +326,30 @@ static void init_tz_ocram(void)
 	uint32_t val;
 	uint32_t lock;
 
+#ifdef CFG_DT
+	/* Get low tz ocram address */
+	dt_find_ocram_tz_addr();
+#endif
+
 	iomux_base = (vaddr_t)phys_to_virt(IOMUXC_GPR_BASE, MEM_AREA_IO_SEC);
 
 	val = read32(iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
 
 	/* Configure the OCRAM Retention to start at offset 0 */
 	val &= ~BM_IOMUX_GPR_OCRAM_S_TZ_ADDR;
+	// Address is 4 Kbytes granularity
+	val |= (((imx_get_ocram_tz_start_addr() >> 12) <<
+			BP_IOMUX_GPR_OCRAM_S_TZ_ADDR) &
+			BM_IOMUX_GPR_OCRAM_S_TZ_ADDR);
 	val |= IOMUX_GPR_OCRAM_S_TZ_ENABLE;
 
 	lock = BM_IOMUX_GPR_OCRAM_S_TZ_ADDR | IOMUX_GPR_OCRAM_S_TZ_ENABLE;
+
+	/* Check if GPR registers for OCRAM TZ protection are locked */
+	if (IOMUX_GPR_OCRAM_LOCK(lock) & val) {
+		EMSG("GPR Registers for OCRAM TZ Configuration locked");
+		panic();
+	}
 
 	write32(val, (iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID)));
 
@@ -261,7 +383,7 @@ static TEE_Result init_ocram(void)
 #endif
 
 #ifdef CFG_MX7
-	iram_tlb_phys_addr = TRUSTZONE_OCRAM_START + IRAM_TBL_OFFSET;
+	iram_tlb_phys_addr = imx_get_ocram_tz_start_addr() + IRAM_TBL_OFFSET;
 	phys_addr = phys_addr_imx7;
 	size_area = AIPS1_SIZE; /* 4M for AIPS1/2/3 */
 #endif

@@ -218,17 +218,18 @@ int imx6_suspend_init(void)
 	uint32_t i;
 	uint32_t *mmdc_offset_array;
 	uint32_t *mmdc_io_offset_array;
-	uint32_t suspend_ocram_base = core_mmu_get_va(TRUSTZONE_OCRAM_START +
-						      SUSPEND_OCRAM_OFFSET,
-						      MEM_AREA_TEE_COHERENT);
-	struct imx6_pm_info *p = (struct imx6_pm_info *)suspend_ocram_base;
 	struct imx6_pm_data *pm_data;
 
+	uint32_t suspend_ocram_base = core_mmu_get_va(
+					imx_get_ocram_tz_start_addr() +
+					SUSPEND_OCRAM_OFFSET,
+						MEM_AREA_TEE_COHERENT);
+	struct imx6_pm_info *p = (struct imx6_pm_info *)suspend_ocram_base;
 	pm_info = p;
 
 	dcache_op_level1(DCACHE_OP_CLEAN_INV);
 
-	p->pa_base = TRUSTZONE_OCRAM_START + SUSPEND_OCRAM_OFFSET;
+	p->pa_base = imx_get_ocram_tz_start_addr() + SUSPEND_OCRAM_OFFSET;
 	p->tee_resume = (paddr_t)virt_to_phys((void *)(vaddr_t)v7_cpu_resume);
 	p->pm_info_size = sizeof(*p);
 	p->ccm_va_base = core_mmu_get_va(CCM_BASE, MEM_AREA_IO_SEC);
