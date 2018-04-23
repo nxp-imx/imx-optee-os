@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  */
 
@@ -639,8 +639,10 @@ wait_for_l2_idle:
 
 	/* parse the ldo and audio mode state */
 	ldr	r10, [r0, #PM_INFO_IDLE_STATE]
-	and	r2, r1, #0x4
-	and	r1, r1, #0x2
+	and	r2, r10, #(1 << 1) /* ldo status */
+	lsr	r2, r2, #0x1
+	and	r1, r10, #(1 << 2) /* audio mode status */
+	lsr	r1, r1, #0x2
 
 	/* make sure MMDC in self-refresh */
 	ldr	r10, [r0, #PM_INFO_MMDC0_V_OFF]
