@@ -20,6 +20,8 @@
 #endif /* CFG_DT */
 
 paddr_t iram_tlb_phys_addr = -1UL;
+
+#if defined(CFG_MX7) || defined(CFG_MX6)
 static paddr_t ocram_tz_start_addr = -1UL;
 
 paddr_t imx_get_ocram_tz_start_addr(void)
@@ -100,6 +102,7 @@ static void dt_find_ocram_tz_addr(void)
 	ocram_tz_start_addr = start_addr;
 }
 #endif /* CFG_DT */
+#endif /* CFG_MX6 || CFG_MX7 */
 
 #ifdef CFG_MX6
 static const paddr_t phys_addr_imx6ull[] = {
