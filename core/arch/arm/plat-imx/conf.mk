@@ -108,6 +108,7 @@ CFG_IMX_OCRAM = n
 CFG_IMX_WDOG = n
 CFG_TZC380 ?= y
 CFG_IMX_UART ?= y
+CFG_IMX_CAAM ?= y
 else
 # arm-v7 platforms Common definition
 ta-targets = ta_arm32
