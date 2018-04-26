@@ -17,7 +17,6 @@ struct csu_setting {
 
 const struct csu_setting csu_setting_imx6[] = {
 	{13, 0xFF0033},		/* Protect ROMCP */
-	{14, 0x3F00FF},		/* Protect OCOTP */
 	{16, 0x330033},		/* Protect TZASC */
 	{26, 0xFF0033},		/* Protect OCRAM */
 	{(-1), 0},
@@ -25,7 +24,6 @@ const struct csu_setting csu_setting_imx6[] = {
 
 const struct csu_setting csu_setting_imx6ul[] = {
 	{13, 0xFF0033},		/* Protect ROMCP */
-	{14, 0x3F00FF},		/* Protect OCOTP */
 	{16, 0x3300FF},		/* Protect TZASC */
 	{39, 0x3300FF},		/* Protect OCRAM */
 	{(-1), 0},
@@ -33,7 +31,6 @@ const struct csu_setting csu_setting_imx6ul[] = {
 
 const struct csu_setting csu_setting_imx6sl[] = {
 	{13, 0xFF0033},		/* Protect ROMCP */
-	{14, 0x3F00FF},		/* Protect OCOTP */
 	{16, 0xFF0033},		/* Protect TZASC */
 	{26, 0xFF0033},		/* Protect OCRAM */
 	{(-1), 0},
@@ -41,7 +38,6 @@ const struct csu_setting csu_setting_imx6sl[] = {
 
 const struct csu_setting csu_setting_imx6sx[] = {
 	{13, 0xFF0033},		/* Protect ROMCP */
-	{14, 0x3F00FF},		/* Protect OCOTP */
 	{15, 0xFF0033},		/* Protect RDC   */
 	{16, 0x3300FF},		/* Protect TZASC */
 	{34, 0x3300FF},		/* Protect OCRAM */
@@ -97,4 +93,3 @@ TEE_Result csu_init(void)
 
 	return TEE_SUCCESS;
 }
-
