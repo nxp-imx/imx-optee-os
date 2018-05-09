@@ -125,8 +125,9 @@ static void init_tz_ocram(void)
 {
 	/* Configure the Secure OCRAM granularity */
 	vaddr_t  iomux_base;
-	uint32_t val;
+	uint32_t val = 0;
 	uint32_t lock = 0;
+	uint32_t lock_val = 0;
 
 #ifdef CFG_DT
 	dt_find_ocram_tz_addr();
@@ -183,15 +184,6 @@ static void init_tz_ocram(void)
 			IOMUX_GPR_OCRAM_TZ_ENABLE;
 	}
 
-	/* Check if GPR registers for OCRAM TZ protection are locked */
-	/* Normally the lock bits are not defined for 6UL and 6SX */
-	if (!soc_is_imx6ul() & !soc_is_imx6sx()) {
-		if (IOMUX_GPR_OCRAM_LOCK(lock) & val) {
-			EMSG("GPR Registers for OCRAM TZ Configuration locked");
-			panic();
-		}
-	}
-
 	/* Write the configuration */
 	write32(val, (iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID)));
 
@@ -199,6 +191,17 @@ static void init_tz_ocram(void)
 	/* Normally the lock bits are not defined for 6UL and 6SX */
 	write32(IOMUX_GPR_OCRAM_LOCK(lock) | val,
 			(iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID)));
+
+	/*
+	 * Ensure that GPR registers for OCRAM TZ protection locked
+	 * match with the current configuration.
+	 */
+	if (!soc_is_imx6ul() & !soc_is_imx6sx()) {
+		lock_val = read32(iomux_base
+				+ IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
+		if ((lock_val & lock) != (val & lock))
+			panic("OCRAM TZ Configuration Lock Mismatch");
+	}
 
 	if (soc_is_imx6sx()) {
 		val = read32(iomux_base
@@ -328,6 +331,7 @@ static void init_tz_ocram(void)
 	vaddr_t  iomux_base;
 	uint32_t val;
 	uint32_t lock;
+	uint32_t lock_val;
 
 #ifdef CFG_DT
 	/* Get low tz ocram address */
@@ -348,17 +352,19 @@ static void init_tz_ocram(void)
 
 	lock = BM_IOMUX_GPR_OCRAM_S_TZ_ADDR | IOMUX_GPR_OCRAM_S_TZ_ENABLE;
 
-	/* Check if GPR registers for OCRAM TZ protection are locked */
-	if (IOMUX_GPR_OCRAM_LOCK(lock) & val) {
-		EMSG("GPR Registers for OCRAM TZ Configuration locked");
-		panic();
-	}
-
 	write32(val, (iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID)));
 
 	/* Then lock configuration */
 	write32(IOMUX_GPR_OCRAM_LOCK(lock) | val,
 			(iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID)));
+
+	/*
+	 * Ensure that GPR registers for OCRAM TZ protection locked
+	 * match with the current configuration.
+	 */
+	lock_val = read32(iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
+	if ((lock_val & lock) != (val & lock))
+		panic("OCRAM TZ Configuration Lock Mismatch");
 #endif
 }
 
