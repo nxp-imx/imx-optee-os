@@ -19,8 +19,8 @@
 #include "caam_jr.h"
 
 /* Utils includes */
-#include "utils_mem.h"
 #include "utils_delay.h"
+#include "utils_mem.h"
 
 /* Hal includes */
 #include "hal_jr.h"

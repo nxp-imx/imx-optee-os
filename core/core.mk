@@ -94,6 +94,12 @@ libname = $(CFG_CRYPTOLIB_NAME)
 libdir = $(CFG_CRYPTOLIB_DIR)
 include mk/lib.mk
 
+ifeq ($(CFG_IMXCRYPT), y)
+libname = imxcrypt
+libdir = core/lib/lib$(libname)
+include mk/lib.mk
+endif
+
 ifeq ($(CFG_DT),y)
 libname = fdt
 libdir = core/lib/libfdt

@@ -362,3 +362,6 @@ CFG_IMX_WDOG ?= y
 $(call force,CFG_IMX_OCRAM,y)
 endif
 
+
+# Cryptographic configuration
+include core/arch/arm/plat-imx/crypto_conf.mk
