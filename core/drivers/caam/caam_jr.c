@@ -223,17 +223,18 @@ static uint32_t do_jr_dequeue(uint32_t waitJobIds)
 	struct caller_info   *caller;
 	struct outring_entry *jr_out;
 	struct jr_jobctx     *jobctx;
+	uint32_t  exceptions;
 	int       found;
 	uint16_t  idx_jr;
 	uint16_t  nbJobs_done;
 	size_t    nbJobs_inv;
 
-	cpu_spin_lock(&jr_privdata->outlock);
+	exceptions = cpu_spin_lock_xsave(&jr_privdata->outlock);
 
 	nbJobs_done = hal_jr_get_nbJobDone(jr_privdata->baseaddr);
 
 	if (nbJobs_done == 0) {
-		cpu_spin_unlock(&jr_privdata->outlock);
+		cpu_spin_unlock_xrestore(&jr_privdata->outlock, exceptions);
 		return retJobId;
 	}
 
@@ -306,7 +307,7 @@ static uint32_t do_jr_dequeue(uint32_t waitJobIds)
 
 	} while (--nbJobs_done);
 
-	cpu_spin_unlock(&jr_privdata->outlock);
+	cpu_spin_unlock_xrestore(&jr_privdata->outlock, exceptions);
 
 	return retJobId;
 }
@@ -326,11 +327,12 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 	enum CAAM_Status retstatus = CAAM_BUSY;
 
 	struct caller_info *caller;
+	uint32_t exceptions;
 	uint32_t job_mask = 0;
 	uint8_t  idx_jr;
 	bool     found;
 
-	cpu_spin_lock(&jr_privdata->inlock);
+	exceptions = cpu_spin_lock_xsave(&jr_privdata->inlock);
 
 	/* Stay lock until a job is available */
 	/* Check if there is an available JR index in the HW */
@@ -405,7 +407,7 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 #endif
 
 end_enqueue:
-	cpu_spin_unlock(&jr_privdata->inlock);
+	cpu_spin_unlock_xrestore(&jr_privdata->inlock, exceptions);
 	*jobId = job_mask;
 
 	return retstatus;
@@ -432,7 +434,7 @@ void caam_jr_cancel(uint32_t jobId)
 {
 	uint8_t idx;
 
-	JR_TRACE("Job cancel %x", jobId);
+	JR_TRACE("Job cancel 0x%"PRIx32"", jobId);
 	for (idx = 0; idx < jr_privdata->nbJobs; idx++) {
 		/*
 		 * Search for the caller information corresponding to
@@ -526,6 +528,11 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 		return CAAM_BAD_PARAM;
 	}
 
+	if ((jobctx->callbk) && (!jobId)) {
+		JR_TRACE("Job Id not defined whereas asynchronous");
+		return CAAM_BAD_PARAM;
+	}
+
 	jobctx->completion = false;
 	jobctx->status     = 0;
 
@@ -541,7 +548,7 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 	retstatus = do_jr_enqueue(jobctx, &jobPushed);
 
 	if (retstatus != CAAM_NO_ERROR) {
-		JR_TRACE("enqueue job error 0x%08x", retstatus);
+		JR_TRACE("enqueue job error 0x%08"PRIx32"", retstatus);
 		return retstatus;
 	}
 
@@ -596,7 +603,7 @@ enum CAAM_Status caam_jr_init(struct jr_cfg *jr_cfg)
 
 	retstatus = hal_jr_setowner(jr_cfg->base, jr_cfg->offset,
 								JROWN_ARM_S);
-	JR_TRACE("JR setowner returned %x", retstatus);
+	JR_TRACE("JR setowner returned 0x%"PRIx32"", retstatus);
 
 	if (retstatus != CAAM_NO_ERROR)
 		goto end_init;

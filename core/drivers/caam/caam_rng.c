@@ -8,6 +8,20 @@
  *          Implementation of RNG functions
  */
 
+/* Standard includes */
+#include <string.h>
+
+/* Global includes */
+#include <atomic.h>
+#include <mm/core_memprot.h>
+#include <tee/cache.h>
+
+#ifdef CFG_CRYPTO_RNG_HW
+/* Library i.MX includes */
+#include <libimxcrypt.h>
+#include <libimxcrypt_rng.h>
+#endif // CFG_CRYPTO_RNG_HW
+
 /* Local includes */
 #include "common.h"
 #include "caam_jr.h"
@@ -22,7 +36,7 @@
 /*
  * Debug Macros
  */
-#define RNG_DEBUG
+//#define RNG_DEBUG
 #ifdef RNG_DEBUG
 #define DUMP_DESC
 #define RNG_TRACE		DRV_TRACE
@@ -38,14 +52,399 @@
 #endif
 
 /**
+ * @brief   Define the RNG Data buffer size and number
+ */
+#define RNG_DATABUF_SIZE	1024
+#define RNG_DATABUF_NB		2
+
+/**
+ * @brief   Define the number of descriptor entry to
+ *          generate random data
+ */
+#define RNG_GEN_DESC_ENTRIES	5
+
+/**
+ * @brief   Status of the data generation
+ */
+enum rngsta {
+	DATA_EMPTY = 0, ///< Data bufer empty
+	DATA_ONGOING,   ///< Data generation on going
+	DATA_FAILURE,   ///< Error during data generation
+	DATA_OK,		///< Data generation complete with success
+};
+
+/**
+ * @brief   RNG Data generation
+ */
+struct rngdata {
+	struct jr_jobctx jobctx;  ///< Job Ring Context
+	uint32_t         jobId;   ///< Job Id enqueued
+
+	uint8_t *data;            ///< Random Data buffer
+	size_t  size;             ///< Size in bytes of the Random data buffer
+	size_t  rdindex;          ///< Current data index in the buffer
+
+	enum rngsta status;       ///< Status of the data generation
+};
+
+/**
  * @brief   RNG module private data
  */
 struct rng_privdata {
-	vaddr_t baseaddr;      ///< RNG base address
-	bool    instantiated;  ///< Flag indicating RNG instantiated
+	vaddr_t   baseaddr;                ///< RNG base address
+	bool      instantiated;            ///< Flag indicating RNG instantiated
+	struct rngdata databuf[RNG_DATABUF_NB]; ///< RNG Data generation
+	uint8_t   dataidx;                 ///< Current RNG Data buffer
 };
 
 static struct rng_privdata *rng_privdata;
+
+/**
+ * @brief   allocate and initialize module private data
+ *
+ *
+ * @retval  CAAM_NO_ERROR    Success
+ * @retval  CAAM_OUT_MEMORY  Allocation error
+ */
+static enum CAAM_Status do_allocate(void)
+{
+	struct rngdata *rngdata;
+	uint8_t   idx;
+
+	/* Allocate the Module resources */
+	rng_privdata = caam_alloc(sizeof(struct rng_privdata));
+	if (!rng_privdata) {
+		RNG_TRACE("Private Data allocation error");
+		return CAAM_OUT_MEMORY;
+	}
+
+	rng_privdata->instantiated = false;
+
+	/* Allocates the RNG Data Buffers */
+	for (idx = 0; idx < RNG_DATABUF_NB; idx++) {
+		rngdata = &rng_privdata->databuf[idx];
+		rngdata->data = caam_alloc_align(RNG_DATABUF_SIZE);
+		if (!rngdata->data)
+			return CAAM_OUT_MEMORY;
+
+		rngdata->size = RNG_DATABUF_SIZE;
+		rngdata->jobctx.desc = caam_alloc_desc(RNG_GEN_DESC_ENTRIES);
+	}
+
+	return CAAM_NO_ERROR;
+}
+
+/**
+ * @brief   free module private data
+ *
+ */
+static void do_free(void)
+{
+	struct rngdata *rng;
+	uint8_t    idx;
+
+	if (rng_privdata) {
+		for (idx = 0; idx < RNG_DATABUF_NB; idx++) {
+			rng = &rng_privdata->databuf[idx];
+
+			/* Check if there is a Job ongoing to cancel it */
+			if (atomic_load_u32(&rng->status) == DATA_ONGOING)
+				caam_jr_cancel(rng->jobId);
+
+			caam_free_desc((void **)&rng->jobctx.desc);
+			caam_free((void **)&rng->data);
+		}
+
+		caam_free((void **)&rng_privdata);
+	}
+}
+
+#ifdef CFG_CRYPTO_RNG_HW
+
+/**
+ * @brief   RNG data generation job ring callback completion
+ *
+ * @param[in] jobctx      RNG data JR Job Context
+ *
+ */
+static void rng_data_done(struct jr_jobctx *jobctx)
+{
+	struct rngdata *rng = jobctx->context;
+
+	RNG_TRACE("RNG Data id 0x%08"PRIx32" done with status 0x%"PRIx32"",
+				rng->jobId, jobctx->status);
+
+	if (JRSTA_SRC_GET(jobctx->status) == JRSTA_SRC_NONE) {
+		atomic_store_u32(&rng->status, DATA_OK);
+
+		/* Invalidate the data buffer to ensure software got it */
+		cache_operation(TEE_CACHEINVALIDATE, rng->data, rng->size);
+	} else {
+		RNG_TRACE("RNG Data completion in error 0x%"PRIx32"",
+			jobctx->status);
+		atomic_store_u32(&rng->status, DATA_FAILURE);
+	}
+
+	rng->jobId   = 0;
+	rng->rdindex = 0;
+}
+
+/**
+ * @brief   Prepares the data generation descriptors
+ *
+ * @param[in] rng       Reference to the RNG Data object
+ *
+ * @retval  CAAM_NO_ERROR     Success
+ * @retval  CAAM_FAILURE      General failure
+ */
+static enum CAAM_Status prepare_gen_desc(struct rngdata *rng)
+{
+	paddr_t       paddr;
+	descPointer_t desc;
+
+	/* Convert the buffer virtual address to physical address */
+	paddr = virt_to_phys(rng->data);
+	if (!paddr)
+		return CAAM_FAILURE;
+
+	desc = rng->jobctx.desc;
+
+	desc[0] = DESC_HEADER(4);
+	desc[1] = RNG_GEN_DATA;
+	desc[2] = FIFO_ST(RNG_TO_MEM, rng->size);
+	desc[3] = paddr;
+
+	RNG_DUMPDESC(desc);
+
+	/* Prepare the job context */
+	rng->jobctx.context = rng;
+	rng->jobctx.callbk  = rng_data_done;
+
+	return CAAM_NO_ERROR;
+}
+
+/**
+ * @brief   Launches a RNG Data generation
+ *
+ * @param[in] rng      RNG Data context
+ *
+ * @retval  CAAM_NO_ERROR   Success
+ * @retval  CAAM_FAILURE    General error
+ */
+static enum CAAM_Status do_rng_start(struct rngdata *rng)
+{
+	enum CAAM_Status ret;
+
+	/* Ensure that data buffer is flushed */
+	cache_operation(TEE_CACHEFLUSH, rng->data, rng->size);
+
+	rng->jobId  = 0;
+	atomic_store_u32(&rng->status, DATA_EMPTY);
+
+	ret = caam_jr_enqueue(&rng->jobctx, &rng->jobId);
+
+	if (ret == CAAM_PENDING) {
+		atomic_store_u32(&rng->status, DATA_ONGOING);
+		ret = CAAM_NO_ERROR;
+	} else {
+		RNG_TRACE("RNG Job Ring Error 0x%"PRIx32"", ret);
+		atomic_store_u32(&rng->status, DATA_FAILURE);
+		ret = CAAM_FAILURE;
+	}
+
+	return ret;
+}
+
+/**
+ * @brief   Checks if there are random data available
+ *
+ * @retval  CAAM_NO_ERROR   Success
+ * @retval  CAAM_FAILURE    General error
+ */
+static enum CAAM_Status do_check_data(void)
+{
+	enum CAAM_Status ret = CAAM_FAILURE;
+
+	struct rngdata *rng;
+
+	uint32_t waitJobs;
+	uint8_t  idx;
+	uint8_t  loop = 4;
+
+	/* Check if there is a RNG Job to be run */
+	for (idx = 0; idx < RNG_DATABUF_NB; idx++) {
+		rng = &rng_privdata->databuf[idx];
+		if (atomic_load_u32(&rng->status) == DATA_EMPTY) {
+			RNG_TRACE("Start RNG #%d data generation", idx);
+			ret = do_rng_start(rng);
+			if (ret != CAAM_NO_ERROR)
+				return CAAM_FAILURE;
+		}
+	}
+
+	/* Check if the current data buffer contains data */
+	rng = &rng_privdata->databuf[rng_privdata->dataidx];
+
+	switch (atomic_load_u32(&rng->status)) {
+	case DATA_OK:
+		return CAAM_NO_ERROR;
+
+	default:
+		/* Wait until one of the data buffer completed */
+		do {
+			waitJobs = 0;
+			for (idx = 0; idx < RNG_DATABUF_NB; idx++) {
+				rng = &rng_privdata->databuf[idx];
+				waitJobs |= rng->jobId;
+
+				if (atomic_load_u32(&rng->status) == DATA_OK) {
+					RNG_TRACE("RNG Data buffer #%d ready",
+						idx);
+					rng_privdata->dataidx = idx;
+					return CAAM_NO_ERROR;
+				}
+			}
+
+			if (!waitJobs) {
+				RNG_TRACE("There are no Data Buffers ongoing");
+				return CAAM_FAILURE;
+			}
+
+			/* Need to wait until one of the jobs complete */
+			ret = caam_jr_dequeue(waitJobs, 100);
+		} while (loop--);
+
+		break;
+	}
+
+	return CAAM_FAILURE;
+}
+
+/**
+ * @brief   Returns the requested random data
+ *
+ * @param[in]  len  number of bytes to returns
+ *
+ * @param[out] buf  data buffer
+ *
+ * @retval  TEE_SUCCESS          Success
+ * @retval  TEE_ERROR_BAD_STATE  RNG is in incorrect state
+ */
+static TEE_Result do_rng_read(uint8_t *buf, size_t len)
+{
+	struct rngdata *rng;
+
+	size_t  remlen  = len;
+	uint8_t *rngbuf = buf;
+
+	if (!rng_privdata) {
+		RNG_TRACE("RNG Driver not initialized");
+		return TEE_ERROR_BAD_STATE;
+	}
+
+	if (rng_privdata->instantiated == false) {
+		RNG_TRACE("RNG Driver not initialized");
+		return TEE_ERROR_BAD_STATE;
+	}
+
+	do {
+		if (do_check_data() != CAAM_NO_ERROR) {
+			RNG_TRACE("No Data available or Error");
+			return TEE_ERROR_BAD_STATE;
+		}
+
+		rng = &rng_privdata->databuf[rng_privdata->dataidx];
+		RNG_TRACE("Current Context #%d contains %d data, asked %d (%d)",
+					rng_privdata->dataidx,
+					(rng->size - rng->rdindex),
+					remlen, len);
+
+		/* Check that current context data are available */
+		if ((rng->size - rng->rdindex) <= remlen) {
+			/*
+			 * There is no or just enough data available,
+			 * copy all data
+			 */
+			RNG_TRACE("Copy all available data");
+			memcpy(rngbuf, &rng->data[rng->rdindex],
+					(rng->size - rng->rdindex));
+
+			remlen -= (rng->size - rng->rdindex);
+			rngbuf += (rng->size - rng->rdindex);
+			/* Set the RNG data status as empty */
+			atomic_store_u32(&rng->status, DATA_EMPTY);
+		} else {
+			/*
+			 * There is enough data in the current context
+			 */
+			RNG_TRACE("Copy %d data", remlen);
+			memcpy(rngbuf, &rng->data[rng->rdindex],
+					remlen);
+			rng->rdindex += remlen;
+			remlen = 0;
+		}
+	} while (remlen);
+
+	return TEE_SUCCESS;
+}
+
+/**
+ * @brief   Add entropy. Nothing done for the CAAM.
+ *
+ * @param[in]  inbuf  entropy to add
+ * @param[in]  len    number of bytes of entropy buffer
+ *
+ * @retval  TEE_SUCCESS          Success
+ */
+static TEE_Result do_add_entropy(const uint8_t *inbuf __unused,
+					size_t len __unused)
+{
+	return TEE_SUCCESS;
+}
+
+/**
+ * @brief   Registration of the RNG Driver
+ */
+struct imxcrypt_rng driver_rng = {
+	.read        = &do_rng_read,
+	.add_entropy = &do_add_entropy,
+};
+
+/**
+ * @brief   Initialize the RNG module to generate data
+ *
+ * @param[in] ctrl_addr   Controller base address
+ *
+ * @retval  CAAM_NO_ERROR    Success
+ * @retval  CAAM_FAILURE     An error occurred
+ */
+static enum CAAM_Status caam_rng_init_data(void)
+{
+	enum CAAM_Status retstatus = CAAM_FAILURE;
+
+	struct rngdata *rng;
+	uint8_t   idx;
+
+	for (idx = 0; (idx < RNG_DATABUF_NB); idx++) {
+		rng = &rng_privdata->databuf[idx];
+		retstatus = prepare_gen_desc(rng);
+		if (retstatus == CAAM_NO_ERROR) {
+			RNG_TRACE("Start RNG #%d data generation", idx);
+			retstatus = do_rng_start(rng);
+		}
+
+		if (retstatus != CAAM_NO_ERROR)
+			break;
+	}
+
+	if (retstatus == CAAM_NO_ERROR) {
+		if (imxcrypt_register(CRYPTO_RNG, &driver_rng))
+			retstatus = CAAM_FAILURE;
+	}
+
+	return retstatus;
+}
+#endif // CFG_CRYPTO_RNG_HW
 
 /**
  * @brief   Prepares the instantiation descriptor
@@ -123,6 +522,7 @@ static void prepare_inst_desc(uint32_t nbSH, uint32_t sh_status,
 
 	RNG_DUMPDESC(desc);
 }
+
 /**
  * @brief   Instantiates the RNG State Handles if not already done
  *
@@ -237,6 +637,7 @@ end_inst:
 	return retstatus;
 }
 
+
 /**
  * @brief   Initialize the RNG module and do the instantation of the
  *          State Handles if not done
@@ -252,23 +653,19 @@ enum CAAM_Status caam_rng_init(vaddr_t ctrl_addr)
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 
 	RNG_TRACE("Initialization");
-
-	/* Allocate the Module resources */
-	rng_privdata = caam_alloc(sizeof(struct rng_privdata));
-	if (!rng_privdata) {
-		RNG_TRACE("Private Data allocation error");
-		retstatus = CAAM_OUT_MEMORY;
-		goto end_init;
+	retstatus = do_allocate();
+	if (retstatus == CAAM_NO_ERROR) {
+		rng_privdata->baseaddr = ctrl_addr;
+		retstatus = do_instantiation();
 	}
 
-	rng_privdata->baseaddr     = ctrl_addr;
-	rng_privdata->instantiated = false;
+#ifdef CFG_CRYPTO_RNG_HW
+	if (retstatus == CAAM_NO_ERROR)
+		retstatus = caam_rng_init_data();
+#endif
 
-	retstatus = do_instantiation();
-
-end_init:
 	if (retstatus != CAAM_NO_ERROR)
-		caam_free((void **)&rng_privdata);
+		do_free();
 
 	return retstatus;
 }

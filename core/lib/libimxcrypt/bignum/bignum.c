@@ -56,9 +56,11 @@ size_t crypto_bignum_num_bits(struct bignum *a __unused)
  */
 static void bignum_cant_happen(void)
 {
+	volatile bool b = true;
 	LIB_TRACE("bad");
 	/* Avoid warning about function does not return */
-	panic();
+	if (b)
+		panic();
 }
 
 void crypto_bignum_bn2bin(const struct bignum *from __unused,

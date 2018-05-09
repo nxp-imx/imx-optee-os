@@ -1,4 +1,6 @@
 
+global-incdirs-y += include
+
 srcs-y += tee_provider.c
 
 subdirs-y += rng

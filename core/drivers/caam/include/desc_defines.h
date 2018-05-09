@@ -97,6 +97,52 @@
 #define REG_OFIFO				0x7E
 
 /*
+ * FIFO STORE Command fields
+ */
+#define CMD_FIFO_STORE_TYPE		CMD_TYPE(0x0C)
+
+/* Output data */
+#define FIFO_STORE_OUTPUT(reg)	SHIFT_U32((FIFO_STORE_##reg & 0x3F), 16)
+
+/* Length */
+#define FIFO_STORE_LENGTH(len)	SHIFT_U32((len & 0xFFFF), 0)
+
+/*
+ * Define the FIFO Store Type Output
+ */
+#define FIFO_STORE_PKHA_A0                           0x00
+#define FIFO_STORE_PKHA_A1                           0x01
+#define FIFO_STORE_PKHA_A2                           0x02
+#define FIFO_STORE_PKHA_A3                           0x03
+#define FIFO_STORE_PKHA_B0                           0x04
+#define FIFO_STORE_PKHA_B1                           0x05
+#define FIFO_STORE_PKHA_B2                           0x06
+#define FIFO_STORE_PKHA_B3                           0x07
+#define FIFO_STORE_PKHA_N                            0x08
+#define FIFO_STORE_PKHA_A                            0x0C
+#define FIFO_STORE_PKHA_B                            0x0D
+#define FIFO_STORE_AFHA_SBOX_AES_CCM_JKEK            0x10
+#define FIFO_STORE_AFHA_SBOX_AES_CCM_TKEK            0x11
+#define FIFO_STORE_PKHA_E_AES_CCM_JKEK               0x12
+#define FIFO_STORE_PKHA_E_AES_CCM_TKEK               0x13
+#define FIFO_STORE_KEY_AES_CCM_JKEK                  0x14
+#define FIFO_STORE_KEY_AES_CCM_TKEK                  0x15
+#define FIFO_STORE_C2_MDHA_SPLIT_KEY_AES_CCM_JKEK    0x16
+#define FIFO_STORE_C2_MDHA_SPLIT_KEY_AES_CCM_TKEK    0x17
+#define FIFO_STORE_AFHA_SBOX_AES_ECB_JKEK            0x20
+#define FIFO_STORE_AFHA_SBOX_AES_ECB_TKEK            0x21
+#define FIFO_STORE_PKHA_E_AES_ECB_JKEK               0x22
+#define FIFO_STORE_PKHA_E_AES_ECB_TKEK               0x23
+#define FIFO_STORE_KEY_AES_ECB_JKEK                  0x24
+#define FIFO_STORE_KEY_AES_ECB_TKEK                  0x25
+#define FIFO_STORE_C2_MDHA_SPLIT_KEY_AES_ECB_JKEK    0x26
+#define FIFO_STORE_C2_MDHA_SPLIT_KEY_AES_ECB_TKEK    0x27
+#define FIFO_STORE_MSG_DATA                          0x30
+#define FIFO_STORE_RNG_TO_MEM                        0x34
+#define FIFO_STORE_RNG_STAY_FIFO                     0x35
+#define FIFO_STORE_SKIP                              0x3F
+
+/*
  * Operation Command fields
  * Algorithm/Protocol/PKHA
  */

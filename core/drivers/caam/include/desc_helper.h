@@ -92,6 +92,13 @@ static inline void dump_desc(void *desc)
 			LD_IMM(CLASS_NO, dst, len)
 
 /**
+ * @brief  FIFO Store from register \a src of length \a len
+ */
+#define FIFO_ST(src, len) \
+			(CMD_FIFO_STORE_TYPE | FIFO_STORE_OUTPUT(src) | \
+			FIFO_STORE_LENGTH(len))
+
+/**
  * @brief  RNG State Handle instantation operation for \a sh id
  */
 #define RNG_SH_INST(sh) \

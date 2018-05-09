@@ -8,6 +8,8 @@ $(call force, CFG_IMXCRYPT,y)
 endif
 
 ifeq ($(CFG_IMXCRYPT), y)
+$(call force, CFG_CRYPTO_RNG_HW,y)
+
 # Ciphers
 $(call force, CFG_CRYPTO_DES,n)
 

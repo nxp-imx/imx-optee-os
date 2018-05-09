@@ -9,6 +9,8 @@
 #ifndef __CAAM_JR_H__
 #define __CAAM_JR_H__
 
+#include "jr_status.h"
+
 /**
  * @brief   Job context to enqueue/dequeue
  *
