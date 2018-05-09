@@ -103,7 +103,6 @@ static void dt_find_ocram_tz_addr(void)
 #endif /* CFG_DT */
 #endif /* CFG_MX7 */
 
-
 #ifdef CFG_MX7
 static const paddr_t phys_addr_imx7[] = {
 	AIPS1_BASE, AIPS2_BASE, AIPS3_BASE, 0
@@ -138,17 +137,19 @@ static void init_tz_ocram(void)
 
 	lock = BM_IOMUX_GPR_OCRAM_S_TZ_ADDR | IOMUX_GPR_OCRAM_S_TZ_ENABLE;
 
-	/* Check if GPR registers for OCRAM TZ protection are locked */
-	if (IOMUX_GPR_OCRAM_LOCK(lock) & val) {
-		EMSG("GPR Registers for OCRAM TZ Configuration locked");
-		panic();
-	}
-
 	write32(val, (iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID)));
 
 	/* Then lock configuration */
 	write32(IOMUX_GPR_OCRAM_LOCK(lock) | val,
 			(iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID)));
+
+	/*
+	 * Ensure that GPR registers for OCRAM TZ protection locked
+	 * match with the current configuration.
+	 */
+	lock_val = read32(iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
+	if ((lock_val & lock) != (val & lock))
+		panic("OCRAM TZ Configuration Lock Mismatch");
 }
 
 static TEE_Result init_ocram(void)
