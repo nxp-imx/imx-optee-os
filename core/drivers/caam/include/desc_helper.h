@@ -92,6 +92,42 @@ static inline void dump_desc(void *desc)
 			LD_IMM(CLASS_NO, dst, len)
 
 /**
+ * @brief  Load value of length \a len to register \a dst of
+ *         class \a cla
+ */
+#define LD_NOIMM(cla, dst, len) \
+			(CMD_LOAD_TYPE | CMD_CLASS(cla) | LOAD_DST(dst) | \
+			LOAD_LENGTH(len))
+
+/**
+ * @brief  FIFO Load to register \a dst class \a cla with action \a act. \n
+ *         The length is externally defined
+ *
+ */
+#define FIFO_LD(cla, dst, act, len) \
+			(CMD_FIFO_LOAD_TYPE | CMD_CLASS(cla) |		\
+			FIFO_LOAD_INPUT(dst) | FIFO_LOAD_ACTION(act) |	\
+			FIFO_LOAD_LENGTH(len))
+
+/**
+ * @brief  FIFO Load to register \a dst class \a cla with action \a act. \n
+ *         The length is externally defined
+ *
+ */
+#define FIFO_LD_EXT(cla, dst, act) \
+			(CMD_FIFO_LOAD_TYPE | FIFO_LOAD_EXT |	\
+			CMD_CLASS(cla) | FIFO_LOAD_INPUT(dst) |	\
+			FIFO_LOAD_ACTION(act))
+
+/**
+ * @brief  Store value of length \a len from register \a src of
+ *         class \a cla
+ */
+#define ST_NOIMM(cla, src, len) \
+			(CMD_STORE_TYPE | CMD_CLASS(cla) | STORE_SRC(src) | \
+			STORE_LENGTH(len))
+
+/**
  * @brief  FIFO Store from register \a src of length \a len
  */
 #define FIFO_ST(src, len) \
@@ -118,6 +154,34 @@ static inline void dump_desc(void *desc)
 #define RNG_GEN_DATA \
 			(CMD_OP_TYPE | OP_TYPE(CLASS1) | OP_ALGO(RNG) | \
 			 ALGO_AS(RNG_GENERATE))
+
+/**
+ * @brief  HASH Init Operation of algorithm \a algo
+ */
+#define HASH_INIT(algo) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
+			ALGO_AS(INIT) | ALGO_ENCRYPT)
+
+/**
+ * @brief  HASH Update Operation of algorithm \a algo
+ */
+#define HASH_UPDATE(algo) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
+			ALGO_AS(UPDATE) | ALGO_ENCRYPT)
+
+/**
+ * @brief  HASH Final Operation of algorithm \a algo
+ */
+#define HASH_FINAL(algo) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
+			ALGO_AS(FINAL) | ALGO_ENCRYPT)
+
+/**
+ * @brief  HASH Init and Final Operation of algorithm \a algo
+ */
+#define HASH_INITFINAL(algo) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
+			ALGO_AS(INIT_FINAL) | ALGO_ENCRYPT)
 
 #endif /* __DESC_HELPER_H__ */
 

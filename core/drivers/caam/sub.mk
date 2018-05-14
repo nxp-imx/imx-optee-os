@@ -7,4 +7,5 @@ subdirs-y += utils
 srcs-y += caam_ctrl.c
 srcs-y += caam_jr.c
 srcs-y += caam_rng.c
+srcs-$(CFG_CRYPTO_HASH_HW) += caam_hash.c
 

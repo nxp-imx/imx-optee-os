@@ -59,10 +59,12 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 
 	/* Prepare the Job Ring MS/LS registers */
 	if (owner & JROWNER_SECURE) {
+		/* Configuration only lock for the Secure JR */
 		cfg_ms  = JRxDID_MS_PRIM_DID(owner & ~JROWNER_SECURE);
 		cfg_ms |= JRxDID_MS_PRIM_TZ | JRxDID_MS_TZ_OWN;
 		cfg_ms |= JRxDID_MS_AMTD | JRxDID_MS_LAMTD;
 		cfg_ms |= JRxDID_MS_PRIM_ICID(owner & ~JROWNER_SECURE);
+		cfg_ms |= JRxDID_MS_LDID;
 	} else {
 		cfg_ms  = JRxDID_MS_PRIM_DID(owner);
 		cfg_ms |= JRxDID_MS_PRIM_ICID(owner);
@@ -75,9 +77,8 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 	if (val & JRxDID_MS_LDID) {
 		/* Check if the setup configuration is correct or not */
 		HAL_TRACE("JR%dDID_MS value 0x%x (0x%x)", jr_idx, val, cfg_ms);
-		if (cfg_ms == (val & ~JRxDID_MS_LDID)) {
-			/*
-			 * Read the LS register and comparte with
+		if ((cfg_ms | JRxDID_MS_LDID) == val) {
+			/* Read the LS register and compare with
 			 * expected value
 			 */
 			val = read32(ctrl_base + JRxDID_LS(jr_idx));
@@ -89,9 +90,9 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 	} else {
 		HAL_TRACE("JR%dDID_LS set value 0x%x", jr_idx, cfg_ls);
 		HAL_TRACE("JR%dDID_MS set value 0x%x", jr_idx, cfg_ms);
-		/* Set the configuration and lock it. */
+		/* Set the configuration */
 		write32(cfg_ls, ctrl_base + JRxDID_LS(jr_idx));
-		write32(cfg_ms | JRxDID_MS_LDID, ctrl_base + JRxDID_MS(jr_idx));
+		write32(cfg_ms, ctrl_base + JRxDID_MS(jr_idx));
 		retstatus = CAAM_NO_ERROR;
 	}
 

@@ -15,6 +15,9 @@
 #include "common.h"
 #include "caam_jr.h"
 #include "caam_rng.h"
+#ifdef CFG_CRYPTO_HASH_HW
+#include "caam_hash.h"
+#endif
 
 /* Utils includes */
 #include "utils_mem.h"
@@ -81,6 +84,15 @@ static TEE_Result caam_init(void)
 		goto exit_init;
 	}
 
+#ifdef CFG_CRYPTO_HASH_HW
+	/* Initialize the Hash Module */
+	retstatus = caam_hash_init(jr_cfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+#endif // CFG_CRYPTO_HASH_HW
+
 	retresult = TEE_SUCCESS;
 
 exit_init:
@@ -89,4 +101,4 @@ exit_init:
 }
 
 
-driver_init(caam_init);
+service_init(caam_init);

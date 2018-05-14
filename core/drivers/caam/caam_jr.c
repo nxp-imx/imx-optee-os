@@ -31,7 +31,7 @@
 //#define JR_DEBUG
 #ifdef JR_DEBUG
 //#define DUMP_DESC
-#define JR_TRACE			DRV_TRACE
+#define JR_TRACE		DRV_TRACE
 #else
 #define JR_TRACE(...)
 #endif
@@ -95,7 +95,9 @@ struct jr_privdata {
 	unsigned int    outlock;        ///< Output JR spin lock
 	uint16_t        outread_index;  ///< SW Index - next JR output completed
 
-	struct caller_info   *callers;  ///< Job Ring Caller information
+	/* Caller Information Variables */
+	struct caller_info *callers;    ///< Job Ring Caller information
+	unsigned int    callers_lock;   ///< Job Ring Caller spin lock
 
 	struct itr_handler it_handler;  ///< Interrupt handler
 };
@@ -162,8 +164,9 @@ static enum CAAM_Status do_jr_alloc(struct jr_privdata **privdata,
 	}
 
 	/* Initialize the spin locks */
-	jr_priv->inlock  = SPINLOCK_UNLOCK;
-	jr_priv->outlock = SPINLOCK_UNLOCK;
+	jr_priv->inlock   = SPINLOCK_UNLOCK;
+	jr_priv->outlock  = SPINLOCK_UNLOCK;
+	jr_priv->callers_lock = SPINLOCK_UNLOCK;
 
 	/* Initialize the queue counter */
 	jr_priv->inwrite_index = jr_priv->outread_index = 0;
@@ -229,12 +232,12 @@ static uint32_t do_jr_dequeue(uint32_t waitJobIds)
 	uint16_t  nbJobs_done;
 	size_t    nbJobs_inv;
 
-	exceptions = cpu_spin_lock_xsave(&jr_privdata->outlock);
+	exceptions = cpu_spin_lock_xsave(&jr_privdata->inlock);
 
 	nbJobs_done = hal_jr_get_nbJobDone(jr_privdata->baseaddr);
 
 	if (nbJobs_done == 0) {
-		cpu_spin_unlock_xrestore(&jr_privdata->outlock, exceptions);
+		cpu_spin_unlock_xrestore(&jr_privdata->inlock, exceptions);
 		return retJobId;
 	}
 
@@ -256,6 +259,11 @@ static uint32_t do_jr_dequeue(uint32_t waitJobIds)
 	do {
 		jr_out = &jr_privdata->outrings[jr_privdata->outread_index];
 
+		/*
+		 * Lock the caller information array because enqueue is
+		 * also touching it
+		 */
+		cpu_spin_lock(&jr_privdata->callers_lock);
 		for ((idx_jr = 0), (found = (-1));
 				(idx_jr < jr_privdata->nbJobs) && (found < 0);
 				idx_jr++) {
@@ -277,7 +285,6 @@ static uint32_t do_jr_dequeue(uint32_t waitJobIds)
 
 				JR_TRACE("JR id=%d, context @0x%08"PRIxVA"",
 					caller->jobid, (vaddr_t)jobctx);
-
 				/* Clear the Entry Descriptor DMA */
 				caller->pdesc = 0;
 				caller->jobid = JR_JOB_FREE;
@@ -286,6 +293,7 @@ static uint32_t do_jr_dequeue(uint32_t waitJobIds)
 					idx_jr);
 			}
 		}
+		cpu_spin_unlock(&jr_privdata->callers_lock);
 
 		/*
 		 * Remove the JR from the output list even if no
@@ -307,7 +315,7 @@ static uint32_t do_jr_dequeue(uint32_t waitJobIds)
 
 	} while (--nbJobs_done);
 
-	cpu_spin_unlock_xrestore(&jr_privdata->outlock, exceptions);
+	cpu_spin_unlock_xrestore(&jr_privdata->inlock, exceptions);
 
 	return retJobId;
 }
@@ -349,7 +357,11 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 	 * that the job pushed is completed.
 	 * Completion is out of order. Look for a free space in the
 	 * caller data to push them and get a job id for the completion
+	 *
+	 * Lock the caller information array because dequeue is
+	 * also touching it
 	 */
+	cpu_spin_lock(&jr_privdata->callers_lock);
 	for ((idx_jr = 0), (found = false);
 			(idx_jr < jr_privdata->nbJobs) && (!found); idx_jr++) {
 		if (jr_privdata->callers[idx_jr].jobid == JR_JOB_FREE) {
@@ -366,6 +378,7 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 			found = true;
 		}
 	}
+	cpu_spin_unlock(&jr_privdata->callers_lock);
 
 	if (!found) {
 		JR_TRACE("Error didn't find a free space in the callers array");
@@ -398,6 +411,7 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 	/* Inform HW that a new JR is available */
 	hal_jr_add_newjob(jr_privdata->baseaddr);
 
+	*jobId = job_mask;
 	retstatus = CAAM_NO_ERROR;
 
 #ifdef IT_MODE
@@ -408,7 +422,6 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 
 end_enqueue:
 	cpu_spin_unlock_xrestore(&jr_privdata->inlock, exceptions);
-	*jobId = job_mask;
 
 	return retstatus;
 }
@@ -480,15 +493,14 @@ enum CAAM_Status caam_jr_dequeue(uint32_t jobIds, uint32_t timeout_ms)
 		if (jobComplete & jobIds)
 			return CAAM_NO_ERROR;
 
-		/* Wait until JR interrupt */
-		while (!hal_jr_poolackIT(jr_privdata->baseaddr)) {
+		/* Check if JR interrupt otherwise wait a bit */
+		if (!hal_jr_poolackIT(jr_privdata->baseaddr)) {
 #ifdef IT_MODE
 			wfe();
 #else
 			caam_udelay(10);
 #endif
 		}
-
 	} while (infinite || (nbTimeWait--));
 
 	return CAAM_TIMEOUT;
@@ -511,12 +523,14 @@ enum CAAM_Status caam_jr_dequeue(uint32_t jobIds, uint32_t timeout_ms)
  * @retval  CAAM_BUSY        Operation cancelled, system is busy
  * @retval  CAAM_PENDING     Operation is pending
  * @retval  CAAM_TIMEOUT     Operation timeout
+ * @retval  CAAM_JOB_STATUS  A job status is available
  */
 enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 {
 	enum CAAM_Status retstatus = CAAM_FAILURE;
-	uint32_t jobPushed = 0;
+#ifdef TIMEOUT_COMPLETION
 	int      timeout   = 10;  // Number of loop to pool job completion
+#endif
 
 	if (!jobctx)
 		return CAAM_BAD_PARAM;
@@ -545,7 +559,7 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 		jobctx->context = jobctx;
 	}
 
-	retstatus = do_jr_enqueue(jobctx, &jobPushed);
+	retstatus = do_jr_enqueue(jobctx, &jobctx->jobId);
 
 	if (retstatus != CAAM_NO_ERROR) {
 		JR_TRACE("enqueue job error 0x%08"PRIx32"", retstatus);
@@ -557,24 +571,41 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 	 * returns with setting the jobId value
 	 */
 	if (jobId) {
-		*jobId = jobPushed;
+		*jobId = jobctx->jobId;
 		return CAAM_PENDING;
 	}
 
+#ifdef TIMEOUT_COMPLETION
 	/*
 	 * Job is synchronous wait until job complete or timeout
 	 */
-	do {
-		retstatus = caam_jr_dequeue(jobPushed, 100);
-	} while ((jobctx->completion == false) && (timeout--));
+	while ((jobctx->completion == false) && (timeout--))
+		retstatus = caam_jr_dequeue(jobctx->jobId, 100);
 
 	if (timeout <= 0) {
 		/* Job timeout, cancel it and return in error */
-		caam_jr_cancel(jobPushed);
+		caam_jr_cancel(jobctx->jobId);
 		retstatus = CAAM_TIMEOUT;
 	} else {
-		retstatus = CAAM_NO_ERROR;
+		if (JRSTA_SRC_GET(jobctx->status) != JRSTA_SRC_NONE)
+			retstatus = CAAM_JOB_STATUS;
+		else
+			retstatus = CAAM_NO_ERROR;
 	}
+#else
+	/*
+	 * Job is synchronous wait until job complete
+	 * Don't use a timeout because there is no HW timer and
+	 * so the timeout in not precise
+	 */
+	while (jobctx->completion == false)
+		retstatus = caam_jr_dequeue(jobctx->jobId, 100);
+
+	if (JRSTA_SRC_GET(jobctx->status) != JRSTA_SRC_NONE)
+		retstatus = CAAM_JOB_STATUS;
+	else
+		retstatus = CAAM_NO_ERROR;
+#endif
 
 	return retstatus;
 }

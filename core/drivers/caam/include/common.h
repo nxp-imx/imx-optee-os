@@ -23,9 +23,16 @@
 #define DRV_TRACE(...)		trace_printf(__func__, __LINE__, 0, false, \
 							 __VA_ARGS__)
 #define DRV_DUMPDESC(desc)	dump_desc(desc)
+
+#define DRV_DUMPBUF(title, buf, len) \
+					{DRV_TRACE("%s @ 0x%"PRIxPTR": %d", \
+						title, (uintptr_t)buf, len); \
+					 dhex_dump(NULL, 0, 0, buf, len); }
+
 #else
 #define DRV_TRACE(...)
 #define DRV_DUMPDESC(...)
+#define DRV_DUMPBUF(...)
 #endif
 
 /**
@@ -45,6 +52,15 @@
 enum jr_owner {
 	JROWN_ARM_NS = 0x01,                  ///< Non-Secure ARM
 	JROWN_ARM_S  = JROWNER_SECURE | 0x1,  ///< Secure ARM
+};
+
+/**
+ * @brief   Definition of a CAAM buffer type
+ */
+struct caambuf {
+	uint8_t *data;    ///< Data buffer
+	paddr_t paddr;    ///< Physical address of the buffer
+	size_t  length;   ///< Number of bytes in the data buffer
 };
 
 #endif /* __COMMON_H__ */

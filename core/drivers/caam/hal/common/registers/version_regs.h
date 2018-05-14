@@ -21,11 +21,18 @@
 #define CHAVID_LS					0x0FEC
 #define BM_CHAVID_LS_RNGVID			SHIFT_U32(0xF, 16)
 #define GET_CHAVID_LS_RNGVID(val)	((val & BM_CHAVID_LS_RNGVID) >> 16)
+#define BM_CHAVID_LS_MDVID			SHIFT_U32(0xF, 12)
+
+#define CHAVID_LS_MDVID_LP256		SHIFT_U32(0, 12)
 
 /* CHA Number */
 #define CHANUM_MS					0x0FF0
 #define BM_CHANUM_MS_JRNUM			SHIFT_U32(0xF, 28)
 #define GET_CHANUM_MS_JRNUM(val)	((val & BM_CHANUM_MS_JRNUM) >> 28)
+
+#define CHANUM_LS	(0x0FF4)
+#define BM_CHANUM_LS_MDNUM			SHIFT_U32(0xF, 12)
+#define GET_CHANUM_LS_MDNUM(val)	((val & BM_CHANUM_LS_MDNUM) >> 12)
 
 #endif /* __VERSION_REGS_H__ */
 

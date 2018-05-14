@@ -48,7 +48,7 @@ void caam_free(void **ptr);
  * @retval  address of the memory block allocated
  * @retval  NULL if allocation error
  */
-void *caam_alloc_desc(uint8_t nbEntries);
+descPointer_t caam_alloc_desc(uint8_t nbEntries);
 
 /**
  * @brief   Free descriptor
@@ -56,7 +56,7 @@ void *caam_alloc_desc(uint8_t nbEntries);
  * @param[in] ptr  Reference to the descriptor to free
  *
  */
-void caam_free_desc(void **ptr);
+void caam_free_desc(descPointer_t *ptr);
 
 /**
  * @brief   Memory utilities initialization

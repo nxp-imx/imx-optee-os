@@ -50,6 +50,18 @@
 #define LOAD_LENGTH(len)		SHIFT_U32((len & 0xFF), 0)
 
 /*
+ * STORE Command fields
+ */
+#define CMD_STORE_TYPE			CMD_TYPE(0x0A)
+
+/* Store Source */
+#define STORE_SRC(reg)			SHIFT_U32((reg & 0x7F), 16)
+
+/* Length */
+#define STORE_LENGTH(len)		SHIFT_U32((len & 0xFF), 0)
+
+
+/*
  * Define the Load/Store Registers Source and Destination
  */
 #define REG_MODE				0x00
@@ -95,6 +107,49 @@
 #define REG_NFIFO				0x7A
 #define REG_IFIFO				0x7C
 #define REG_OFIFO				0x7E
+
+/*
+ * FIFO LOAD Command fields
+ */
+#define CMD_FIFO_LOAD_TYPE		CMD_TYPE(0x04)
+
+/* Extended Length */
+#define FIFO_LOAD_EXT			BIT32(22)
+
+/* Input data */
+#define FIFO_LOAD_INPUT(reg)	SHIFT_U32((FIFO_LOAD_##reg & 0x3F), 16)
+#define FIFO_LOAD_ACTION(act)	SHIFT_U32((FIFO_LOAD_##act & 0x3F), 16)
+
+/* Length */
+#define FIFO_LOAD_LENGTH(len)	SHIFT_U32((len & 0xFFFF), 0)
+
+/*
+ * Define the FIFO Load Type Input
+ */
+#define FIFO_LOAD_PKHA_A0		0x00
+#define FIFO_LOAD_PKHA_A1		0x01
+#define FIFO_LOAD_PKHA_A2		0x02
+#define FIFO_LOAD_PKHA_A3		0x03
+#define FIFO_LOAD_PKHA_B0		0x04
+#define FIFO_LOAD_PKHA_B1		0x05
+#define FIFO_LOAD_PKHA_B2		0x06
+#define FIFO_LOAD_PKHA_B3		0x07
+#define FIFO_LOAD_PKHA_N		0x08
+#define FIFO_LOAD_PKHA_A		0x0C
+#define FIFO_LOAD_PKHA_B		0x0D
+#define FIFO_LOAD_NO_INFO_NFIFO	0x0F
+#define FIFO_LOAD_MSG			0x10
+#define FIFO_LOAD_MSG_C1_OUT_C2	0x18
+#define FIFO_LOAD_IV			0x20
+#define FIFO_LOAD_BITDATA		0x2C
+#define FIFO_LOAD_AAD			0x30
+#define FIFO_LOAD_ICV			0x38
+
+/* Define Action of some FIFO Data */
+#define FIFO_LOAD_NOACTION		0x0
+#define FIFO_LOAD_FLUSH			0x1
+#define FIFO_LOAD_LAST_C1		0x2
+#define FIFO_LOAD_LAST_C2		0x4
 
 /*
  * FIFO STORE Command fields

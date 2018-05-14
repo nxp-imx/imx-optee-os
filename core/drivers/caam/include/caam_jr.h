@@ -18,6 +18,7 @@
 struct jr_jobctx {
 	descPointer_t desc;       ///< reference to the descriptor
 	descStatus_t  status;     ///< executed job status
+	uint32_t      jobId;
 	bool          completion; ///< job completion flag
 	void          *context;   ///< caller job context
 	void (*callbk)(struct jr_jobctx *jobctx); ///< job completion callback

@@ -22,6 +22,7 @@ enum CAAM_Status {
 	CAAM_PENDING,        ///< Operation is pending
 	CAAM_TIMEOUT,        ///< Operation timeout
 	CAAM_OUT_OF_BOUND,   ///< Value is out of boundary
+	CAAM_JOB_STATUS,     ///< A job status is available
 };
 
 #endif /* __CAAM_STATUS_H__ */

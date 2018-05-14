@@ -151,7 +151,7 @@ static void do_free(void)
 			if (atomic_load_u32(&rng->status) == DATA_ONGOING)
 				caam_jr_cancel(rng->jobId);
 
-			caam_free_desc((void **)&rng->jobctx.desc);
+			caam_free_desc(&rng->jobctx.desc);
 			caam_free((void **)&rng->data);
 		}
 
@@ -630,7 +630,7 @@ end_inst:
 	if (retstatus == CAAM_NO_ERROR)
 		rng_privdata->instantiated = true;
 
-	caam_free_desc((void **)&desc);
+	caam_free_desc(&desc);
 
 	RNG_TRACE("RNG Instantiation return 0x%08"PRIx32"", retstatus);
 
