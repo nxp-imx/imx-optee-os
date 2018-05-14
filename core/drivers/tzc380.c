@@ -225,7 +225,14 @@ void tzc_dump_state(void)
 	DMSG("enter");
 	DMSG("security_inversion_en %x\n",
 	     read32(tzc.base + SECURITY_INV_EN_OFF));
-	for (n = 0; n <= REGION_MAX; n++) {
+
+
+	DMSG("\n");
+	DMSG("default security (region 0)");
+	temp_32reg = tzc_read_region_attributes(tzc.base, 0);
+	DMSG("region sp: %x", temp_32reg >> TZC_ATTR_SP_SHIFT);
+
+	for (n = 1; n <= REGION_MAX; n++) {
 		temp_32reg = tzc_read_region_attributes(tzc.base, n);
 		if (!(temp_32reg & TZC_ATTR_REGION_EN_MASK))
 			continue;
