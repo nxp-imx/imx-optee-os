@@ -48,6 +48,9 @@ struct imxcrypt_hash {
 
 	///< Copy Hash context
 	void (*cpy_state)(void *dst_ctx, void *src_ctx);
+
+	///< HMAC Key computing
+	TEE_Result (*compute_key)(void *ctx, const uint8_t *key, size_t len);
 };
 
 #endif /* __LIBIMXCRYPT_HASH_H__ */

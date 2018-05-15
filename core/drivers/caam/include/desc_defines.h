@@ -39,6 +39,24 @@
 #define GET_JD_DESCLEN(entry)	(entry & 0x7F)
 
 /*
+ * KEY Command fields
+ */
+#define CMD_KEY_TYPE			CMD_TYPE(0x00)
+
+/* Key Destination */
+#define KEY_DEST(val)			SHIFT_U32((KEY_DEST_##val & 0x3), 16)
+#define KEY_DEST_REG			0x0
+#define KEY_DEST_PKHA_E			0x1
+#define KEY_DEST_AFHA_SBOX		0x2
+#define KEY_DEST_MDHA_SPLIT		0x3
+
+/* Plaintext Store */
+#define KEY_PTS					BIT32(14)
+
+/* Key Length */
+#define KEY_LENGTH(len)			SHIFT_U32((len & 0x3FF), 0)
+
+/*
  * LOAD Command fields
  */
 #define CMD_LOAD_TYPE			CMD_TYPE(0x02)
@@ -229,6 +247,32 @@
 #define ALGO_SHA512				0x45
 #define ALGO_SHA512_224			0x46
 #define ALGO_SHA512_256			0x47
+
+/* Algorithm Additional Information */
+#define ALGO_AAI(info)			SHIFT_U32((AAI_##info & 0x1FF), 4)
+
+// AES AAI
+#define AAI_AES_CTR_MOD128		0x00
+#define AAI_AES_CBC				0x10
+#define AAI_AES_ECB				0x20
+#define AAI_AES_CFB				0x30
+#define AAI_AES_OFB				0x40
+#define AAI_AES_CMAC			0x60
+#define AAI_AES_XCBC_MAC		0x70
+#define AAI_AES_CCM				0x80
+#define AAI_AES_GCM				0x90
+
+// DES AAI
+#define AAI_DES_CBC				0x10
+#define AAI_DES_ECB				0x20
+#define AAI_DES_CFB				0x30
+#define AAI_DES_OFB				0x40
+
+// Digest MD5/SHA AAI
+#define AAI_DIGEST_HASH			0x00
+#define AAI_DIGEST_HMAC			0x01
+#define AAI_DIGEST_SMAC			0x02
+#define AAI_DIGEST_HMAC_PRECOMP	0x04
 
 /* Algorithm State */
 #define ALGO_AS(state)			SHIFT_U32((AS_##state & 0x3), 2)

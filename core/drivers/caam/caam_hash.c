@@ -64,6 +64,7 @@ struct hashalg {
 	uint8_t  size_digest; ///< Digest size
 	uint8_t  size_block;  ///< Computing block size
 	uint8_t  size_ctx;    ///< CAAM Context Register size (8 + digest size)
+	uint8_t  size_key;    ///< HMAC split key size
 };
 
 #define HASH_MSG_LEN			8
@@ -78,6 +79,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_MD5_HASH_SIZE,
 		.size_block  = TEE_MD5_HASH_SIZE * 4,
 		.size_ctx    = HASH_MSG_LEN + TEE_MD5_HASH_SIZE,
+		.size_key    = TEE_MD5_HASH_SIZE * 2,
 	},
 	{
 		/* sha1 */
@@ -85,6 +87,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA1_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA1_HASH_SIZE,
+		.size_key    = TEE_SHA1_HASH_SIZE * 2,
 	},
 	{
 		/* sha224 */
@@ -92,6 +95,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA224_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA256_HASH_SIZE,
+		.size_key    = TEE_SHA224_HASH_SIZE * 2,
 	},
 	{
 		/* sha256 */
@@ -99,6 +103,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA256_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA256_HASH_SIZE,
+		.size_key    = TEE_SHA256_HASH_SIZE * 2,
 	},
 	{
 		/* sha384 */
@@ -106,6 +111,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA384_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE * 2,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA512_HASH_SIZE,
+		.size_key    = TEE_SHA384_HASH_SIZE * 2,
 	},
 	{
 		/* sha512 */
@@ -113,6 +119,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA512_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE * 2,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA512_HASH_SIZE,
+		.size_key    = TEE_SHA512_HASH_SIZE * 2,
 	},
 };
 
@@ -127,6 +134,14 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 #define MAX_DESC_ENTRIES	20
 
 /**
+ * @brief   Local key type enumerate
+ */
+enum keytype {
+	KEY_EMPTY = 0,  ///< No key
+	KEY_PRECOMP,    ///< Precomputed key
+};
+
+/**
  * @brief   Full hashing data SW context
  */
 struct hashdata {
@@ -137,8 +152,215 @@ struct hashdata {
 
 	struct caambuf ctx;            ///< Hash Context used by the CAAM
 
+	struct caambuf key;            ///< HMAC split key
+	enum keytype   key_type;       ///< HMAC key type
+
 	enum imxcrypt_hash_id algo_id; ///< Hash Algorithm Id
 };
+
+static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
+					const uint8_t *data, size_t len);
+
+/**
+ * @brief   Reduce key to be a hash algorithm block size maximum
+ *
+ * @param[in]  alg    Reference to the algorithm definition
+ * @param[in]  inkey  Key to be reduced
+ * @param[out] outkey key resulting
+ *
+ * @retval  CAAM_NO_ERROR      Success
+ * @retval  CAAM_FAILURE       General error
+ * @retval  CAAM_OUT_MEMORY    Out of memory error
+ */
+static enum CAAM_Status do_reduce_key(const struct hashalg *alg,
+				const struct caambuf *inkey,
+				struct caambuf *outkey)
+{
+#define KEY_REDUCE_DESC_ENTRIES	8
+	enum CAAM_Status retstatus = CAAM_FAILURE;
+
+	struct jr_jobctx jobctx  = {0};
+	descPointer_t desc    = NULL;
+	uint8_t       desclen = 1;
+
+	/* Allocate the job descriptor */
+	desc = caam_alloc_desc(KEY_REDUCE_DESC_ENTRIES);
+	if (!desc) {
+		retstatus = CAAM_OUT_MEMORY;
+		goto exit_reduce;
+	}
+
+	desc[desclen++] = HASH_INITFINAL(alg->type);
+
+	/* Load the input key */
+	desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG, LAST_C2);
+	desc[desclen++] = inkey->paddr;
+	desc[desclen++] = inkey->length;
+
+	/* Store key reduced */
+	desc[desclen++] = ST_NOIMM(CLASS_2, REG_CTX, outkey->length);
+	desc[desclen++] = outkey->paddr;
+
+	/* Set the descriptor Header with length */
+	desc[0] = DESC_HEADER(desclen);
+
+	HASH_DUMPDESC(desc);
+
+	cache_operation(TEE_CACHECLEAN, inkey->data, inkey->length);
+	cache_operation(TEE_CACHEFLUSH, outkey->data, outkey->length);
+
+	jobctx.desc = desc;
+	retstatus = caam_jr_enqueue(&jobctx, NULL);
+
+	if (retstatus == CAAM_NO_ERROR) {
+		cache_operation(TEE_CACHEINVALIDATE, outkey->data,
+			outkey->length);
+		HASH_DUMPBUF("Reduced Key", outkey->data, outkey->length);
+	} else {
+		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+		retstatus = CAAM_FAILURE;
+	}
+
+exit_reduce:
+	caam_free_desc(&desc);
+
+	return retstatus;
+}
+
+/**
+ * @brief   Split key of the input key using the CAAM HW HMAC operation
+ *
+ * @param[in] ctx   Operation Software context
+ * @param[in] ikey  Input key to compute
+ * @param[in] ilen  Key length
+ *
+ * @retval  TEE_SUCCESS              Success
+ * @retval  TEE_ERROR_GENERIC        General error
+ * @retval  TEE_ERROR_OUT_OF_MEMORY  Out of memory error
+ */
+static TEE_Result do_split_key(void *ctx, const uint8_t *ikey, size_t ilen)
+{
+#define KEY_COMPUTE_DESC_ENTRIES	8
+	TEE_Result    ret = TEE_ERROR_GENERIC;
+	enum CAAM_Status retstatus;
+
+	struct hashdata *hashdata = ctx;
+
+	const struct hashalg *alg = &hash_alg[hashdata->algo_id];
+
+	struct caambuf inkey;
+	struct caambuf key      = {0};
+	uint8_t        *hashkey = NULL;
+
+	struct jr_jobctx jobctx  = {0};
+	descPointer_t    desc     = NULL;
+	uint8_t          desclen  = 1;
+
+	HASH_TRACE("split key length %d", ilen);
+
+	inkey.data   = (uint8_t *)ikey;
+	inkey.length = ilen;
+	inkey.paddr  = virt_to_phys(inkey.data);
+	if (!inkey.paddr) {
+		ret = TEE_ERROR_GENERIC;
+		goto exit_split_key;
+	}
+
+	/* Allocate the job descriptor */
+	desc = caam_alloc_desc(KEY_REDUCE_DESC_ENTRIES);
+	if (!desc) {
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto exit_split_key;
+	}
+
+	/* Allocate the split key and keep it in the context */
+	hashdata->key.data = caam_alloc_align(alg->size_key);
+	if (!hashdata->key.data) {
+		HASH_TRACE("HMAC key allocation error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto exit_split_key;
+	}
+
+	hashdata->key.paddr = virt_to_phys(hashdata->key.data);
+	if (!hashdata->key.paddr)	{
+		HASH_TRACE("HMAC Key physical address error");
+		goto exit_split_key;
+	}
+
+	hashdata->key.length = alg->size_key;
+
+	if (inkey.length > alg->size_block) {
+		HASH_TRACE("Input key must be reduced");
+
+		hashkey = caam_alloc_align(alg->size_digest);
+		if (!hashkey) {
+			HASH_TRACE("Reduced Key allocation error");
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto exit_split_key;
+		}
+
+		key.data  = hashkey;
+		key.paddr = virt_to_phys(key.data);
+		if (!key.paddr)	{
+			HASH_TRACE("Reduced Key physical address error");
+			goto exit_split_key;
+		}
+
+		key.length = alg->size_digest;
+
+		retstatus = do_reduce_key(alg, &inkey, &key);
+
+		if (retstatus != CAAM_NO_ERROR)
+			goto exit_split_key;
+	} else {
+		/* Key size is correct use directly the input key */
+		key.data   = inkey.data;
+		key.paddr  = inkey.paddr;
+		key.length = inkey.length;
+	}
+
+	/* Load either input key or the reduced input key into key register */
+	desc[desclen++] = LD_KEY_PLAIN(CLASS_2, REG, key.length);
+	desc[desclen++] = key.paddr;
+	/* Split the key */
+	desc[desclen++] = HMAC_INIT_DECRYPT(alg->type);
+	desc[desclen++] = FIFO_LD_IMM(CLASS_2, MSG, LAST_C2, 0);
+	/* Store the split key */
+	desc[desclen++] = FIFO_ST(C2_MDHA_SPLIT_KEY_AES_ECB_JKEK,
+					hashdata->key.length);
+	desc[desclen++] = hashdata->key.paddr;
+
+	/* Set the descriptor Header with length */
+	desc[0] = DESC_HEADER(desclen);
+
+	HASH_DUMPDESC(desc);
+
+	cache_operation(TEE_CACHECLEAN, key.data, key.length);
+	cache_operation(TEE_CACHEFLUSH, hashdata->key.data,
+			hashdata->key.length);
+
+	jobctx.desc = desc;
+	retstatus = caam_jr_enqueue(&jobctx, NULL);
+
+	if (retstatus == CAAM_NO_ERROR) {
+		cache_operation(TEE_CACHEINVALIDATE, hashdata->key.data,
+						hashdata->key.length);
+		HASH_DUMPBUF("Split Key", hashdata->key.data,
+			hashdata->key.length);
+
+		hashdata->key_type = KEY_PRECOMP;
+
+		ret = TEE_SUCCESS;
+	} else {
+		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+	}
+
+exit_split_key:
+	caam_free((void **)&hashkey);
+	caam_free_desc(&desc);
+
+	return ret;
+}
 
 /**
  * @brief   Free the internal hashing data context
@@ -166,6 +388,12 @@ static void do_free_intern(struct hashdata *ctx)
 		/* Free the context register */
 		caam_free((void **)&ctx->ctx.data);
 		ctx->ctx.paddr = 0;
+
+		/* Free the HMAC Key */
+		caam_free((void **)&ctx->key.data);
+		ctx->key.paddr  = 0;
+		ctx->key.length = 0;
+		ctx->key_type   = KEY_EMPTY;
 	}
 }
 
@@ -309,6 +537,9 @@ static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
 		hashdata->circbuf[1].length = 0;
 		hashdata->ctx.length = 0;
 
+		hashdata->key.length = 0;
+		hashdata->key_type   = KEY_EMPTY;
+
 		return TEE_SUCCESS;
 	}
 
@@ -441,8 +672,26 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 		} else {
 			HASH_TRACE("Init Operation");
 
-			/* Algo Operation - Init */
-			desc[desclen++] = HASH_INIT(alg->type);
+			/* Check if there is a key to load it */
+			if (hashdata->key_type == KEY_PRECOMP) {
+				HASH_TRACE("Insert Key");
+				desc[desclen++] = LD_KEY_SPLIT(
+					hashdata->key.length);
+				desc[desclen++] = hashdata->key.paddr;
+
+				/* Algo Operation - HMAC Init */
+				desc[desclen++] = HMAC_INIT_PRECOMP(alg->type);
+
+				/* Invalidate Split key */
+				cache_operation(TEE_CACHEINVALIDATE,
+					hashdata->key.data,
+					hashdata->key.length);
+
+			} else {
+				/* Algo Operation - Init */
+				desc[desclen++] = HASH_INIT(alg->type);
+			}
+
 			hashdata->ctx.length = alg->size_ctx;
 		}
 			/* Data to be hashed */
@@ -457,8 +706,8 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 				desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG,
 						LAST_C2);
 			}
-			desc[desclen++] = circbuf->length;
 			desc[desclen++] = circbuf->paddr;
+			desc[desclen++] = circbuf->length;
 
 			/* Clean the circular buffer data to be loaded */
 			cache_operation(TEE_CACHECLEAN, circbuf->data,
@@ -470,8 +719,8 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 		/* Add the input data multiple of blocksize */
 		if (size_todo) {
 			desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG, LAST_C2);
-			desc[desclen++] = size_todo;
 			desc[desclen++] = paddr_data;
+			desc[desclen++] = size_todo;
 
 			/* Clean the input data to be loaded */
 			cache_operation(TEE_CACHECLEAN, (void *)data,
@@ -507,6 +756,9 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 			HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
 			ret = TEE_ERROR_GENERIC;
 		}
+	} else {
+		/* Return success, all data postponed */
+		ret = TEE_SUCCESS;
 	}
 
 	hashdata->active_buf = next_active_buf;
@@ -580,21 +832,39 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	circbuf = &hashdata->circbuf[hashdata->active_buf];
 	desc = hashdata->descriptor;
 
+	/* Check if there is a key to load it */
+	if (hashdata->key_type == KEY_PRECOMP) {
+		HASH_TRACE("Load key");
+		desc[desclen++] = LD_KEY_SPLIT(hashdata->key.length);
+		desc[desclen++] = hashdata->key.paddr;
+
+		/* Invalidate Split key */
+		cache_operation(TEE_CACHEINVALIDATE, hashdata->key.data,
+						hashdata->key.length);
+	}
+
 	if (hashdata->ctx.length) {
 		HASH_TRACE("Final Operation");
-		/* Algo Operation - Finalize */
-		desc[desclen++] = HASH_FINAL(alg->type);
+
+		if (hashdata->key_type == KEY_PRECOMP)
+			desc[desclen++] = HMAC_FINAL_PRECOMP(alg->type);
+		else
+			desc[desclen++] = HASH_FINAL(alg->type);
 
 		/* Running context to restore */
 		desc[desclen++] = LD_NOIMM(CLASS_2, REG_CTX,
 					hashdata->ctx.length);
+		desc[desclen++] = hashdata->ctx.paddr;
 
 		cache_operation(TEE_CACHEINVALIDATE, hashdata->ctx.data,
 						hashdata->ctx.length);
 		HASH_DUMPBUF("CTX", hashdata->ctx.data, hashdata->ctx.length);
 	} else {
 		HASH_TRACE("Init/Final Operation");
-		desc[desclen++] = HASH_INITFINAL(alg->type);
+		if (hashdata->key_type == KEY_PRECOMP)
+			desc[desclen++] = HMAC_INITFINAL_PRECOMP(alg->type);
+		else
+			desc[desclen++] = HASH_INITFINAL(alg->type);
 	}
 
 	HASH_DUMPBUF("Cirbuf", circbuf->data, circbuf->length);
@@ -664,19 +934,38 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 						src->circbuf[idx].length);
 		}
 	}
+
+	dst->key.length = src->key.length;
+	if (src->key.length)
+		memcpy(dst->key.data, src->key.data, src->key.length);
 }
 
 /**
  * @brief   Registration of the HASH Driver
  */
 struct imxcrypt_hash driver_hash = {
-	.alloc_ctx = &do_allocate,
-	.free_ctx  = &do_free,
-	.init      = &do_init,
-	.update    = &do_update,
-	.final     = &do_final,
-	.cpy_state = &do_cpy_state,
+	.alloc_ctx  = &do_allocate,
+	.free_ctx   = &do_free,
+	.init       = &do_init,
+	.update     = &do_update,
+	.final      = &do_final,
+	.cpy_state  = &do_cpy_state,
+	.compute_key = NULL,
 };
+
+/**
+ * @brief   Registration of the HMAC Driver
+ */
+struct imxcrypt_hash driver_hmac = {
+	.alloc_ctx   = &do_allocate,
+	.free_ctx    = &do_free,
+	.init        = &do_init,
+	.update      = &do_update,
+	.final       = &do_final,
+	.cpy_state   = &do_cpy_state,
+	.compute_key = &do_split_key,
+};
+
 
 /**
  * @brief   Initialize the Hash module
@@ -692,13 +981,14 @@ enum CAAM_Status caam_hash_init(vaddr_t ctrl_addr)
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 	int hash_limit;
 
-
 	hash_limit = hal_ctrl_hash_limit(ctrl_addr);
 
 	if (hash_limit > 0) {
 		driver_hash.max_hash = hash_limit;
+		driver_hmac.max_hash = hash_limit;
 
-		if (imxcrypt_register(CRYPTO_HASH, &driver_hash) == 0)
+		if ((imxcrypt_register(CRYPTO_HASH, &driver_hash) == 0) &&
+			(imxcrypt_register(CRYPTO_HMAC, &driver_hmac) == 0))
 			retstatus = CAAM_NO_ERROR;
 	}
 

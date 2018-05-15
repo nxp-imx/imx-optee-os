@@ -17,6 +17,7 @@
 enum imxcrypt_algo_id {
 	CRYPTO_RNG = 0,      ///< RNG driver
 	CRYPTO_HASH,         ///< Hash driver
+	CRYPTO_HMAC,         ///< Hmac driver
 	CRYPTO_MAX_ALGO      ///< Maximum numer of algo supported
 };
 

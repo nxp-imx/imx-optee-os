@@ -108,7 +108,7 @@ void crypto_hash_free_ctx(void *ctx, uint32_t algo)
 }
 
 /**
- * @brief   Copy Sofware Hashing Context
+ * @brief   Copy Software Hashing Context
  *
  * @param[in] src_ctx  Reference the context source
  * @param[in] algo     Algorithm

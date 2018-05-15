@@ -120,6 +120,16 @@ static inline void dump_desc(void *desc)
 			FIFO_LOAD_ACTION(act))
 
 /**
+ * @brief  FIFO Load Immediate data length \a len to register \a dst
+ *         class \a cla with action \a act.
+ *
+ */
+#define FIFO_LD_IMM(cla, dst, act, len) \
+			(CMD_FIFO_LOAD_TYPE | CMD_IMM |			\
+			CMD_CLASS(cla) | FIFO_LOAD_INPUT(dst) |		\
+			FIFO_LOAD_ACTION(act) | FIFO_LOAD_LENGTH(len))
+
+/**
  * @brief  Store value of length \a len from register \a src of
  *         class \a cla
  */
@@ -182,6 +192,52 @@ static inline void dump_desc(void *desc)
 #define HASH_INITFINAL(algo) \
 			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
 			ALGO_AS(INIT_FINAL) | ALGO_ENCRYPT)
+
+/**
+ * @brief  HMAC Init Decryption Operation of algorithm \a algo
+ */
+#define HMAC_INIT_DECRYPT(algo) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
+			ALGO_AS(INIT) | ALGO_AAI(DIGEST_HMAC) | ALGO_DECRYPT)
+
+/**
+ * @brief  HMAC Init Operation of algorithm \a algo with Precomp key
+ */
+#define HMAC_INITFINAL_PRECOMP(algo) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
+			ALGO_AS(INIT_FINAL) | ALGO_AAI(DIGEST_HMAC_PRECOMP) | \
+			ALGO_ENCRYPT)
+
+/**
+ * @brief  HMAC Init and Final Operation of algorithm \a algo with Precomp key
+ */
+#define HMAC_INIT_PRECOMP(algo) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
+			ALGO_AS(INIT) | ALGO_AAI(DIGEST_HMAC_PRECOMP) | \
+			ALGO_ENCRYPT)
+/**
+ * @brief  HMAC Final Operation of algorithm \a algo with Precomp key
+ */
+#define HMAC_FINAL_PRECOMP(algo) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS2) | (algo) | \
+			ALGO_AS(FINAL) | ALGO_AAI(DIGEST_HMAC_PRECOMP) | \
+			ALGO_ENCRYPT)
+
+/**
+ * @brief   Load a class \a cla key of length \a len to register \a dst.
+ *          Key can be store in plain text.
+ */
+#define LD_KEY_PLAIN(cla, dst, len) \
+			(CMD_KEY_TYPE | CMD_CLASS(cla) | KEY_PTS | \
+			KEY_DEST(dst) | KEY_LENGTH(len))
+
+/**
+ * @brief   Load a split key of length \a len.
+ */
+#define LD_KEY_SPLIT(len) \
+			(CMD_KEY_TYPE | CMD_CLASS(CLASS_2) | \
+			KEY_DEST(MDHA_SPLIT) | \
+			KEY_LENGTH(len))
 
 #endif /* __DESC_HELPER_H__ */
 
