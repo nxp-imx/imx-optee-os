@@ -144,7 +144,8 @@ void main_init_gic(void)
 }
 
 #if defined(CFG_MX6QP) || defined(CFG_MX6Q) || defined(CFG_MX6D) || \
-	defined(CFG_MX6DL) || defined(CFG_MX7) || defined(CFG_MX8M)
+	defined(CFG_MX6DL) || defined(CFG_MX7) || defined(CFG_MX8M) || \
+	defined(CFG_MX8MM)
 void main_secondary_init_gic(void)
 {
 	gic_cpu_init(&gic_data);

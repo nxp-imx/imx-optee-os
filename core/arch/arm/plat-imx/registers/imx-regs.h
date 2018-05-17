@@ -18,6 +18,8 @@
 #include <imx7ulp-regs.h>
 #elif defined(CFG_MX8M)
 #include <imx8-regs.h>
+#elif defined(CFG_MX8MM)
+#include <imx8mm-regs.h>
 #else
 #error "PLATFORM not defined"
 #endif
