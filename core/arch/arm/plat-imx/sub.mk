@@ -20,7 +20,6 @@ ifneq (,$(filter y, $(CFG_MX7) $(CFG_MX7ULP) $(CFG_MX6UL) $(CFG_MX6ULL)))
 srcs-y += a7_plat_init.S
 endif
 
-
 srcs-$(CFG_TZC380) += tzasc.c
 srcs-$(CFG_DT) += imx_dt.c
 srcs-$(CFG_CSU) += imx_csu.c

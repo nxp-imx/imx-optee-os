@@ -15,6 +15,7 @@ mx7d-flavorlist = mx7dsabresd
 mx7s-flavorlist = mx7swarp7
 mx7ulp-flavorlist = mx7ulpevk
 mx8m-flavorlist = mx8mqevk
+mx8mm-flavorlist = mx8mmevk
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
@@ -76,6 +77,10 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8m-flavorlist)))
 $(call force,CFG_MX8M,y)
 $(call force,CFG_ARM64_core,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
+else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8mm-flavorlist)))
+$(call force,CFG_MX8MM,y)
+$(call force,CFG_ARM64_core,y)
+$(call force,CFG_TEE_CORE_NB_CORE,4)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -99,6 +104,7 @@ $(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)
 ta-targets = ta_arm64
 CFG_CRYPTO_WITH_CE ?= y
 
+CFG_IMX_OCRAM = n
 CFG_IMX_WDOG = n
 CFG_TZC380 ?= y
 CFG_IMX_UART ?= y
@@ -356,6 +362,10 @@ endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mqevk))
 CFG_DDR_SIZE ?= 0xC0000000
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mmevk))
+CFG_DDR_SIZE ?= 0x80000000
 endif
 
 ifeq ($(filter y, $(CFG_PSCI_ARM32)), y)
