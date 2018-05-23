@@ -2,7 +2,7 @@
 
 boards_list=(mx6ulevk mx6ul9x9evk mx6ullevk mx6slevk mx6sllevk mx6sxsabreauto \
 	mx6sxsabresd mx6qsabrelite mx6qsabresd mx6qsabreauto mx6qpsabresd mx6qpsabreauto \
-	mx6dlsabresd mx6dlsabreauto mx7dsabresd mx7ulpevk mx8mqevk)
+	mx6dlsabresd mx6dlsabreauto mx7dsabresd mx7ulpevk mx8mqevk mx8mmevk)
 
 CROSS_COMPILE="${CROSS_COMPILE:-arm-linux-gnueabihf-}"
 CROSS_COMPILE64="${CROSS_COMPILE64:-aarch64-linux-gnu-}"
@@ -21,21 +21,21 @@ mx67build()
 	return 0
 }
 
-mx8mqevk()
+mx8build()
 {
+	platform=$1 && \
 	make CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
-		PLATFORM=imx PLATFORM_FLAVOR=mx8mqevk  CFG_TEE_CORE_LOG_LEVEL=1 O=${O}/build.mx8mqevk && \
-	${CROSS_COMPILE64}objcopy -O binary ${O}/build.mx8mqevk/core/tee.elf ${O}/build.mx8mqevk/tee.bin && \
+		PLATFORM=imx PLATFORM_FLAVOR=$platform  CFG_TEE_CORE_LOG_LEVEL=1 O=${O}/build.$platform && \
+	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
 	return 0
 }
 
 build()
 {
-	if [ "$1" == "mx8mqevk" ]; then
-		mx8mqevk
-	else
-		mx67build $1
-	fi
+	case $1 in
+		mx[6-7]*) mx67build $1 ;;&
+		mx8*) mx8build $1 ;;&
+	esac
 		
 }
 
@@ -110,8 +110,5 @@ then
 	done
 fi
 
+build $1
 
-case $1 in
-	mx[6-7]*) mx67build $1 ;;&
-	mx8mqevk) mx8mqevk ;;&
-esac
