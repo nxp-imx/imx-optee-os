@@ -239,6 +239,8 @@ void tzc_dump_state(void)
 		DMSG("region sp: %x", temp_32reg >> TZC_ATTR_SP_SHIFT);
 		DMSG("region size: %x\n", (temp_32reg & TZC_REGION_SIZE_MASK) >>
 				TZC_REGION_SIZE_SHIFT);
+		DMSG("region dis: %x\n", (temp_32reg & TZC_SUBREGION_DIS_MASK) >>
+				TZC_SUBREGION_DIS_SHIFT);
 	}
 	DMSG("exit");
 }

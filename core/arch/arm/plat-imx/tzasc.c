@@ -23,6 +23,60 @@
 #error "pager not supported"
 #endif
 
+/*
+ *             Explication about the TZASC configuration:
+ *            ------------------------------------------
+ *
+ *  Generic regions configured:
+ *  --------------------------
+ *  region 0) The default configuration (region 0) is set to secured
+ *    -> See "Protection against aliased access" below
+ *
+ *  region 1) The memory space corresponding to DDR installed is set as
+ *            non-secured
+ *
+ *  region 2) The DDR memory needed for OPTEE (at the end of the DDR mapping)
+ *
+ *  region 3) The DDR for exchange between REE and TEE
+ *
+ *  Use of subregion:
+ *  -----------------
+ *  Another feature of the TZASC which can be used is the subregion
+ *  functionality.
+ *
+ *  ex:
+ *  This way if we have to map 1GB sarting at 0x1000 0000, it is possible to
+ *  define a region of 2GB whose subregion are 256MB and to disables 1
+ *  subregion of low address (range 0x0 -- 0x0fff ffff)and 3 at high address
+ *  (ranges 0x5000 0000 -- 0x5fff ffff and 0x600 0000 -- 0x6fff ffff and
+ *  0x7000 0000 -- 0x7fff ffff)
+ *
+ *  Protection against aliased access:
+ *  ---------------------------------
+ *  It is possible to access memory protected by the TZASC in case the DDR
+ *  installed is smaller than the memory space supported by the controller.
+ *  (Ref: RM, section about the TZASC: "Address Mapping in various memory
+ *  mapping modes").
+ *
+ *  Without aliasing protection it is possible to use an address outside of the
+ *  DDR ranged and bypass TZASC protection.
+ *
+ *  ex:
+ *  DDR installed: 1GB (mapped to range 0x4000 0000 -- 0x8000 0000)
+ *  Memory space supported: 4GB
+ *  In this case the following addresses will access the same physical memory
+ *  of the DDR:
+ *   1) 0x8000 0000
+ *   2) 0xc000 0000
+ *
+ *  If the address 1) is protected by the TZASC but not 2), then it is
+ *  possible to read/write the content at 1) using the address 2).
+ *
+ *  That's why the default security configuration for region 0 is secure and
+ *  the effective range of DDR installed is configured in region 1: All
+ *  aliased access out of range of region 1) will fall in region 0).
+ */
+
 
 #if (defined(PLATFORM_FLAVOR_mx6qpsabresd) \
 	|| defined(PLATFORM_FLAVOR_mx6qsabresd) \
@@ -32,31 +86,22 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	/*
-	 * Note, this is not a good way, because we split the regions
-	 * to fit into tzc380 region size rules. Also, we try
-	 * to pass DDR/TEE memory to build script from user, but hard
-	 * to fit into tzasc. So hack code here.
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
+	/* We map 2G to effectively map 1G starting at 0x1000 0000
+	   Disabling 4 subsection of 256M
 	 */
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, 0x00000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0x40000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_1G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(3, 0x20000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_512M) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(4, 0x10000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_256M) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(5, 0x4e000000,
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW
+		| TZC_ATTR_SUBREGION_DIS(0)
+		| TZC_ATTR_SUBREGION_DIS(5)
+		| TZC_ATTR_SUBREGION_DIS(6)
+		| TZC_ATTR_SUBREGION_DIS(7));
+	tzc_configure_region(2, 0x4e000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(6, 0x4fe00000,
+	tzc_configure_region(3, 0x4fe00000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -71,22 +116,22 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	/*
-	 * Note, this is not a good way, because we split the regions
-	 * to fit into tzc380 region size rules. Also, we try
-	 * to pass DDR/TEE memory to build script from user, but hard
-	 * to fit into tzasc. So hack code here.
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
+	/* We map 2G and 256M to effectively map 2G starting at 0x1000 0000
+	   Disabling 1 subsection of 256M
 	 */
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, 0x00000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW
+		| TZC_ATTR_SUBREGION_DIS(0));
+	tzc_configure_region(2, 0x80000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_256M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(5, 0x8e000000,
+	tzc_configure_region(3, 0x8e000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(6, 0x8fe00000,
+	tzc_configure_region(4, 0x8fe00000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -99,11 +144,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
 	tzc_configure_region(1, 0x80000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_512M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
 	tzc_configure_region(2, 0x9e000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
@@ -121,11 +165,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
 	tzc_configure_region(1, 0x80000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_256M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
 	tzc_configure_region(2, 0x8e000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
@@ -143,11 +186,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
 	tzc_configure_region(1, 0x80000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_512M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
 	tzc_configure_region(2, 0x9e000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
@@ -165,11 +207,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
 	tzc_configure_region(1, 0x80000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_1G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
 	tzc_configure_region(2, 0xbe000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
@@ -187,9 +228,8 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
 	tzc_configure_region(1, 0x80000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
@@ -209,11 +249,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
 	tzc_configure_region(1, 0x80000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_1G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
 	tzc_configure_region(2, 0xbe000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
@@ -232,9 +271,8 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
 	tzc_configure_region(1, 0x80000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
@@ -254,11 +292,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
 	tzc_configure_region(1, 0x80000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_1G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
 	tzc_configure_region(2, 0xbe000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
@@ -276,21 +313,27 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
+	 tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
+	/* The DDR mappng seems to start at 0 instead of 0x4000 0000
+		We map 4G disabling 2 subregion of 512 M to effectively map 3G at
+	    0x0000 0000
+	   */
+	tzc_configure_region(1, 0x00000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
-	tzc_configure_region(1, 0xbe000000,
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW
+		| TZC_ATTR_SUBREGION_DIS(6)
+		| TZC_ATTR_SUBREGION_DIS(7)
+		);
+
+	tzc_configure_region(2, 0xbe000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(2, 0xbfe00000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2M) |
+	tzc_configure_region(3, 0xbfc00000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
 	tzc_set_action(3);
-
-	tzc_region_enable(2);
-	tzc_region_enable(1);
-	tzc_region_enable(0);
 
 	tzc_dump_state();
 
@@ -301,21 +344,20 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
 
-	tzc_configure_region(0, 0x00000000,
-		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
-		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
-	tzc_configure_region(1, 0xbe000000,
+	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
+
+	tzc_configure_region(1, 0x00000000,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
+
+	tzc_configure_region(2, 0x7e000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(2, 0xbfc00000,
+	tzc_configure_region(3, 0x7fc00000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
 	tzc_set_action(3);
-
-	tzc_region_enable(2);
-	tzc_region_enable(1);
-	tzc_region_enable(0);
 
 	tzc_dump_state();
 
