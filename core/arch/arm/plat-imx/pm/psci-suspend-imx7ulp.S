@@ -499,6 +499,11 @@ resume:
 	ldr	r7, [r0, r6]
 	str	r7, [r11, #SCG_FIRCDIV]
 
+	/* restore system OSC div */
+	add	r6, r5, #64
+	ldr	r7, [r0, r6]
+	str	r7, [r11, #SCG_SOSCDIV]
+
 	/* enable mmdc clock in pcc3 */
 	ldr	r11, =PCC3_BASE
 	ldr	r7, [r11, #0xac]

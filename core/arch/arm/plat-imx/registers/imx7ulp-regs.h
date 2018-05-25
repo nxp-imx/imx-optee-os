@@ -49,8 +49,9 @@
 /*
  * Use SRAM0 to perform power management functionality.
  */
-#define IRAM_BASE		0x2f000000
-#define IRAM_SIZE		0x8000
+#define IRAM_BASE		0x1FFFC000
+#define IRAM_SIZE		0x4000
+
 #define LP_OCRAM_START		IRAM_BASE
 
 #endif /* __IMX7ULP_REGS_H__ */
