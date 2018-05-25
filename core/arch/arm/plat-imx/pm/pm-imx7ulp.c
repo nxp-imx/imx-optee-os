@@ -77,7 +77,7 @@ struct imx7ulp_pm_info *pm_info;
 int imx7ulp_suspend_init(void)
 {
 	uint32_t i;
-	uint32_t suspend_ocram_base = (uint32_t)phys_to_virt(
+	uint32_t suspend_ocram_base = (uint32_t)core_mmu_get_va(
 			(paddr_t)LP_OCRAM_START +
 			SUSPEND_OCRAM_OFFSET, MEM_AREA_TEE_COHERENT);
 	struct imx7ulp_pm_info *p =

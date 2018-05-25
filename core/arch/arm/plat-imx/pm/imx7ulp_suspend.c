@@ -5,7 +5,6 @@
  */
 #include <arm.h>
 #include <console.h>
-#include <drivers/imx_uart.h>
 #include <io.h>
 #include <imx_pm.h>
 #include <imx.h>
@@ -35,23 +34,10 @@ static vaddr_t scg1_base;
 static vaddr_t pcc2_base;
 static vaddr_t pcc3_base;
 static vaddr_t iomuxc1_base;
-static vaddr_t lpuart4_base;
 static vaddr_t tpm5_base;
 static vaddr_t smc1_base;
 static vaddr_t pmc0_base;
 static vaddr_t pmc1_base;
-
-#define LPUART_BAUD	0x10
-#define LPUART_CTRL	0x18
-#define LPUART_FIFO	0x28
-#define LPUART_WATER	0x2c
-
-#define PTC2_LPUART4_TX_OFFSET	0x8
-#define PTC3_LPUART4_RX_OFFSET	0xc
-#define PTC2_LPUART4_TX_INPUT_OFFSET	0x248
-#define PTC3_LPUART4_RX_INPUT_OFFSET	0x24c
-#define LPUART4_MUX_VALUE	(4 << 8)
-#define LPUART4_INPUT_VALUE	(1)
 
 #define GPIO_PDOR	0x0
 #define GPIO_PDDR	0x14
@@ -113,37 +99,36 @@ static vaddr_t pmc1_base;
 #define BP_PMCTRL_PSTOPO	16
 
 static uint32_t tpm5_regs[4];
-static uint32_t lpuart4_regs[4];
-static uint32_t pcc2_regs[25][2] = {
+static uint32_t pcc2_regs[][2] = {
 	{0x20, 0}, {0x3c, 0}, {0x40, 0}, {0x6c, 0},
-	{0x84, 0}, {0x8c, 0}, {0x90, 0}, {0x94, 0},
-	{0x98, 0}, {0x9c, 0}, {0xa4, 0}, {0xa8, 0},
-	{0xac, 0}, {0xb0, 0}, {0xb4, 0}, {0xb8, 0},
-	{0xc4, 0}, {0xcc, 0}, {0xd0, 0}, {0xd4, 0},
-	{0xd8, 0}, {0xdc, 0}, {0xe0, 0}, {0xf4, 0},
-	{0x10c, 0},
+	{0x84, 0}, {0x90, 0}, {0x94, 0}, {0x98, 0},
+	{0x9c, 0}, {0xa4, 0}, {0xa8, 0}, {0xac, 0},
+	{0xb0, 0}, {0xb4, 0}, {0xb8, 0}, {0xc4, 0},
+	{0xcc, 0}, {0xd0, 0}, {0xd4, 0}, {0xd8, 0},
+	{0xdc, 0}, {0xe0, 0}, {0xf4, 0}, {0x10c, 0},
 };
 
-static uint32_t pcc3_regs[16][2] = {
+static uint32_t pcc3_regs[][2] = {
 	{0x84, 0}, {0x88, 0}, {0x90, 0}, {0x94, 0},
 	{0x98, 0}, {0x9c, 0}, {0xa0, 0}, {0xa4, 0},
 	{0xa8, 0}, {0xac, 0}, {0xb8, 0}, {0xbc, 0},
 	{0xc0, 0}, {0xc4, 0}, {0x140, 0}, {0x144, 0},
 };
 
-static uint32_t scg1_offset[16] = {
+static uint32_t scg1_offset[] = {
 	0x14, 0x30, 0x40, 0x304,
 	0x500, 0x504, 0x508, 0x50c,
 	0x510, 0x514, 0x600, 0x604,
 	0x608, 0x60c, 0x610, 0x614,
+	0x104,
 };
 
 
 static void imx7ulp_gpio_save(struct imx7ulp_pm_info *p)
 {
-	int i;
+	uint32_t i;
 
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < ARRAY_SIZE(gpio_base); i++) {
 		p->gpio[i][0] = read32(gpio_base[i] + GPIO_PDOR);
 		p->gpio[i][1] = read32(gpio_base[i] + GPIO_PDDR);
 	}
@@ -151,41 +136,41 @@ static void imx7ulp_gpio_save(struct imx7ulp_pm_info *p)
 
 static void imx7ulp_scg1_save(struct imx7ulp_pm_info *p)
 {
-	int i;
+	uint32_t i;
 
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < ARRAY_SIZE(scg1_offset); i++)
 		p->scg1[i] = read32(scg1_base + scg1_offset[i]);
 }
 
 static void imx7ulp_pcc3_save(struct imx7ulp_pm_info *p __unused)
 {
-	int i;
+	uint32_t i;
 
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < ARRAY_SIZE(pcc3_regs); i++)
 		pcc3_regs[i][1] = read32(pcc3_base + pcc3_regs[i][0]);
 }
 
 static void imx7ulp_pcc3_restore(struct imx7ulp_pm_info *p __unused)
 {
-	int i;
+	uint32_t i;
 
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < ARRAY_SIZE(pcc3_regs); i++)
 		write32(pcc3_regs[i][1], pcc3_base + pcc3_regs[i][0]);
 }
 
 static void imx7ulp_pcc2_save(struct imx7ulp_pm_info *p __unused)
 {
-	int i;
+	uint32_t i;
 
-	for (i = 0; i < 25; i++)
+	for (i = 0; i < ARRAY_SIZE(pcc2_regs); i++)
 		pcc2_regs[i][1] = read32(pcc2_base + pcc2_regs[i][0]);
 }
 
 static void imx7ulp_pcc2_restore(struct imx7ulp_pm_info *p __unused)
 {
-	int i;
+	uint32_t i;
 
-	for (i = 0; i < 25; i++)
+	for (i = 0; i < ARRAY_SIZE(pcc2_regs); i++)
 		write32(pcc2_regs[i][1], pcc2_base + pcc2_regs[i][0]);
 }
 
@@ -201,32 +186,6 @@ static inline void imx7ulp_iomuxc_save(struct imx7ulp_pm_info *p)
 	for (i = 0; i < p->select_input_num; i++)
 		p->select_input_val[i] = read32(iomuxc1_base +
 						SELECT_INPUT_START + i * 0x4);
-}
-
-static void imx7ulp_lpuart_save(struct imx7ulp_pm_info *p __unused)
-{
-	lpuart4_regs[0] = read32(lpuart4_base + LPUART_BAUD);
-	lpuart4_regs[1] = read32(lpuart4_base + LPUART_FIFO);
-	lpuart4_regs[2] = read32(lpuart4_base + LPUART_WATER);
-	lpuart4_regs[3] = read32(lpuart4_base + LPUART_CTRL);
-}
-
-static void imx7ulp_lpuart_restore(struct imx7ulp_pm_info *p __unused)
-{
-	write32(0x10101, scg1_base + 0x104);
-	write32(LPUART4_MUX_VALUE,
-		iomuxc1_base + PTC2_LPUART4_TX_OFFSET);
-	write32(LPUART4_MUX_VALUE,
-		iomuxc1_base + PTC3_LPUART4_RX_OFFSET);
-	write32(LPUART4_INPUT_VALUE,
-		iomuxc1_base + PTC2_LPUART4_TX_INPUT_OFFSET);
-	write32(LPUART4_INPUT_VALUE,
-		iomuxc1_base + PTC3_LPUART4_RX_INPUT_OFFSET);
-
-	write32(lpuart4_regs[0], lpuart4_base + LPUART_BAUD);
-	write32(lpuart4_regs[1], lpuart4_base + LPUART_FIFO);
-	write32(lpuart4_regs[2], lpuart4_base + LPUART_WATER);
-	write32(lpuart4_regs[3], lpuart4_base + LPUART_CTRL);
 }
 
 static void imx7ulp_tpm_save(struct imx7ulp_pm_info *p __unused)
@@ -294,7 +253,8 @@ static int imx7ulp_set_lpm(enum imx7ulp_sys_pwr_mode mode)
 int imx7ulp_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 			uint32_t context_id __unused, struct sm_nsec_ctx *nsec)
 {
-	int ret, i;
+	uint32_t i;
+	int ret;
 	/*
 	 * TODO: move the code to a platform init place, note that
 	 * need to change kernel pm-imx6.c to avoid use LPRAM.
@@ -310,7 +270,7 @@ int imx7ulp_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		PSCI_POWER_STATE_TYPE_SHIFT;
 
 	if (!suspended_init) {
-		for (i = 0; i < 4; i++) {
+		for (i = 0; i < ARRAY_SIZE(gpio_base); i++) {
 			gpio_base[i] = core_mmu_get_va(GPIOC_BASE + i * 0x40,
 						       MEM_AREA_IO_SEC);
 		}
@@ -318,7 +278,6 @@ int imx7ulp_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		pcc2_base = core_mmu_get_va(PCC2_BASE, MEM_AREA_IO_SEC);
 		pcc3_base = core_mmu_get_va(PCC3_BASE, MEM_AREA_IO_SEC);
 		iomuxc1_base = core_mmu_get_va(IOMUXC1_BASE, MEM_AREA_IO_SEC);
-		lpuart4_base = core_mmu_get_va(UART4_BASE, MEM_AREA_IO_SEC);
 		tpm5_base = core_mmu_get_va(TPM5_BASE, MEM_AREA_IO_SEC);
 		pmc0_base = core_mmu_get_va(PMC0_BASE, MEM_AREA_IO_SEC);
 		pmc1_base = core_mmu_get_va(PMC1_BASE, MEM_AREA_IO_SEC);
@@ -335,14 +294,12 @@ int imx7ulp_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		imx7ulp_pcc2_save(p);
 		imx7ulp_pcc3_save(p);
 		imx7ulp_tpm_save(p);
-		imx7ulp_lpuart_save(p);
 		imx7ulp_iomuxc_save(p);
 		imx7ulp_set_lpm(VLLS);
 		ret = sm_pm_cpu_suspend((uint32_t)p, (int (*)(uint32_t))
 				(suspend_ocram_base + sizeof(*p)));
 		imx7ulp_pcc2_restore(p);
 		imx7ulp_pcc3_restore(p);
-		imx7ulp_lpuart_restore(p);
 		imx7ulp_set_dgo(p, 0);
 		imx7ulp_tpm_restore(p);
 		imx7ulp_set_lpm(RUN);
