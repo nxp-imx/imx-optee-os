@@ -11,6 +11,7 @@
 /* Global includes */
 #include <arm.h>
 #include <malloc.h>
+#include <mm/core_memprot.h>
 #include <string.h>
 
 /* Local includes */

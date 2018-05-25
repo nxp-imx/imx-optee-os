@@ -38,12 +38,12 @@
 /**
  * @brief   Definition of the number of CAAM Jobs to manage in JR queues
  */
-#define NB_JOBS_QUEUE	(10)
+#define NB_JOBS_QUEUE	10
 
 /**
  * @brief   Flag Job Ring Owner is Secure
  */
-#define JROWNER_SECURE	(0x10)
+#define JROWNER_SECURE	0x10
 
 /**
  * @brief   Job Ring Owner. Enumerate Id (expect the Secure Flag) correspond
@@ -61,6 +61,15 @@ struct caambuf {
 	uint8_t *data;    ///< Data buffer
 	paddr_t paddr;    ///< Physical address of the buffer
 	size_t  length;   ///< Number of bytes in the data buffer
+};
+
+/**
+ * @brief   Definition of key size
+ */
+struct defkey {
+	uint8_t min;  ///< Minimum size
+	uint8_t max;  ///< Maximum size
+	uint8_t mod;  ///< Key modulus
 };
 
 #endif /* __COMMON_H__ */

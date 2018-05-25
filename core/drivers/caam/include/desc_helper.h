@@ -224,6 +224,14 @@ static inline void dump_desc(void *desc)
 			ALGO_ENCRYPT)
 
 /**
+ * @brief  Cipher Init and Final Operation of algorithm \a algo
+ */
+#define CIPHER_INITFINAL(algo, encrypt) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS1) | (algo) | \
+			 ALGO_AS(INIT_FINAL) | \
+			((encrypt == true) ? ALGO_ENCRYPT : ALGO_DECRYPT))
+
+/**
  * @brief   Load a class \a cla key of length \a len to register \a dst.
  *          Key can be store in plain text.
  */

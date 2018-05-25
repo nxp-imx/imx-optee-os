@@ -9,54 +9,330 @@
  */
 
 /* Global includes */
-#include <assert.h>
 #include <crypto/crypto.h>
+#include <utee_defines.h>
+#include <trace.h>
 
-TEE_Result crypto_cipher_alloc_ctx(void **ctx __unused, uint32_t algo __unused)
+/* Library i.MX includes */
+#include <libimxcrypt.h>
+#include <libimxcrypt_cipher.h>
+
+#define LIB_DEBUG
+#ifdef LIB_DEBUG
+#define LIB_TRACE	DMSG
+#else
+#define LIB_TRACE(...)
+#endif
+
+/**
+ * @brief   Checks and returns reference to the driver operations
+ *
+ * @param[in]  algo       Algorithm
+ * @param[out] cipher_id  Cipher Algorithm internal ID
+ *
+ * @retval  Reference to the driver operations
+ */
+static struct imxcrypt_cipher *do_check_algo(uint32_t algo,
+					enum imxcrypt_cipher_id *cipher_id)
 {
-	return TEE_ERROR_NOT_IMPLEMENTED;
+	struct imxcrypt_cipher *cipher = NULL;
+	uint8_t algo_op;
+	uint8_t algo_id;
+	uint8_t algo_md;
+	int     cipher_algo;
+
+	/* Extract the algorithms fields */
+	algo_op = TEE_ALG_GET_CLASS(algo);
+	algo_id = TEE_ALG_GET_MAIN_ALG(algo);
+	algo_md = TEE_ALG_GET_CHAIN_MODE(algo);
+
+	/* Calculate the Cipher Algorithm enumerate */
+	cipher_algo  = (algo_id - TEE_MAIN_ALGO_AES);
+	cipher_algo += (algo_md - TEE_CHAIN_MODE_ECB_NOPAD);
+
+	LIB_TRACE("Algo op:%d id:%d md:%d ==> %d",
+				algo_op, algo_id, algo_md, cipher_algo);
+
+	if ((algo_op == TEE_OPERATION_CIPHER) &&
+		((cipher_algo >= 0) && (cipher_algo < MAX_CIPHER_SUPPORTED))) {
+		cipher     = imxcrypt_getmod(CRYPTO_CIPHER);
+		*cipher_id = cipher_algo;
+	}
+
+	LIB_TRACE("Check Cipher id: %d ret 0x%"PRIxPTR"",
+				cipher_algo, (uintptr_t)cipher);
+
+	return cipher;
 }
 
-void crypto_cipher_free_ctx(void *ctx __unused, uint32_t algo __unused)
+/**
+ * @brief   Allocates the Software Cipher Context function of the algorithm
+ *
+ * @param[in/out] ctx    Reference the context pointer
+ * @param[in]     algo   Algorithm
+ *
+ * @retval TEE_SUCCESS                 Success
+ * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
+ * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
+ */
+TEE_Result crypto_cipher_alloc_ctx(void **ctx, uint32_t algo)
 {
-	assert(1);
+	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
+	struct imxcrypt_cipher  *cipher   = NULL;
+	enum imxcrypt_cipher_id cipher_id = 0;
+
+	/* Check the parameters */
+	if (!ctx)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	cipher = do_check_algo(algo, &cipher_id);
+	if (cipher) {
+		if (cipher->alloc_ctx)
+			ret = cipher->alloc_ctx(ctx, cipher_id);
+	}
+
+	return ret;
 }
 
-void crypto_cipher_copy_state(void *dst_ctx __unused, void *src_ctx __unused,
-			      uint32_t algo __unused)
+/**
+ * @brief   Free the Software Cipher Context function of the algorithm
+ *
+ * @param[in/out] ctx    Reference the context pointer
+ * @param[in]     algo   Algorithm
+ *
+ */
+void crypto_cipher_free_ctx(void *ctx, uint32_t algo)
 {
-	assert(1);
+	struct imxcrypt_cipher  *cipher   = NULL;
+	enum imxcrypt_cipher_id cipher_id = 0;
+
+	/* Check the parameters */
+	if (ctx) {
+		cipher = do_check_algo(algo, &cipher_id);
+		if (cipher) {
+			if (cipher->free_ctx)
+				cipher->free_ctx(ctx);
+		}
+	}
 }
 
-TEE_Result crypto_cipher_init(void *ctx __unused, uint32_t algo __unused,
-			      TEE_OperationMode mode __unused,
-			      const uint8_t *key1 __unused,
-			      size_t key1_len __unused,
-			      const uint8_t *key2 __unused,
-			      size_t key2_len __unused,
-			      const uint8_t *iv __unused,
-			      size_t iv_len __unused)
+/**
+ * @brief   Copy Software Cipher Context
+ *
+ * @param[in] src_ctx  Reference the context source
+ * @param[in] algo     Algorithm
+ *
+ * @param[out] dst_ctx  Reference the context destination
+ *
+ */
+void crypto_cipher_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
 {
-	return TEE_ERROR_NOT_IMPLEMENTED;
+	struct imxcrypt_cipher  *cipher   = NULL;
+	enum imxcrypt_cipher_id cipher_id = 0;
+
+	if ((!dst_ctx) || (!src_ctx))
+		return;
+
+	/* Check the parameters */
+	cipher = do_check_algo(algo, &cipher_id);
+	if (cipher) {
+		if (cipher->cpy_state)
+			cipher->cpy_state(dst_ctx, src_ctx);
+	}
 }
 
-TEE_Result crypto_cipher_update(void *ctx __unused, uint32_t algo __unused,
-				TEE_OperationMode mode __unused,
-				bool last_block __unused,
-				const uint8_t *data __unused,
-				size_t len __unused, uint8_t *dst __unused)
+/**
+ * @brief  Initialization of the Cipher operation
+ *
+ * @param[in] ctx      Reference the context pointer
+ * @param[in] algo     Algorithm
+ * @param[in] mode     Operation mode
+ * @param[in] key1     First Key
+ * @param[in] key1_len Length of the first key
+ * @param[in] key2     Second Key
+ * @param[in] key2_len Length of the second key
+ * @param[in] iv       Initial Vector
+ * @param[in] iv_len   Length of the IV
+ *
+ * @retval TEE_SUCCESS                 Success
+ * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
+ * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
+ */
+TEE_Result crypto_cipher_init(void *ctx, uint32_t algo,
+					TEE_OperationMode mode,
+					const uint8_t *key1, size_t key1_len,
+					const uint8_t *key2, size_t key2_len,
+					const uint8_t *iv, size_t iv_len)
 {
-	return TEE_ERROR_NOT_IMPLEMENTED;
+	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
+	struct imxcrypt_cipher   *cipher   = NULL;
+	enum imxcrypt_cipher_id  cipher_id = 0;
+	struct imxcrypt_cipher_init dinit;
+
+	/* Check the parameters */
+	if (!ctx)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	/* Check the mode */
+	if ((mode != TEE_MODE_DECRYPT) && (mode != TEE_MODE_ENCRYPT)) {
+		LIB_TRACE("Bad Cipher mode request %d", mode);
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	/* Check the keys vs. length */
+	if (((!key1) && (key1_len != 0)) ||
+		((!key2) && (key2_len != 0)) ||
+		((!iv) && (iv_len != 0))) {
+		LIB_TRACE("One of the key is bad");
+		LIB_TRACE("key1 @0x%08"PRIxPTR"-%d)",
+			(uintptr_t)key1, key1_len);
+		LIB_TRACE("key2 @0x%08"PRIxPTR"-%d)",
+			(uintptr_t)key1, key1_len);
+		LIB_TRACE("iv   @0x%08"PRIxPTR"-%d)",
+			(uintptr_t)iv, iv_len);
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	cipher = do_check_algo(algo, &cipher_id);
+	if (cipher) {
+		if (cipher->init) {
+			/* Prepare the initialization data */
+			dinit.ctx         = ctx;
+			dinit.algo        = cipher_id;
+			dinit.encrypt     = ((mode == TEE_MODE_ENCRYPT) ?
+						true : false);
+			dinit.key1.data   = (uint8_t *)key1;
+			dinit.key1.length = key1_len;
+			dinit.key2.data   = (uint8_t *)key2;
+			dinit.key2.length = key2_len;
+			dinit.iv.data     = (uint8_t *)iv;
+			dinit.iv.length   = iv_len;
+			ret = cipher->init(&dinit);
+		}
+	}
+
+	return ret;
 }
 
-void crypto_cipher_final(void *ctx __unused, uint32_t algo __unused)
+/**
+ * @brief  Update of the Cipher operation
+ *
+ * @param[in]  ctx        Reference the context pointer
+ * @param[in]  algo       Algorithm
+ * @param[in]  mode       Operation mode
+ * @param[in]  last_block True if last block to handle
+ * @param[in]  data       Data to encrypt/decrypt
+ * @param[in]  len        Length of the input data and output result
+ * @param[out] dst        Result block of the operation
+ *
+ * @retval TEE_SUCCESS                 Success
+ * @retval TEE_ERROR_GENERIC           Other Error
+ * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
+ * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
+ */
+TEE_Result crypto_cipher_update(void *ctx, uint32_t algo,
+				TEE_OperationMode mode,	bool last_block,
+				const uint8_t *data, size_t len,
+				uint8_t *dst)
 {
+	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
+	struct imxcrypt_cipher   *cipher   = NULL;
+	enum imxcrypt_cipher_id  cipher_id = 0;
+	struct imxcrypt_cipher_update dupdate;
+
+	/* Check the parameters */
+	if ((!ctx) || (!dst))
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	/* Check the mode */
+	if ((mode != TEE_MODE_DECRYPT) && (mode != TEE_MODE_ENCRYPT)) {
+		LIB_TRACE("Bad Cipher mode request %d", mode);
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	/* Check the data vs. length */
+	if ((!data) && (len != 0)) {
+		LIB_TRACE("Bad data data @0x%08"PRIxPTR"-%d)",
+				(uintptr_t)data, len);
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	cipher = do_check_algo(algo, &cipher_id);
+	if (cipher) {
+		if (cipher->update) {
+			/* Prepare the update data */
+			dupdate.ctx         = ctx;
+			dupdate.algo        = cipher_id;
+			dupdate.last        = last_block;
+			dupdate.src.data    = (uint8_t *)data;
+			dupdate.src.length  = len;
+			dupdate.dst.data    = dst;
+			dupdate.dst.length  = len;
+
+			if (mode == TEE_MODE_ENCRYPT)
+				dupdate.encrypt = true;
+			else
+				dupdate.encrypt = false;
+
+			ret = cipher->update(&dupdate);
+		}
+	}
+
+	return ret;
 }
 
-TEE_Result crypto_cipher_get_block_size(uint32_t algo __unused,
-					size_t *size __unused)
+/**
+ * @brief  Finalize the Cipher operation
+ *
+ * @param[in]  ctx        Reference the context pointer
+ * @param[in]  algo       Algorithm
+ *
+ */
+void crypto_cipher_final(void *ctx, uint32_t algo)
 {
-	return TEE_ERROR_NOT_IMPLEMENTED;
+	struct imxcrypt_cipher  *cipher   = NULL;
+	enum imxcrypt_cipher_id cipher_id = 0;
+
+	/* Check the parameters */
+	if (ctx) {
+		cipher = do_check_algo(algo, &cipher_id);
+		if (cipher) {
+			if (cipher->final)
+				cipher->final(ctx, cipher_id);
+		}
+	}
+}
+
+/**
+ * @brief  Gets the algorithm block size
+ *
+ * @param[in]  algo       Algorithm
+ * @param[out] size       Block size of the algorithm
+ *
+ * @retval TEE_SUCCESS                 Success
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
+ * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
+ */
+TEE_Result crypto_cipher_get_block_size(uint32_t algo, size_t *size)
+{
+	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
+	struct imxcrypt_cipher  *cipher   = NULL;
+	enum imxcrypt_cipher_id cipher_id = 0;
+
+	/* Check the parameters */
+	if (!size)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	cipher = do_check_algo(algo, &cipher_id);
+	if (cipher) {
+		if (cipher->block_size)
+			ret = cipher->block_size(cipher_id, size);
+	}
+
+	return ret;
 }
 
 TEE_Result crypto_aes_expand_enc_key(const void *key __unused,

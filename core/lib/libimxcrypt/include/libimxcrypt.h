@@ -12,13 +12,21 @@
 
 /**
  * @brief   i.MX Crypto Library Algorithm enumeration
- *
  */
 enum imxcrypt_algo_id {
 	CRYPTO_RNG = 0,      ///< RNG driver
 	CRYPTO_HASH,         ///< Hash driver
 	CRYPTO_HMAC,         ///< Hmac driver
+	CRYPTO_CIPHER,       ///< Cipher driver
 	CRYPTO_MAX_ALGO      ///< Maximum numer of algo supported
+};
+
+/**
+ * @brief   i.MX Cryptographic buffer type
+ */
+struct imxcrypt_buf {
+	uint8_t *data;   ///< Pointer to the data buffer
+	size_t  length;  ///< Length in bytes of the data buffer
 };
 
 /**

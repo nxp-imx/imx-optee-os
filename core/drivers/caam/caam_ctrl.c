@@ -15,6 +15,9 @@
 #include "common.h"
 #include "caam_jr.h"
 #include "caam_rng.h"
+#ifdef CFG_CRYPTO_CIPHER_HW
+#include "caam_cipher.h"
+#endif
 #ifdef CFG_CRYPTO_HASH_HW
 #include "caam_hash.h"
 #endif
@@ -92,6 +95,15 @@ static TEE_Result caam_init(void)
 		goto exit_init;
 	}
 #endif // CFG_CRYPTO_HASH_HW
+
+#ifdef CFG_CRYPTO_CIPHER_HW
+	/* Initialize the Cipher Module */
+	retstatus = caam_cipher_init(jr_cfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+#endif // CFG_CRYPTO_CIPHER_HW
 
 	retresult = TEE_SUCCESS;
 
