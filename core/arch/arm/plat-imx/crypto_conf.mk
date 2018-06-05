@@ -12,6 +12,8 @@ $(call force, CFG_CRYPTO_RNG_HW,y)
 $(call force, CFG_CRYPTO_HASH_HW,y)
 $(call force, CFG_CRYPTO_CIPHER_HW,y)
 
+$(call force, CFG_CRYPTO_GCM_HW,n)
+
 # Ciphers
 $(call force, CFG_CRYPTO_DES,n)
 

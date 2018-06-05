@@ -10,14 +10,20 @@
 
 /* Global includes */
 #include <crypto/crypto.h>
-#include <utee_defines.h>
+#include <kernel/panic.h>
+#include <string.h>
 #include <trace.h>
+#include <utee_defines.h>
 
 /* Library i.MX includes */
 #include <libimxcrypt.h>
 #include <libimxcrypt_cipher.h>
 
-#define LIB_DEBUG
+#ifndef CFG_CRYPTO_GCM_HW
+#include <tomcrypt.h>
+#endif
+
+//#define LIB_DEBUG
 #ifdef LIB_DEBUG
 #define LIB_TRACE	DMSG
 #else
@@ -335,6 +341,69 @@ TEE_Result crypto_cipher_get_block_size(uint32_t algo, size_t *size)
 	return ret;
 }
 
+#ifndef CFG_CRYPTO_GCM_HW
+
+/**
+ * @brief  AES Expansion key
+ *
+ * @param[in]  key       Input key of \a key_len bytes size
+ * @param[in]  key_len   Key size in bytes
+ *
+ * @param[out] enc_key   Key resulting of the operation
+ * @param[out] rounds    Number of encryption rounds to do
+ *
+ * @retval TEE_SUCCESS                 Success
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
+ * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
+ */
+TEE_Result crypto_aes_expand_enc_key(const void *key, size_t key_len,
+				void *enc_key, unsigned int *rounds)
+{
+	symmetric_key skey;
+
+	if (aes_setup(key, key_len, 0, &skey))
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	memcpy(enc_key, skey.rijndael.eK, sizeof(skey.rijndael.eK));
+	*rounds = skey.rijndael.Nr;
+	return TEE_SUCCESS;
+}
+
+/**
+ * @brief  AES encryption block
+ *
+ * @param[in]  enc_key   Encryption key
+ * @param[in]  rounds    Rounds number
+ * @param[in]  src       Data to encrypt
+ *
+ * @param[out] dst       Cipher result
+ */
+void crypto_aes_enc_block(const void *enc_key, unsigned int rounds,
+			const void *src, void *dst)
+{
+	symmetric_key skey;
+
+	memcpy(skey.rijndael.eK, enc_key, sizeof(skey.rijndael.eK));
+	skey.rijndael.Nr = rounds;
+	if (aes_ecb_encrypt(src, dst, &skey))
+		panic();
+}
+
+#else
+
+/**
+ * @brief  AES Expansion key
+ *
+ * @param[in]  key       Input key of \a key_len bytes size
+ * @param[in]  key_len   Key size in bytes
+ *
+ * @param[out] enc_key   Key resulting of the operation
+ * @param[out] rounds    Number of encryption rounds to do
+ *
+ * @retval TEE_SUCCESS                 Success
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
+ * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
+ */
 TEE_Result crypto_aes_expand_enc_key(const void *key __unused,
 					size_t key_len __unused,
 					void *enc_key __unused,
@@ -343,9 +412,21 @@ TEE_Result crypto_aes_expand_enc_key(const void *key __unused,
 	return TEE_ERROR_NOT_IMPLEMENTED;
 }
 
-void crypto_aes_enc_block(const void *enc_key __unused,
+/**
+ * @brief  AES encryption block
+ *
+ * @param[in]  enc_key   Encryption key
+ * @param[in]  rounds    Rounds number
+ * @param[in]  src       Data to encrypt
+ *
+ * @param[out] dst       Cipher result
+ */
+void __noreturn crypto_aes_enc_block(const void *enc_key __unused,
 					unsigned int rounds __unused,
 					const void *src __unused,
 					void *dst __unused)
 {
+	panic();
 }
+
+#endif // CFG_CRYPTO_GCM_HW
