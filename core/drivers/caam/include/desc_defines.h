@@ -64,6 +64,9 @@
 /* Load Destination */
 #define LOAD_DST(reg)			SHIFT_U32((reg & 0x7F), 16)
 
+/* Offset in destination register */
+#define LOAD_OFFSET(off)		SHIFT_U32((off & 0xFF), 8)
+
 /* Length */
 #define LOAD_LENGTH(len)		SHIFT_U32((len & 0xFF), 0)
 
@@ -74,6 +77,9 @@
 
 /* Store Source */
 #define STORE_SRC(reg)			SHIFT_U32((reg & 0x7F), 16)
+
+/* Offset in source register */
+#define STORE_OFFSET(off)		SHIFT_U32((off & 0xFF), 8)
 
 /* Length */
 #define STORE_LENGTH(len)		SHIFT_U32((len & 0xFF), 0)

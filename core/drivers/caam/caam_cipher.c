@@ -12,9 +12,9 @@
 #include <string.h>
 
 /* Global includes */
-#include <utee_defines.h>
 #include <mm/core_memprot.h>
 #include <tee/cache.h>
+#include <utee_defines.h>
 
 /* Library i.MX includes */
 #include <libimxcrypt.h>
@@ -56,7 +56,7 @@
 /**
  * @brief    Maximum number of entry in the descriptor
  */
-#define MAX_DESC_ENTRIES	(10)
+#define MAX_DESC_ENTRIES	10
 
 /**
  * @brief   Definition of flags tagging which key(s) is required
@@ -65,25 +65,37 @@
 #define NEED_KEY2	BIT(1)
 #define NEED_IV		BIT(2)
 
+/* Local Function declaration */
+static enum CAAM_Status do_init_ctx_ctr(struct imxcrypt_cipher_init *dinit);
+static enum CAAM_Status do_init_ctx_cbc(struct imxcrypt_cipher_init *dinit);
+
 /**
  * @brief   Cipher Algorithm definition
  */
 struct cipheralg {
 	uint32_t type;        ///< Algo type for operation
 	uint8_t  size_block;  ///< Computing block size
+	uint8_t  size_ctx;    ///< CAAM Context Register size
+	uint8_t  ctx_offset;  ///< CAAM Context Register offset
 	uint8_t  require_key; ///< Tag defining key(s) required
+
 	struct defkey def_key;     ///< Key size accepted
+
+	///< Initialization of the Context Register
+	enum CAAM_Status (*initctx)(struct imxcrypt_cipher_init *dinit);
 };
 
 /**
  * @brief   Full Cipher data SW context
  */
 struct cipherdata {
-	descPointer_t descriptor;     ///< Job descriptor
+	descPointer_t descriptor;        ///< Job descriptor
 
-	struct caambuf     key1;      ///< First Key
-	struct caambuf     key2;      ///< Second Key
-	struct caambuf     iv;        ///< Initial Vector
+	struct caambuf key1;             ///< First Key
+	struct caambuf key2;             ///< Second Key
+	struct caambuf iv;               ///< Initial Vector
+
+	struct caambuf ctx;              ///< CAAM Context Register
 
 	enum imxcrypt_cipher_id algo_id; ///< Cipher Algorithm Id
 };
@@ -96,10 +108,88 @@ static const struct cipheralg cipher_alg[MAX_CIPHER_SUPPORTED] = {
 		/* AES ECB No Pad */
 		.type        = OP_ALGO(AES) | ALGO_AAI(AES_ECB),
 		.size_block  = TEE_AES_BLOCK_SIZE,
+		.size_ctx    = 0,
+		.ctx_offset  = 0,
 		.require_key = NEED_KEY1,
 		.def_key     = {.min = 16, .max = 32, .mod = 8},
+		.initctx     = NULL,
+	},
+	{
+		/* AES CBC No Pad */
+		.type        = OP_ALGO(AES) | ALGO_AAI(AES_CBC),
+		.size_block  = TEE_AES_BLOCK_SIZE,
+		.size_ctx    = 2 * sizeof(uint64_t),
+		.ctx_offset  = 0,
+		.require_key = NEED_KEY1,
+		.def_key     = {.min = 16, .max = 32, .mod = 8},
+		.initctx     = &do_init_ctx_cbc,
+	},
+	{
+		/* AES CTR */
+		.type        = OP_ALGO(AES) | ALGO_AAI(AES_CTR_MOD128),
+		.size_block  = TEE_AES_BLOCK_SIZE,
+		.size_ctx    = 2 * sizeof(uint64_t),
+		.ctx_offset  = 16,
+		.require_key = NEED_KEY1,
+		.def_key     = {.min = 16, .max = 32, .mod = 8},
+		.initctx     = &do_init_ctx_ctr,
 	},
 };
+
+/**
+ * @brief   Initialization of the AES CBC Context
+ *
+ * @param[in] dinit  Data initialization object
+ *
+ * @retval CAAM_NO_ERROR   Success
+ * @retval CAAM_BAD_PARAM  Bad parameters
+ */
+static enum CAAM_Status do_init_ctx_cbc(struct imxcrypt_cipher_init *dinit)
+{
+	struct cipherdata *cipherdata = dinit->ctx;
+
+	CIPHER_TRACE("Initialize AES_CBC IV->CTX");
+
+	if (dinit->iv.length != cipherdata->ctx.length)
+		return CAAM_BAD_PARAM;
+
+	memcpy(cipherdata->ctx.data, dinit->iv.data, dinit->iv.length);
+
+	CIPHER_DUMPBUF("CTX", cipherdata->ctx.data, cipherdata->ctx.length);
+
+	/* Push data to physical memory */
+	cache_operation(TEE_CACHECLEAN, cipherdata->ctx.data,
+					cipherdata->ctx.length);
+
+	return CAAM_NO_ERROR;
+
+}
+
+/**
+ * @brief   Initialization of the AES CTR Context
+ *
+ * @param[in] dinit  Data initialization object
+ *
+ * @retval CAAM_NO_ERROR   Success
+ * @retval CAAM_BAD_PARAM  Bad parameters
+ */
+static enum CAAM_Status do_init_ctx_ctr(struct imxcrypt_cipher_init *dinit)
+{
+	struct cipherdata *cipherdata = dinit->ctx;
+
+	CIPHER_DUMPBUF("Init AES_CTR CTR0", dinit->ctr.data, dinit->ctr.length);
+
+	memcpy(cipherdata->ctx.data, dinit->iv.data, dinit->iv.length);
+
+	CIPHER_DUMPBUF("CTR0", cipherdata->ctx.data, cipherdata->ctx.length);
+
+	/* Push data to physical memory */
+	cache_operation(TEE_CACHECLEAN, cipherdata->ctx.data,
+					cipherdata->ctx.length);
+
+	return CAAM_NO_ERROR;
+
+}
 
 /**
  * @brief   Allocate context data and copy input data into
@@ -219,6 +309,11 @@ static void do_free_intern(struct cipherdata *ctx)
 		caam_free((void **)&ctx->iv.data);
 		ctx->iv.length = 0;
 		ctx->iv.paddr  = 0;
+
+		/* Free the Context Register */
+		caam_free((void **)&ctx->ctx.data);
+		ctx->ctx.length = 0;
+		ctx->ctx.paddr  = 0;
 	}
 }
 
@@ -295,6 +390,36 @@ static TEE_Result do_init(struct imxcrypt_cipher_init *dinit)
 				(dinit->encrypt ? "Encrypt" : " Decrypt"));
 
 	alg = &cipher_alg[cipherdata->algo_id];
+
+	/* Check if there is a CAAM Context register to be allocated */
+	if (alg->size_ctx != 0) {
+		CIPHER_TRACE("Allocate CAAM Context Register (%d bytes)",
+					alg->size_ctx);
+
+		cipherdata->ctx.data = caam_alloc_align(alg->size_ctx);
+		if (!cipherdata->ctx.data) {
+			CIPHER_TRACE("Allocation Context Register error");
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto exit_init;
+		}
+
+		cipherdata->ctx.length = alg->size_ctx;
+		cipherdata->ctx.paddr  = virt_to_phys(cipherdata->ctx.data);
+		if (!cipherdata->ctx.paddr) {
+			CIPHER_TRACE("Bad physical address Context Register");
+			ret = TEE_ERROR_GENERIC;
+			goto exit_init;
+		}
+
+		/* Initialize the Context Register function of the algo */
+		if (alg->initctx) {
+			retstatus = alg->initctx(dinit);
+			if (retstatus != CAAM_NO_ERROR) {
+				ret = TEE_ERROR_BAD_PARAMETERS;
+				goto exit_init;
+			}
+		}
+	}
 
 	/* Check if all required keys are defined */
 	if (alg->require_key & NEED_KEY1) {
@@ -427,8 +552,17 @@ static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
 						cipherdata->key1.length);
 	}
 
-	/* Operation with the direction */
-	desc[desclen++] = CIPHER_INITFINAL(alg->type, dupdate->encrypt);
+	/* If there is a context register load it */
+	if (cipherdata->ctx.length) {
+		desc[desclen++] = LD_NOIMM_OFF(CLASS_1, REG_CTX,
+				cipherdata->ctx.length, alg->ctx_offset);
+		desc[desclen++] = cipherdata->ctx.paddr;
+			/* Operation with the direction */
+		desc[desclen++] = CIPHER_INIT(alg->type, dupdate->encrypt);
+	} else {
+		/* Operation with the direction */
+		desc[desclen++] = CIPHER_INITFINAL(alg->type, dupdate->encrypt);
+	}
 
 	/* Load the source data */
 	desc[desclen++] = FIFO_LD(CLASS_1, MSG, LAST_C1, dupdate->src.length);
@@ -437,6 +571,17 @@ static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
 	/* Store the destination data */
 	desc[desclen++] = FIFO_ST(MSG_DATA, dupdate->dst.length);
 	desc[desclen++] = pdst;
+
+	if (cipherdata->ctx.length) {
+		/* Store the context */
+		desc[desclen++] = ST_NOIMM_OFF(CLASS_1, REG_CTX,
+				cipherdata->ctx.length, alg->ctx_offset);
+		desc[desclen++] = cipherdata->ctx.paddr;
+
+		/* Ensure Context register data are not in cache */
+		cache_operation(TEE_CACHEINVALIDATE, cipherdata->ctx.data,
+					cipherdata->ctx.length);
+	}
 
 	/* Set the descriptor Header with length */
 	desc[0] = DESC_HEADER(desclen);

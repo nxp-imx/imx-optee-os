@@ -17,6 +17,8 @@
  */
 enum imxcrypt_cipher_id {
 	AES_ECB_NOPAD = 0,    ///< AES Algo mode ECB NO PAD
+	AES_CBC_NOPAD,        ///< AES Algo mode CBC NO PAD
+	AES_CTR,              ///< AES Algo mode CTR
 	MAX_CIPHER_SUPPORTED, ///< Maximum Cipher supported
 };
 

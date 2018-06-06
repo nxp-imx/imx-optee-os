@@ -100,6 +100,14 @@ static inline void dump_desc(void *desc)
 			LOAD_LENGTH(len))
 
 /**
+ * @brief  Load value of length \a len to register \a dst of
+ *         class \a cla starting of register offset \a off
+ */
+#define LD_NOIMM_OFF(cla, dst, len, off) \
+			(CMD_LOAD_TYPE | CMD_CLASS(cla) | LOAD_DST(dst) | \
+			LOAD_OFFSET(off) | LOAD_LENGTH(len))
+
+/**
  * @brief  FIFO Load to register \a dst class \a cla with action \a act. \n
  *         The length is externally defined
  *
@@ -136,6 +144,14 @@ static inline void dump_desc(void *desc)
 #define ST_NOIMM(cla, src, len) \
 			(CMD_STORE_TYPE | CMD_CLASS(cla) | STORE_SRC(src) | \
 			STORE_LENGTH(len))
+
+/**
+ * @brief  Store value of length \a len from register \a src of
+ *         class \a cla starting at register offset \a off
+ */
+#define ST_NOIMM_OFF(cla, src, len, off) \
+			(CMD_STORE_TYPE | CMD_CLASS(cla) | STORE_SRC(src) | \
+			STORE_OFFSET(off) | STORE_LENGTH(len))
 
 /**
  * @brief  FIFO Store from register \a src of length \a len
@@ -229,6 +245,14 @@ static inline void dump_desc(void *desc)
 #define CIPHER_INITFINAL(algo, encrypt) \
 			(CMD_OP_TYPE | OP_TYPE(CLASS1) | (algo) | \
 			 ALGO_AS(INIT_FINAL) | \
+			((encrypt == true) ? ALGO_ENCRYPT : ALGO_DECRYPT))
+
+/**
+ * @brief  Cipher Init Operation of algorithm \a algo
+ */
+#define CIPHER_INIT(algo, encrypt) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS1) | (algo) | \
+			 ALGO_AS(INIT) | \
 			((encrypt == true) ? ALGO_ENCRYPT : ALGO_DECRYPT))
 
 /**
