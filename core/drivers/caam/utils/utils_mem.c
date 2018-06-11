@@ -155,6 +155,78 @@ void caam_free_desc(descPointer_t *ptr)
 }
 
 /**
+ * @brief   Allocate internal driver buffer and initialize it with 0s
+ *
+ * @param[in/out] buf   buffer to allocate
+ * @param[in]     size  size in bytes of the memory to allocate
+ *
+ * @retval  CAAM_NO_ERROR		Success
+ * @retval  CAAM_OUT_MEMORY		Allocation error
+ */
+enum CAAM_Status caam_alloc_buf(struct caambuf *buf, size_t size)
+{
+	buf->data = caam_alloc(size);
+
+	if (!buf->data)
+		return CAAM_OUT_MEMORY;
+
+	buf->paddr = virt_to_phys(buf->data);
+	if (!buf->paddr) {
+		caam_free_buf(buf);
+		return CAAM_OUT_MEMORY;
+	}
+
+	buf->length = size;
+	return CAAM_NO_ERROR;
+}
+
+/**
+ * @brief   Allocate internal driver buffer aligned with a cache line
+ *          and initialize it with 0s
+ *
+ * @param[in/out] buf   buffer to allocate
+ * @param[in]     size  size in bytes of the memory to allocate
+ *
+ * @retval  CAAM_NO_ERROR		Success
+ * @retval  CAAM_OUT_MEMORY		Allocation error
+ */
+enum CAAM_Status caam_alloc_align_buf(struct caambuf *buf, size_t size)
+{
+	buf->data = caam_alloc_align(size);
+
+	if (!buf->data)
+		return CAAM_OUT_MEMORY;
+
+	buf->paddr = virt_to_phys(buf->data);
+	if (!buf->paddr) {
+		caam_free_buf(buf);
+		return CAAM_OUT_MEMORY;
+	}
+
+	buf->length = size;
+	return CAAM_NO_ERROR;
+}
+
+/**
+ * @brief   Free internal driver buffer allocated memory
+ *
+ * @param[in/out] buf   buffer to free
+ *
+ */
+void caam_free_buf(struct caambuf *buf)
+{
+	if (buf) {
+		if (buf->data) {
+			free(buf->data);
+			buf->data = NULL;
+		}
+
+		buf->length = 0;
+		buf->paddr  = 0;
+	}
+}
+
+/**
  * @brief   Memory utilities initialization
  *
  * @retval  CAAM_NO_ERROR   Success

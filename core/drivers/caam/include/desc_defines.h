@@ -21,6 +21,7 @@
 #define CLASS_1					0x1
 #define CLASS_2					0x2
 
+#define	CMD_SGT					BIT32(24)
 #define	CMD_IMM					BIT32(23)
 
 /*

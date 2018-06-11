@@ -64,12 +64,42 @@ struct caambuf {
 };
 
 /**
+ * @brief   Definition of a CAAM Block buffer. Buffer used to store
+ *          user source data to build a full algorithm block buffer
+ */
+struct caamblock {
+	struct caambuf buf;     ///< Data buffer
+	size_t         filled;  ///< Current length filled in the buffer
+};
+
+/**
  * @brief   Definition of key size
  */
 struct defkey {
 	uint8_t min;  ///< Minimum size
 	uint8_t max;  ///< Maximum size
 	uint8_t mod;  ///< Key modulus
+};
+
+/**
+ * @brief Scatter/Gather Table type for inputs and outputs data
+ */
+struct sgt {
+	/* Word 0 */
+	uint32_t ptr_ms :8;   ///< Address pointer (MS 8 bits)
+	uint32_t res_w0 :24;  ///< Not used
+
+	/* Word 1 */
+	uint32_t ptr_ls;      ///< Address pointer (LS 32 bits)
+
+	/* Word 2 */
+	uint32_t length :30;  ///< Length (30 bits)
+	uint32_t final  :1;   ///< Last entry in the table
+	uint32_t ext    :1;   ///< Extension bit (if set, point to sgt table)
+
+	/* Word 3 */
+	uint32_t offset :13;  ///< Offset in memory buffer
+	uint32_t res_w3 :19;  ///< Not used
 };
 
 #endif /* __COMMON_H__ */

@@ -11,6 +11,9 @@
 #ifndef __UTILS_MEM_H__
 #define __UTILS_MEM_H__
 
+/* Local includes */
+#include "common.h"
+
 /**
  * @brief   Allocate normal memory and initialize it with 0s
  *
@@ -57,6 +60,37 @@ descPointer_t caam_alloc_desc(uint8_t nbEntries);
  *
  */
 void caam_free_desc(descPointer_t *ptr);
+
+/**
+ * @brief   Allocate internal driver buffer and initialize it with 0s
+ *
+ * @param[in/out] buf   buffer to allocate
+ * @param[in]     size  size in bytes of the memory to allocate
+ *
+ * @retval  CAAM_NO_ERROR		Success
+ * @retval  CAAM_OUT_MEMORY		Allocation error
+ */
+enum CAAM_Status caam_alloc_buf(struct caambuf *buf, size_t size);
+
+/**
+ * @brief   Allocate internal driver buffer aligned with a cache line
+ *          and initialize it with 0s
+ *
+ * @param[in/out] buf   buffer to allocate
+ * @param[in]     size  size in bytes of the memory to allocate
+ *
+ * @retval  CAAM_NO_ERROR		Success
+ * @retval  CAAM_OUT_MEMORY		Allocation error
+ */
+enum CAAM_Status caam_alloc_align_buf(struct caambuf *buf, size_t size);
+
+/**
+ * @brief   Free internal driver buffer allocated memory
+ *
+ * @param[in/out] buf   buffer to free
+ *
+ */
+void caam_free_buf(struct caambuf *buf);
 
 /**
  * @brief   Memory utilities initialization

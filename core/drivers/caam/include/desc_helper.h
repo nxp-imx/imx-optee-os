@@ -161,6 +161,14 @@ static inline void dump_desc(void *desc)
 			FIFO_STORE_LENGTH(len))
 
 /**
+ * @brief  FIFO Store from register \a src of length \a len. Pointer is
+ *         a Scatter/Gatter Table
+ */
+#define FIFO_ST_SGT(src, len) \
+			(CMD_FIFO_STORE_TYPE | CMD_SGT | \
+			 FIFO_STORE_OUTPUT(src) | FIFO_STORE_LENGTH(len))
+
+/**
  * @brief  RNG State Handle instantation operation for \a sh id
  */
 #define RNG_SH_INST(sh) \
