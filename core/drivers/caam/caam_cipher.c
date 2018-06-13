@@ -101,12 +101,13 @@ struct cipherdata {
 	struct caamblock blockbuf;       ///< Temporary Block buffer
 
 	enum imxcrypt_cipher_id algo_id; ///< Cipher Algorithm Id
+	const struct cipheralg  *alg;    ///< Reference to the algo constants
 };
 
 /**
- * @brief   Constants definition of the Hash algorithm
+ * @brief   Constants definition of the AES algorithm
  */
-static const struct cipheralg cipher_alg[MAX_CIPHER_SUPPORTED] = {
+static const struct cipheralg aes_alg[MAX_AES_SUPPORTED] = {
 	{
 		/* AES ECB No Pad */
 		.type        = OP_ALGO(AES) | ALGO_AAI(AES_ECB),
@@ -147,7 +148,58 @@ static const struct cipheralg cipher_alg[MAX_CIPHER_SUPPORTED] = {
 		.def_key     = {.min = 16, .max = 32, .mod = 8},
 		.update      = do_update_cts,
 	},
+};
 
+/**
+ * @brief   Constants definition of the DES algorithm
+ */
+static const struct cipheralg des_alg[MAX_DES_SUPPORTED] = {
+	{
+		/* DES ECB No Pad */
+		.type        = OP_ALGO(DES) | ALGO_AAI(DES_ECB),
+		.size_block  = TEE_DES_BLOCK_SIZE,
+		.size_ctx    = 0,
+		.ctx_offset  = 0,
+		.require_key = NEED_KEY1,
+		.def_key     = {.min = 8, .max = 8, .mod = 8},
+		.update      = do_update_block,
+	},
+	{
+		/* DES CBC No Pad */
+		.type        = OP_ALGO(DES) | ALGO_AAI(DES_CBC),
+		.size_block  = TEE_DES_BLOCK_SIZE,
+		.size_ctx    = sizeof(uint64_t),
+		.ctx_offset  = 0,
+		.require_key = NEED_KEY1 | NEED_IV,
+		.def_key     = {.min = 8, .max = 8, .mod = 8},
+		.update      = do_update_block,
+	},
+};
+
+/**
+ * @brief   Constants definition of the DES3 algorithm
+ */
+static const struct cipheralg des3_alg[MAX_DES3_SUPPORTED] = {
+	{
+		/* Triple-DES ECB No Pad */
+		.type        = OP_ALGO(3DES) | ALGO_AAI(DES_ECB),
+		.size_block  = TEE_DES_BLOCK_SIZE,
+		.size_ctx    = 0,
+		.ctx_offset  = 0,
+		.require_key = NEED_KEY1,
+		.def_key     = {.min = 16, .max = 24, .mod = 8},
+		.update      = do_update_block,
+	},
+	{
+		/* Triple-DES CBC No Pad */
+		.type        = OP_ALGO(3DES) | ALGO_AAI(DES_CBC),
+		.size_block  = TEE_DES_BLOCK_SIZE,
+		.size_ctx    = sizeof(uint64_t),
+		.ctx_offset  = 0,
+		.require_key = NEED_KEY1 | NEED_IV,
+		.def_key     = {.min = 16, .max = 24, .mod = 8},
+		.update      = do_update_block,
+	},
 };
 
 /**
@@ -200,15 +252,19 @@ static enum CAAM_Status do_check_keysize(const struct defkey *def, size_t size)
 /**
  * @brief   Allocate the SW cipher data context
  *
- * @param[in/out]  ctx    Caller context variable
- * @param[in]      algo   Algorithm ID of the context
+ * @param[in/out]  ctx         Caller context variable
+ * @param[in]      algo        Algorithm ID of the context
  *
  * @retval TEE_SUCCESS                 Success
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  */
 static TEE_Result do_allocate(void **ctx, enum imxcrypt_cipher_id algo)
 {
-	struct cipherdata *cipherdata = NULL;
+	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
+
+	struct cipherdata      *cipherdata = NULL;
+	const struct cipheralg *alg;
 
 	CIPHER_TRACE("Allocate Context (0x%"PRIxPTR")", (uintptr_t)ctx);
 
@@ -222,14 +278,38 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_cipher_id algo)
 	cipherdata->descriptor = caam_alloc_desc(MAX_DESC_ENTRIES);
 	if (!cipherdata->descriptor) {
 		CIPHER_TRACE("Allocation descriptor error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto err_allocate;
 	}
 
-	/* Setup the algorithm id */
+	/* Setup the algorithm id and constants reference */
 	cipherdata->algo_id = algo;
+
+	switch (IMX_CIPHER_ID(algo)) {
+	case IMX_AES_ID:
+		CIPHER_TRACE("AES 0x%x", algo);
+		alg = aes_alg;
+		break;
+
+	case IMX_DES_ID:
+		CIPHER_TRACE("DES 0x%x", algo);
+		alg = des_alg;
+		break;
+
+	case IMX_DES3_ID:
+		CIPHER_TRACE("DES3 0x%x", algo);
+		alg = des3_alg;
+		break;
+
+	default:
+		goto err_allocate;
+	}
 
 	/* Initialize the block buffer */
 	cipherdata->blockbuf.filled = 0;
+
+	/* Setup the Algorithm pointer */
+	cipherdata->alg = &alg[algo - IMX_CIPHER_ID(algo)];
 
 	*ctx = cipherdata;
 
@@ -239,7 +319,7 @@ err_allocate:
 	caam_free_desc(&cipherdata->descriptor);
 	caam_free((void **)&cipherdata);
 
-	return TEE_ERROR_OUT_OF_MEMORY;
+	return ret;
 }
 
 /**
@@ -301,22 +381,49 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 	CIPHER_TRACE("Copy State context (0x%"PRIxPTR") to (0x%"PRIxPTR")",
 			 (uintptr_t)src_ctx, (uintptr_t)dst_ctx);
 
-	dst->algo_id = src->algo_id;
+	memcpy(dst, src, sizeof(struct cipherdata));
 }
 
 /**
  * @brief   Get the algorithm block size
  *
- * @param[in]  algo  Algorithm ID
- * @param[out] size  Block size of the algorithm
+ * @param[in]  algo        Algorithm ID
+ * @param[out] size        Block size of the algorithm
  *
- * @retval TEE_SUCCESS                 Success
+ * @retval TEE_SUCCESS     Success
  */
 static TEE_Result do_get_blocksize(enum imxcrypt_cipher_id algo, size_t *size)
 {
-	*size = cipher_alg[algo].size_block;
+	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	return TEE_SUCCESS;
+	size_t       size_block = 0;
+	const struct cipheralg *alg;
+
+	switch (IMX_CIPHER_ID(algo)) {
+	case IMX_AES_ID:
+		alg = aes_alg;
+		break;
+
+	case IMX_DES_ID:
+		alg = des_alg;
+		break;
+
+	case IMX_DES3_ID:
+		alg = des3_alg;
+		break;
+
+	default:
+		return ret;
+	}
+
+	size_block = alg[algo - IMX_CIPHER_ID(algo)].size_block;
+
+	if (size_block) {
+		*size = size_block;
+		ret = TEE_SUCCESS;
+	}
+
+	return ret;
 }
 
 /**
@@ -336,7 +443,7 @@ static enum CAAM_Status do_cpy_block_src(struct cipherdata *ctx,
 	enum CAAM_Status ret;
 
 	struct caamblock       *block = &ctx->blockbuf;
-	const struct cipheralg *alg   = &cipher_alg[ctx->algo_id];
+	const struct cipheralg *alg   = ctx->alg;
 
 	size_t cpy_size;
 
@@ -379,9 +486,9 @@ end_cpy:
  */
 static TEE_Result do_init(struct imxcrypt_cipher_init *dinit)
 {
-	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
-
+	TEE_Result       ret = TEE_ERROR_BAD_PARAMETERS;
 	enum CAAM_Status retstatus;
+
 	struct cipherdata      *cipherdata = dinit->ctx;
 	const struct cipheralg *alg;
 
@@ -391,7 +498,7 @@ static TEE_Result do_init(struct imxcrypt_cipher_init *dinit)
 	CIPHER_TRACE("Algo %d - %s", cipherdata->algo_id,
 				(dinit->encrypt ? "Encrypt" : " Decrypt"));
 
-	alg = &cipher_alg[cipherdata->algo_id];
+	alg = cipherdata->alg;
 
 	/* Check if all required keys are defined */
 	if (alg->require_key & NEED_KEY1) {
@@ -485,7 +592,7 @@ exit_init:
  */
 static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 {
-	TEE_Result    ret = TEE_ERROR_GENERIC;
+	TEE_Result       ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
 
 	struct cipherdata      *cipherdata = dupdate->ctx;
@@ -507,7 +614,7 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 				dupdate->src.length,
 				(dupdate->encrypt ? "Encrypt" : " Decrypt"));
 
-	alg = &cipher_alg[cipherdata->algo_id];
+	alg = cipherdata->alg;
 
 	/* Get and check the payload/cipher physical addresses */
 	psrc = virt_to_phys(dupdate->src.data);
@@ -691,7 +798,7 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
  */
 static TEE_Result do_update_block(struct imxcrypt_cipher_update *dupdate)
 {
-	TEE_Result    ret = TEE_ERROR_BAD_PARAMETERS;
+	TEE_Result       ret = TEE_ERROR_BAD_PARAMETERS;
 	enum CAAM_Status retstatus;
 
 	struct cipherdata      *cipherdata = dupdate->ctx;
@@ -707,7 +814,7 @@ static TEE_Result do_update_block(struct imxcrypt_cipher_update *dupdate)
 				dupdate->src.length,
 				(dupdate->encrypt ? "Encrypt" : " Decrypt"));
 
-	alg = &cipher_alg[cipherdata->algo_id];
+	alg = cipherdata->alg;
 
 	/* Check the length of the payload/cipher */
 	if ((dupdate->src.length < alg->size_block) ||
@@ -832,12 +939,13 @@ static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
 {
 	TEE_Result  ret;
 
-	struct cipherdata *cipherdata = dupdate->ctx;
-	const struct cipheralg *alg;
+	struct cipherdata      *cipherdata = dupdate->ctx;
+	const struct cipheralg *orialg;
 
-	enum imxcrypt_cipher_id orialgo;
+	enum imxcrypt_cipher_id orialgo_id;
 
-	orialgo = cipherdata->algo_id;
+	orialgo_id = cipherdata->algo_id;
+	orialg     = cipherdata->alg;
 
 	switch (cipherdata->algo_id) {
 	case AES_CTS:
@@ -849,7 +957,9 @@ static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
 
 		/* Change context algo to be able update operation */
 		cipherdata->algo_id = dupdate->algo;
-		break;
+		cipherdata->alg = &aes_alg[dupdate->algo - IMX_AES_ID];
+
+	break;
 
 	default:
 		if (cipherdata->algo_id != dupdate->algo)
@@ -857,12 +967,11 @@ static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
 		break;
 	}
 
-	alg = &cipher_alg[cipherdata->algo_id];
-
-	ret = alg->update(dupdate);
+	ret = cipherdata->alg->update(dupdate);
 
 	/* Restore the original algorithm in the context */
-	cipherdata->algo_id = orialgo;
+	cipherdata->algo_id = orialgo_id;
+	cipherdata->alg     = orialg;
 
 	return ret;
 }

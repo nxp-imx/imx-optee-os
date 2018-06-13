@@ -45,24 +45,44 @@ static struct imxcrypt_cipher *do_check_algo(uint32_t algo,
 	uint8_t algo_op;
 	uint8_t algo_id;
 	uint8_t algo_md;
-	int     cipher_algo;
+	uint8_t min_id;
+	uint8_t max_id;
+	enum imxcrypt_cipher_id cipher_algo = 0;
 
 	/* Extract the algorithms fields */
 	algo_op = TEE_ALG_GET_CLASS(algo);
 	algo_id = TEE_ALG_GET_MAIN_ALG(algo);
 	algo_md = TEE_ALG_GET_CHAIN_MODE(algo);
 
-	/* Calculate the Cipher Algorithm enumerate */
-	cipher_algo  = (algo_id - TEE_MAIN_ALGO_AES);
-	cipher_algo += (algo_md - TEE_CHAIN_MODE_ECB_NOPAD);
+	LIB_TRACE("Algo op:%d id:%d md:%d",	algo_op, algo_id, algo_md);
 
-	LIB_TRACE("Algo op:%d id:%d md:%d ==> %d",
-				algo_op, algo_id, algo_md, cipher_algo);
+	if (algo_op == TEE_OPERATION_CIPHER) {
+		switch (algo_id) {
+		case TEE_MAIN_ALGO_AES:
+			min_id = IMX_AES_ID;
+			max_id = MAX_AES_ID;
+			break;
 
-	if ((algo_op == TEE_OPERATION_CIPHER) &&
-		((cipher_algo >= 0) && (cipher_algo < MAX_CIPHER_SUPPORTED))) {
-		cipher     = imxcrypt_getmod(CRYPTO_CIPHER);
-		*cipher_id = cipher_algo;
+		case TEE_MAIN_ALGO_DES:
+			min_id = IMX_DES_ID;
+			max_id = MAX_DES_ID;
+			break;
+
+		case TEE_MAIN_ALGO_DES3:
+			min_id = IMX_DES3_ID;
+			max_id = MAX_DES3_ID;
+			break;
+
+		default:
+			return NULL;
+		}
+
+		cipher_algo = min_id + algo_md;
+
+		if (cipher_algo < max_id) {
+			cipher     = imxcrypt_getmod(CRYPTO_CIPHER);
+			*cipher_id = cipher_algo;
+		}
 	}
 
 	LIB_TRACE("Check Cipher id: %d ret 0x%"PRIxPTR"",
@@ -85,6 +105,7 @@ static struct imxcrypt_cipher *do_check_algo(uint32_t algo,
 TEE_Result crypto_cipher_alloc_ctx(void **ctx, uint32_t algo)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
+
 	struct imxcrypt_cipher  *cipher   = NULL;
 	enum imxcrypt_cipher_id cipher_id = 0;
 
@@ -250,8 +271,11 @@ TEE_Result crypto_cipher_update(void *ctx, uint32_t algo,
 	struct imxcrypt_cipher_update dupdate;
 
 	/* Check the parameters */
-	if ((!ctx) || (!dst))
+	if ((!ctx) || (!dst)) {
+		LIB_TRACE("Bad ctx @0x%08"PRIxPTR" or dst @0x%08"PRIxPTR"",
+					(uintptr_t)ctx, (uintptr_t)dst);
 		return TEE_ERROR_BAD_PARAMETERS;
+	}
 
 	/* Check the mode */
 	if ((mode != TEE_MODE_DECRYPT) && (mode != TEE_MODE_ENCRYPT)) {
@@ -325,6 +349,7 @@ void crypto_cipher_final(void *ctx, uint32_t algo)
 TEE_Result crypto_cipher_get_block_size(uint32_t algo, size_t *size)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
+
 	struct imxcrypt_cipher  *cipher   = NULL;
 	enum imxcrypt_cipher_id cipher_id = 0;
 

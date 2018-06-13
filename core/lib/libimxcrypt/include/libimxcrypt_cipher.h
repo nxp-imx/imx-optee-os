@@ -10,18 +10,44 @@
 #ifndef __LIBIMXCRYPT_CIPHER_H__
 #define __LIBIMXCRYPT_CIPHER_H__
 
+#include <util.h>
 #include <tee_api_types.h>
 
+/** @brief  AES Algorithm type id */
+#define IMX_AES_ID		BIT32(5)
+/** @brief  DES Algorithm type id */
+#define IMX_DES_ID		BIT32(6)
+/** @brief  Triple-DES Algorithm type id */
+#define IMX_DES3_ID		BIT32(7)
+
+/** @brief  Cipher ID mask */
+#define IMX_CIPHER_ID_MASK	(IMX_DES3_ID | IMX_DES_ID | IMX_AES_ID)
+/** @brief  Return the Cipher algo id */
+#define IMX_CIPHER_ID(algo)	(algo & IMX_CIPHER_ID_MASK)
+
 /**
- * @brief   Cipher Algorithm enumerate
+ * @brief   Cipher AES Algorithm enumerate
  */
 enum imxcrypt_cipher_id {
-	AES_ECB_NOPAD = 0,    ///< AES Algo mode ECB NO PAD
-	AES_CBC_NOPAD,        ///< AES Algo mode CBC NO PAD
-	AES_CTR,              ///< AES Algo mode CTR
-	AES_CTS,              ///< AES Algo mode CTS
-	MAX_CIPHER_SUPPORTED, ///< Maximum Cipher supported
+	AES_ECB_NOPAD = IMX_AES_ID,   ///< AES Algo mode ECB NO PAD
+	AES_CBC_NOPAD,                ///< AES Algo mode CBC NO PAD
+	AES_CTR,                      ///< AES Algo mode CTR
+	AES_CTS,                      ///< AES Algo mode CTS
+	MAX_AES_ID,                   ///< Maximum AES ID
+	DES_ECB_NOPAD = IMX_DES_ID,   ///< DES Algo mode ECB NO PAD
+	DES_CBC_NOPAD,                ///< DES Algo mode CBC NO PAD
+	MAX_DES_ID,                   ///< Maximum DES ID
+	DES3_ECB_NOPAD = IMX_DES3_ID, ///< Triple-DES Algo mode ECB NO PAD
+	DES3_CBC_NOPAD,               ///< Triple-DES Algo mode CBC NO PAD
+	MAX_DES3_ID,                  ///< Maximum Triple-DES ID
 };
+
+/** @brief  Maximum AES supported */
+#define MAX_AES_SUPPORTED	(MAX_AES_ID - IMX_AES_ID)
+/** @brief  Maximum DES supported */
+#define MAX_DES_SUPPORTED	(MAX_DES_ID - IMX_DES_ID)
+/** @brief  Maximum Triple-DES supported */
+#define MAX_DES3_SUPPORTED	(MAX_DES3_ID - IMX_DES3_ID)
 
 /**
  * @brief   Cipher Algorithm initialization data
