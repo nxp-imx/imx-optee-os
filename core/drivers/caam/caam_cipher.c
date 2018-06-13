@@ -15,6 +15,7 @@
 #include <kernel/panic.h>
 #include <mm/core_memprot.h>
 #include <tee/cache.h>
+#include <tee/tee_cryp_utl.h>
 #include <utee_defines.h>
 
 /* Library i.MX includes */
@@ -32,7 +33,7 @@
 /*
  * Debug Macros
  */
-#define CIPHER_DEBUG
+//#define CIPHER_DEBUG
 #ifdef CIPHER_DEBUG
 #define DUMP_DESC
 #define DUMP_BUF
@@ -69,6 +70,7 @@
 /* Local Function declaration */
 static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate);
 static TEE_Result do_update_block(struct imxcrypt_cipher_update *dupdate);
+static TEE_Result do_update_cts(struct imxcrypt_cipher_update *dupdate);
 
 /**
  * @brief   Cipher Algorithm definition
@@ -135,6 +137,17 @@ static const struct cipheralg cipher_alg[MAX_CIPHER_SUPPORTED] = {
 		.def_key     = {.min = 16, .max = 32, .mod = 8},
 		.update      = do_update_streaming,
 	},
+	{
+		/* AES CTS, combinaison of CBC and ECB mode */
+		.type        = 0,
+		.size_block  = TEE_AES_BLOCK_SIZE,
+		.size_ctx    = 2 * sizeof(uint64_t),
+		.ctx_offset  = 0,
+		.require_key = NEED_KEY1 | NEED_IV,
+		.def_key     = {.min = 16, .max = 32, .mod = 8},
+		.update      = do_update_cts,
+	},
+
 };
 
 /**
@@ -472,7 +485,7 @@ exit_init:
  */
 static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 {
-	TEE_Result    ret = TEE_ERROR_BAD_PARAMETERS;
+	TEE_Result    ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
 
 	struct cipherdata      *cipherdata = dupdate->ctx;
@@ -515,7 +528,7 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 	}
 
 	/* If there is a context register load it */
-	if (cipherdata->ctx.length) {
+	if ((cipherdata->ctx.length) && (alg->size_ctx)) {
 		desc[desclen++] = LD_NOIMM_OFF(CLASS_1, REG_CTX,
 					cipherdata->ctx.length,
 					alg->ctx_offset);
@@ -608,7 +621,8 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 		desc[desclen++] = pdst;
 	}
 
-	if ((cipherdata->ctx.length) && (noctxbackup == false)) {
+	if ((cipherdata->ctx.length) && (alg->size_ctx) &&
+		(noctxbackup == false)) {
 		/* Store the context */
 		desc[desclen++] = ST_NOIMM_OFF(CLASS_1, REG_CTX,
 				cipherdata->ctx.length, alg->ctx_offset);
@@ -673,6 +687,7 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
  *
  * @retval TEE_SUCCESS               Success
  * @retval TEE_ERROR_GENERIC         Other Error
+ * @retval TEE_ERROR_BAD_PARAMETERS  Bad Parameters
  */
 static TEE_Result do_update_block(struct imxcrypt_cipher_update *dupdate)
 {
@@ -721,7 +736,7 @@ static TEE_Result do_update_block(struct imxcrypt_cipher_update *dupdate)
 	}
 
 	/* If there is a context register load it */
-	if (cipherdata->ctx.length) {
+	if ((cipherdata->ctx.length) && (alg->size_ctx)) {
 		desc[desclen++] = LD_NOIMM_OFF(CLASS_1, REG_CTX,
 				cipherdata->ctx.length, alg->ctx_offset);
 		desc[desclen++] = cipherdata->ctx.paddr;
@@ -741,7 +756,7 @@ static TEE_Result do_update_block(struct imxcrypt_cipher_update *dupdate)
 	desc[desclen++] = FIFO_ST(MSG_DATA, dupdate->dst.length);
 	desc[desclen++] = pdst;
 
-	if (cipherdata->ctx.length) {
+	if ((cipherdata->ctx.length) && (alg->size_ctx)) {
 		/* Store the context */
 		desc[desclen++] = ST_NOIMM_OFF(CLASS_1, REG_CTX,
 				cipherdata->ctx.length, alg->ctx_offset);
@@ -780,6 +795,29 @@ static TEE_Result do_update_block(struct imxcrypt_cipher_update *dupdate)
 
 	return ret;
 }
+/**
+ * @brief   Update of the cipher operation for AES CTS mode.
+ *          Call the tee_aes_cbc_cts_update function that will either
+ *          call AES ECB/CBC algorithm.
+ *
+ * @param[in] dupdate  Data update object
+ *
+ * @retval TEE_SUCCESS               Success
+ * @retval TEE_ERROR_GENERIC         Other Error
+ * @retval TEE_ERROR_BAD_PARAMETERS  Bad Parameters
+ * @retval TEE_ERROR_BAD_STATE       Data length error
+ */
+static TEE_Result do_update_cts(struct imxcrypt_cipher_update *dupdate)
+{
+	CIPHER_TRACE("Algo AES CTS length=%d - %s",
+				dupdate->src.length,
+				(dupdate->encrypt ? "Encrypt" : " Decrypt"));
+
+	return tee_aes_cbc_cts_update(dupdate->ctx, dupdate->ctx,
+		(dupdate->encrypt ? TEE_MODE_ENCRYPT : TEE_MODE_DECRYPT),
+		dupdate->last, dupdate->src.data, dupdate->src.length,
+		dupdate->dst.data);
+}
 
 /**
  * @brief   Update of the cipher operation. Call the algorithm update
@@ -792,15 +830,41 @@ static TEE_Result do_update_block(struct imxcrypt_cipher_update *dupdate)
  */
 static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
 {
+	TEE_Result  ret;
+
 	struct cipherdata *cipherdata = dupdate->ctx;
 	const struct cipheralg *alg;
 
-	if (cipherdata->algo_id != dupdate->algo)
-		return TEE_ERROR_BAD_PARAMETERS;
+	enum imxcrypt_cipher_id orialgo;
+
+	orialgo = cipherdata->algo_id;
+
+	switch (cipherdata->algo_id) {
+	case AES_CTS:
+		/* For this case, check if input algo is AES ECB/CBC */
+		if ((dupdate->algo != AES_ECB_NOPAD) &&
+			(dupdate->algo != AES_CBC_NOPAD) &&
+			(dupdate->algo != AES_CTS))
+			return TEE_ERROR_BAD_PARAMETERS;
+
+		/* Change context algo to be able update operation */
+		cipherdata->algo_id = dupdate->algo;
+		break;
+
+	default:
+		if (cipherdata->algo_id != dupdate->algo)
+			return TEE_ERROR_BAD_PARAMETERS;
+		break;
+	}
 
 	alg = &cipher_alg[cipherdata->algo_id];
 
-	return alg->update(dupdate);
+	ret = alg->update(dupdate);
+
+	/* Restore the original algorithm in the context */
+	cipherdata->algo_id = orialgo;
+
+	return ret;
 }
 
 /**
