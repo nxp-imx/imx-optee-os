@@ -10,14 +10,20 @@
 #ifndef __LIBIMXCRYPT_H__
 #define __LIBIMXCRYPT_H__
 
+/* Global includes */
+#include <tee_api_types.h>
+
 /**
  * @brief   i.MX Crypto Library Algorithm enumeration
  */
 enum imxcrypt_algo_id {
 	CRYPTO_RNG = 0,      ///< RNG driver
-	CRYPTO_HASH,         ///< Hash driver
-	CRYPTO_HMAC,         ///< Hmac driver
+	CRYPTO_HASH,         ///< HASH driver
+	CRYPTO_HASH_SW,      ///< HASH SW driver
+	CRYPTO_HMAC,         ///< HMAC driver
+	CRYPTO_HMAC_SW,      ///< HMAC SW driver
 	CRYPTO_CIPHER,       ///< Cipher driver
+	CRYPTO_RSA,          ///< Assymetric Cipher RSA driver
 	CRYPTO_MAX_ALGO      ///< Maximum numer of algo supported
 };
 
@@ -48,5 +54,24 @@ int imxcrypt_register(enum imxcrypt_algo_id idx, void *ops);
  * retval  address of the crypto module structure
  */
 void *imxcrypt_getmod(enum imxcrypt_algo_id idx);
+
+/**
+ * @brief   Initialize the Software library. Calls all Software drivers
+ *          initialization function ot register then
+ *
+ * @retval TEE_SUCCESS          Success
+ * @retval TEE_ERROR_GENERIC    General failure
+ */
+TEE_Result imxcrypt_libsoft_init(void);
+
+/**
+ * @brief   Crypto driver initialization function called by the Crypto
+ *          Library initialization
+ *
+ * @retval  TEE_SUCCESS              Success
+ * @retval  TEE_ERROR_GENERIC        Generic Error (driver init failure)
+ * @retval  TEE_ERROR_NOT_SUPPORTED  Driver not supported
+ */
+TEE_Result crypto_driver_init(void);
 
 #endif /* __LIBIMXCRYPT_H__ */

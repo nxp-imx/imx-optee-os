@@ -11,6 +11,9 @@
 #include <initcall.h>
 #include <tee_api_types.h>
 
+/* Library i.MX includes */
+#include <libimxcrypt.h>
+
 /* Local includes */
 #include "common.h"
 #include "caam_jr.h"
@@ -39,13 +42,14 @@
 #endif
 
 /**
- * @brief   CAAM driver initialization function called at TEE boot
+ * @brief   Crypto driver initialization function called by the Crypto
+ *          Library initialization
  *
  * @retval  TEE_SUCCESS              Success
  * @retval  TEE_ERROR_GENERIC        Generic Error (driver init failure)
- * @retval  TEE_ERROR_NOT_SUPPORTED  CAAM driver not supported
+ * @retval  TEE_ERROR_NOT_SUPPORTED  Driver not supported
  */
-static TEE_Result caam_init(void)
+TEE_Result crypto_driver_init(void)
 {
 	TEE_Result       retresult = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
@@ -112,5 +116,3 @@ exit_init:
 	return retresult;
 }
 
-
-service_init(caam_init);

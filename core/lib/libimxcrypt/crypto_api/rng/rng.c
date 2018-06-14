@@ -9,7 +9,6 @@
  */
 
 /* Global includes */
-#include <assert.h>
 #include <crypto/crypto.h>
 
 /* Library i.MX includes */
@@ -45,32 +44,5 @@ TEE_Result crypto_rng_read(void *buf, size_t blen)
 	return TEE_ERROR_NOT_IMPLEMENTED;
 }
 
-/**
- * @brief   Add Random generation entropy
- *
- * @param[in] inbuf  Entropy to add
- * @param[in] len    Size of the entropy buffer
- *
- * @retval TEE_SUCCESS               Success
- * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
- * @retval TEE_ERROR_BAD_STATE       RNG is not in correct state
- * @retval TEE_ERROR_NOT_IMPLEMENTED RNG function is not implemented
- */
-TEE_Result crypto_rng_add_entropy(const uint8_t *inbuf,	size_t len)
-{
-	struct imxcrypt_rng *rng;
-
-	if ((!inbuf) || (len == 0))
-		return TEE_ERROR_BAD_PARAMETERS;
-
-	rng = imxcrypt_getmod(CRYPTO_RNG);
-
-	if (rng) {
-		if (rng->add_entropy)
-			return rng->add_entropy(inbuf, len);
-	}
-
-	return TEE_ERROR_NOT_IMPLEMENTED;
-}
 
 

@@ -20,7 +20,7 @@
 /* Utils includes */
 #include "utils_mem.h"
 
-#define MEM_DEBUG
+//#define MEM_DEBUG
 #ifdef MEM_DEBUG
 #define MEM_TRACE		DRV_TRACE
 #else
@@ -80,6 +80,7 @@ void *caam_alloc(size_t size)
 	void *ptr;
 
 	ptr = malloc(size);
+	MEM_TRACE("ALLOC 0x%"PRIxPTR"", (uintptr_t)ptr);
 
 	if (ptr)
 		memset(ptr, 0, size);
@@ -101,6 +102,7 @@ void *caam_alloc_align(size_t size)
 	void *ptr;
 
 	ptr = memalign(cacheline_size, ROUNDUP(size, cacheline_size));
+	MEM_TRACE("ALLOC 0x%"PRIxPTR"", (uintptr_t)ptr);
 	if (ptr)
 		memset(ptr, 0, size);
 
@@ -116,6 +118,7 @@ void *caam_alloc_align(size_t size)
 void caam_free(void **ptr)
 {
 	if (*ptr) {
+		MEM_TRACE("FREE 0x%"PRIxPTR"", (uintptr_t)*ptr);
 		free(*ptr);
 		*ptr = NULL;
 	}
@@ -134,6 +137,7 @@ descPointer_t caam_alloc_desc(uint8_t nbEntries)
 	void *ptr;
 
 	ptr = memalign(DESC_START_ALIGN, DESC_SZBYTES(nbEntries));
+	MEM_TRACE("ALLOC 0x%"PRIxPTR"", (uintptr_t)ptr);
 	if (ptr)
 		memset(ptr, 0, DESC_SZBYTES(nbEntries));
 
@@ -149,6 +153,7 @@ descPointer_t caam_alloc_desc(uint8_t nbEntries)
 void caam_free_desc(descPointer_t *ptr)
 {
 	if (*ptr) {
+		MEM_TRACE("FREE 0x%"PRIxPTR"", (uintptr_t)*ptr);
 		free(*ptr);
 		*ptr = NULL;
 	}
@@ -217,6 +222,7 @@ void caam_free_buf(struct caambuf *buf)
 {
 	if (buf) {
 		if (buf->data) {
+			MEM_TRACE("FREE 0x%"PRIxPTR"", (uintptr_t)buf->data);
 			free(buf->data);
 			buf->data = NULL;
 		}

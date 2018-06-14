@@ -20,7 +20,7 @@ enum imxcrypt_hash_id {
 	HASH_SHA1,          ///< SHA 1
 	HASH_SHA224,        ///< SHA 224
 	HASH_SHA256,        ///< SHA 256
-	HASH_SHA382,        ///< SHA 382
+	HASH_SHA384,        ///< SHA 384
 	HASH_SHA512,        ///< SHA 512
 	MAX_HASH_SUPPORTED  ///< Maximum Hash supported
 };

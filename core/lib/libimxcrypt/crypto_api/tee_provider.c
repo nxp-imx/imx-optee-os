@@ -13,6 +13,8 @@
 
 /* Global includes */
 #include <crypto/crypto.h>
+#include <initcall.h>
+#include <mpalib.h>
 #include <trace.h>
 
 /* Library i.MX includes */
@@ -66,7 +68,7 @@ void *imxcrypt_getmod(enum imxcrypt_algo_id idx)
 }
 
 /**
- * @brief   Crypto library initialization.
+ * @brief   Crypto library initialization called by the tee_cryp_init function.
  *          Calls all initialization functions
  *
  * @retval  TEE_SUCCESS              Success
@@ -78,9 +80,13 @@ TEE_Result crypto_init(void)
 
 	LIB_TRACE("Initialization of the i.MX Crypto Lib");
 
-	/* Check if the RNG is registered */
-	if (imxcrypt_algo[CRYPTO_RNG] != NULL)
-		ret = TEE_SUCCESS;
+	ret = crypto_driver_init();
+
+	if (ret == TEE_SUCCESS) {
+		/* Check if the RNG is registered */
+		if (imxcrypt_algo[CRYPTO_RNG] != NULL)
+			ret = imxcrypt_libsoft_init();
+	}
 
 	return ret;
 }

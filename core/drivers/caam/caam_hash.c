@@ -79,7 +79,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_MD5_HASH_SIZE,
 		.size_block  = TEE_MD5_HASH_SIZE * 4,
 		.size_ctx    = HASH_MSG_LEN + TEE_MD5_HASH_SIZE,
-		.size_key    = TEE_MD5_HASH_SIZE * 2,
+		.size_key    = 32,
 	},
 	{
 		/* sha1 */
@@ -87,7 +87,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA1_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA1_HASH_SIZE,
-		.size_key    = TEE_SHA1_HASH_SIZE * 2,
+		.size_key    = 40,
 	},
 	{
 		/* sha224 */
@@ -95,7 +95,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA224_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA256_HASH_SIZE,
-		.size_key    = TEE_SHA224_HASH_SIZE * 2,
+		.size_key    = 64,
 	},
 	{
 		/* sha256 */
@@ -103,7 +103,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA256_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA256_HASH_SIZE,
-		.size_key    = TEE_SHA256_HASH_SIZE * 2,
+		.size_key    = 64,
 	},
 	{
 		/* sha384 */
@@ -111,7 +111,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA384_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE * 2,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA512_HASH_SIZE,
-		.size_key    = TEE_SHA384_HASH_SIZE * 2,
+		.size_key    = 96,
 	},
 	{
 		/* sha512 */
@@ -119,7 +119,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA512_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE * 2,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA512_HASH_SIZE,
-		.size_key    = TEE_SHA512_HASH_SIZE * 2,
+		.size_key    = 128,
 	},
 };
 
@@ -212,13 +212,11 @@ static enum CAAM_Status do_reduce_key(const struct hashalg *alg,
 	jobctx.desc = desc;
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
-	if (retstatus == CAAM_NO_ERROR) {
-		cache_operation(TEE_CACHEINVALIDATE, outkey->data,
-			outkey->length);
-		HASH_DUMPBUF("Reduced Key", outkey->data, outkey->length);
-	} else {
+	if (retstatus != CAAM_NO_ERROR) {
 		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
 		retstatus = CAAM_FAILURE;
+	} else {
+		HASH_DUMPBUF("Reduced Key", outkey->data, outkey->length);
 	}
 
 exit_reduce:
@@ -248,9 +246,9 @@ static TEE_Result do_split_key(void *ctx, const uint8_t *ikey, size_t ilen)
 
 	const struct hashalg *alg = &hash_alg[hashdata->algo_id];
 
-	struct caambuf inkey;
-	struct caambuf key      = {0};
-	uint8_t        *hashkey = NULL;
+	struct caambuf     inkey;
+	struct caambuf     key     = {0};
+	struct caambuf     hashkey = {0};
 
 	struct jr_jobctx jobctx  = {0};
 	descPointer_t    desc     = NULL;
@@ -273,18 +271,14 @@ static TEE_Result do_split_key(void *ctx, const uint8_t *ikey, size_t ilen)
 		goto exit_split_key;
 	}
 
-	/* Allocate the split key and keep it in the context */
-	hashdata->key.data = caam_alloc_align(alg->size_key);
-	if (!hashdata->key.data) {
-		HASH_TRACE("HMAC key allocation error");
-		ret = TEE_ERROR_OUT_OF_MEMORY;
-		goto exit_split_key;
-	}
-
-	hashdata->key.paddr = virt_to_phys(hashdata->key.data);
-	if (!hashdata->key.paddr)	{
-		HASH_TRACE("HMAC Key physical address error");
-		goto exit_split_key;
+	if (hashdata->key.data == NULL) {
+		/* Allocate the split key and keep it in the context */
+		retstatus = caam_alloc_align_buf(&hashdata->key, alg->size_key);
+		if (retstatus != CAAM_NO_ERROR) {
+			HASH_TRACE("HMAC key allocation error");
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto exit_split_key;
+		}
 	}
 
 	hashdata->key.length = alg->size_key;
@@ -292,20 +286,15 @@ static TEE_Result do_split_key(void *ctx, const uint8_t *ikey, size_t ilen)
 	if (inkey.length > alg->size_block) {
 		HASH_TRACE("Input key must be reduced");
 
-		hashkey = caam_alloc_align(alg->size_digest);
-		if (!hashkey) {
+		retstatus = caam_alloc_align_buf(&hashkey, alg->size_digest);
+		if (retstatus != CAAM_NO_ERROR) {
 			HASH_TRACE("Reduced Key allocation error");
 			ret = TEE_ERROR_OUT_OF_MEMORY;
 			goto exit_split_key;
 		}
 
-		key.data  = hashkey;
-		key.paddr = virt_to_phys(key.data);
-		if (!key.paddr)	{
-			HASH_TRACE("Reduced Key physical address error");
-			goto exit_split_key;
-		}
-
+		key.data   = hashkey.data;
+		key.paddr  = hashkey.paddr;
 		key.length = alg->size_digest;
 
 		retstatus = do_reduce_key(alg, &inkey, &key);
@@ -343,20 +332,17 @@ static TEE_Result do_split_key(void *ctx, const uint8_t *ikey, size_t ilen)
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		cache_operation(TEE_CACHEINVALIDATE, hashdata->key.data,
-						hashdata->key.length);
 		HASH_DUMPBUF("Split Key", hashdata->key.data,
 			hashdata->key.length);
 
 		hashdata->key_type = KEY_PRECOMP;
-
 		ret = TEE_SUCCESS;
 	} else {
 		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
 	}
 
 exit_split_key:
-	caam_free((void **)&hashkey);
+	caam_free_buf(&hashkey);
 	caam_free_desc(&desc);
 
 	return ret;
@@ -378,21 +364,17 @@ static void do_free_intern(struct hashdata *ctx)
 		ctx->descriptor = NULL;
 
 		/* Free the circular buffer */
-		caam_free((void **)&ctx->circbuf[0].data);
-		ctx->circbuf[0].paddr = 0;
+		caam_free_buf(&ctx->circbuf[0]);
 
 		/* Clear the other circular buffer data address */
 		ctx->circbuf[1].data  = NULL;
 		ctx->circbuf[1].paddr = 0;
 
 		/* Free the context register */
-		caam_free((void **)&ctx->ctx.data);
-		ctx->ctx.paddr = 0;
+		caam_free_buf(&ctx->ctx);
 
 		/* Free the HMAC Key */
-		caam_free((void **)&ctx->key.data);
-		ctx->key.paddr  = 0;
-		ctx->key.length = 0;
+		caam_free_buf(&ctx->key);
 		ctx->key_type   = KEY_EMPTY;
 	}
 }
@@ -410,8 +392,7 @@ static enum CAAM_Status do_allocate_intern(struct hashdata *ctx)
 {
 	TEE_Result ret = CAAM_OUT_MEMORY;
 
-	void       *buf;
-	paddr_t    paddr_buf;
+	struct caambuf  buf;
 
 	HASH_TRACE("Allocate Context (0x%"PRIxPTR")", (uintptr_t)ctx);
 
@@ -423,43 +404,32 @@ static enum CAAM_Status do_allocate_intern(struct hashdata *ctx)
 	}
 
 	/* Allocate the Circular buffers - size = 2x blocks */
-	buf = caam_alloc_align(2 * hash_alg[ctx->algo_id].size_block);
-	if (!buf) {
+	ret = caam_alloc_align_buf(&buf, 2 * hash_alg[ctx->algo_id].size_block);
+	if (ret != CAAM_NO_ERROR) {
 		HASH_TRACE("Allocation circular buffer error");
 		goto exit_alloc;
 	}
 
-	paddr_buf = virt_to_phys(buf);
-	if (!paddr_buf) {
-		HASH_TRACE("Circular buffer physical address error");
-		ret = CAAM_FAILURE;
-		goto exit_alloc;
-	}
-
-	ctx->circbuf[0].data   = buf;
-	ctx->circbuf[0].paddr  = paddr_buf;
-	ctx->circbuf[1].data   = (uint8_t *)buf +
-				hash_alg[ctx->algo_id].size_block;
-	ctx->circbuf[1].paddr  = paddr_buf + hash_alg[ctx->algo_id].size_block;
+	ctx->circbuf[0].data   = buf.data;
+	ctx->circbuf[0].paddr  = buf.paddr;
+	/* Ensure buffer length is 0 */
+	ctx->circbuf[0].length = 0;
+	ctx->circbuf[1].data   = ctx->circbuf[0].data +
+					hash_alg[ctx->algo_id].size_block;
+	ctx->circbuf[1].paddr  = ctx->circbuf[0].paddr +
+					hash_alg[ctx->algo_id].size_block;
+	/* Ensure buffer length is 0 */
+	ctx->circbuf[1].length = 0;
 
 	/* Allocate the CAAM Context register */
-	buf = caam_alloc_align(hash_alg[ctx->algo_id].size_ctx);
-	if (!buf) {
+	ret = caam_alloc_align_buf(&ctx->ctx, hash_alg[ctx->algo_id].size_ctx);
+#ifdef HASH_DEBUG
+	if (ret != CAAM_NO_ERROR)
 		HASH_TRACE("Allocation context register error");
-		goto exit_alloc;
-	}
+#endif
 
-	paddr_buf = virt_to_phys(buf);
-	if (!paddr_buf) {
-		HASH_TRACE("Context register physical address error");
-		ret = CAAM_FAILURE;
-		goto exit_alloc;
-	}
-
-	ctx->ctx.data  = buf;
-	ctx->ctx.paddr = paddr_buf;
-
-	ret = CAAM_NO_ERROR;
+	/* Ensure buffer length is 0 */
+	ctx->ctx.length = 0;
 
 exit_alloc:
 	if (ret != CAAM_NO_ERROR) {
@@ -682,8 +652,8 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 				/* Algo Operation - HMAC Init */
 				desc[desclen++] = HMAC_INIT_PRECOMP(alg->type);
 
-				/* Invalidate Split key */
-				cache_operation(TEE_CACHEINVALIDATE,
+				/* Clean the Split key */
+				cache_operation(TEE_CACHECLEAN,
 					hashdata->key.data,
 					hashdata->key.length);
 
@@ -746,12 +716,8 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 
 		if (retstatus == CAAM_NO_ERROR) {
 			ret = TEE_SUCCESS;
-#ifdef DUMP_BUF
-			cache_operation(TEE_CACHEINVALIDATE, hashdata->ctx.data,
-							hashdata->ctx.length);
 			HASH_DUMPBUF("CTX", hashdata->ctx.data,
-					hashdata->ctx.length);
-#endif
+				hashdata->ctx.length);
 		} else {
 			HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
 			ret = TEE_ERROR_GENERIC;
@@ -838,8 +804,8 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 		desc[desclen++] = LD_KEY_SPLIT(hashdata->key.length);
 		desc[desclen++] = hashdata->key.paddr;
 
-		/* Invalidate Split key */
-		cache_operation(TEE_CACHEINVALIDATE, hashdata->key.data,
+		/* Clean Split key */
+		cache_operation(TEE_CACHECLEAN, hashdata->key.data,
 						hashdata->key.length);
 	}
 
@@ -889,7 +855,6 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 
 	if (retstatus == CAAM_NO_ERROR) {
 		ret = TEE_SUCCESS;
-		cache_operation(TEE_CACHEINVALIDATE, digest, alg->size_digest);
 		HASH_DUMPBUF("Digest", digest, alg->size_digest);
 	} else {
 		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
@@ -926,6 +891,7 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 
 	memcpy(dst->ctx.data, src->ctx.data, src->ctx.length);
 	dst->ctx.length = src->ctx.length;
+	cache_operation(TEE_CACHECLEAN, dst->ctx.data, dst->ctx.length);
 
 	for (idx = 0; idx < NB_CIRC_BUFFER; idx++) {
 		dst->circbuf[idx].length = src->circbuf[idx].length;
@@ -935,9 +901,14 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 		}
 	}
 
-	dst->key.length = src->key.length;
-	if (src->key.length)
-		memcpy(dst->key.data, src->key.data, src->key.length);
+	dst->key_type   = src->key_type;
+	if (src->key.length) {
+		if (caam_alloc_align_buf(&dst->key,
+					hash_alg[src->algo_id].size_key) ==
+			CAAM_NO_ERROR) {
+			memcpy(dst->key.data, src->key.data, src->key.length);
+		}
+	}
 }
 
 /**

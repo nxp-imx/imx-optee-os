@@ -10,8 +10,8 @@
 #ifndef __LIBIMXCRYPT_CIPHER_H__
 #define __LIBIMXCRYPT_CIPHER_H__
 
-#include <util.h>
 #include <tee_api_types.h>
+#include <util.h>
 
 /** @brief  AES Algorithm type id */
 #define IMX_AES_ID		BIT32(5)
@@ -26,7 +26,7 @@
 #define IMX_CIPHER_ID(algo)	(algo & IMX_CIPHER_ID_MASK)
 
 /**
- * @brief   Cipher AES Algorithm enumerate
+ * @brief   Cipher Algorithm enumerate
  */
 enum imxcrypt_cipher_id {
 	AES_ECB_NOPAD = IMX_AES_ID,   ///< AES Algo mode ECB NO PAD

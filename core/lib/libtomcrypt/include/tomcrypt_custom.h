@@ -39,19 +39,19 @@
 
 /* macros for various libc functions you can change for embedded targets */
 #ifndef XMALLOC
-   #ifdef malloc 
+   #ifdef malloc
    #define LTC_NO_PROTOTYPES
    #endif
 #define XMALLOC  malloc
 #endif
 #ifndef XREALLOC
-   #ifdef realloc 
+   #ifdef realloc
    #define LTC_NO_PROTOTYPES
    #endif
 #define XREALLOC realloc
 #endif
 #ifndef XCALLOC
-   #ifdef calloc 
+   #ifdef calloc
    #define LTC_NO_PROTOTYPES
    #endif
 #define XCALLOC  calloc
@@ -76,7 +76,7 @@
 #define XMEMCPY  memcpy
 #endif
 #ifndef XMEMCMP
-   #ifdef memcmp 
+   #ifdef memcmp
    #define LTC_NO_PROTOTYPES
    #endif
 #define XMEMCMP  memcmp
@@ -113,12 +113,12 @@
    #define LTC_BLOWFISH
    #define LTC_DES
    #define LTC_CAST5
-   
+
    #define LTC_NO_MODES
    #define LTC_ECB_MODE
    #define LTC_CBC_MODE
    #define LTC_CTR_MODE
-   
+
    #define LTC_NO_HASHES
    #define LTC_SHA1
    #define LTC_SHA512
@@ -136,13 +136,17 @@
    #define LTC_SPRNG
    #define LTC_DEVRANDOM
    #define LTC_TRY_URANDOM_FIRST
-      
+
    #define LTC_NO_PK
    #define LTC_MRSA
    #define LTC_MECC
-#endif   
+#endif
 
 /* Set LTC_ options based on OP-TEE configuration */
+#ifndef CFG_CRYPTO_WITH_HW_ACC
+/* Pure software algorithm implementation (with possibility to
+ * use ARM Cryptographic Accelerator if supported
+ */
 
 #define LTC_NO_CIPHERS
 
@@ -260,6 +264,12 @@
    #define LTC_DER
 #endif
 
+#else  // CFG_CRYPTO_WITH_HW_ACC
+#include "tomcrypt_custom_with_hw.h"
+#endif // CFG_CRYPTO_WITH_HW_ACC
+
+
+
 /* Use small code where possible */
 /* #define LTC_SMALL_CODE */
 
@@ -310,7 +320,7 @@
 #define LTC_LRW_MODE
 #ifndef LTC_NO_TABLES
    /* like GCM mode this will enable 16 8x128 tables [64KB] that make
-    * seeking very fast.  
+    * seeking very fast.
     */
    #define LTC_LRW_TABLES
 #endif
@@ -321,7 +331,7 @@
 #endif /* LTC_NO_MODES */
 
 /* ---> One-Way Hash Functions <--- */
-#ifndef LTC_NO_HASHES 
+#ifndef LTC_NO_HASHES
 
 #define LTC_SHA512
 #define LTC_SHA384
@@ -356,7 +366,7 @@
 
 /* Use 64KiB tables */
 #ifndef LTC_NO_TABLES
-   #define LTC_GCM_TABLES 
+   #define LTC_GCM_TABLES
 #endif
 
 /* USE SSE2? requires GCC works on x86_32 and x86_64*/
@@ -380,6 +390,7 @@
 
 /* Fortuna PRNG */
 #define LTC_FORTUNA
+
 /* reseed every N calls to the read function */
 #define LTC_FORTUNA_WD    10
 /* number of pools (4..32) can save a bit of ram by lowering the count */
@@ -420,7 +431,7 @@
 
 #if defined(TFM_LTC_DESC) && defined(LTC_MECC)
    #define LTC_MECC_ACCEL
-#endif   
+#endif
 
 /* do we want fixed point ECC */
 /* #define LTC_MECC_FP */
@@ -461,7 +472,7 @@
 
 #ifdef LTC_MRSA
    #define LTC_PKCS_1
-#endif   
+#endif
 
 #if defined(LTC_DER) && !defined(LTC_MPI)
    #error ASN.1 DER requires MPI functionality
@@ -470,7 +481,6 @@
 #if (defined(LTC_MDSA) || defined(LTC_MRSA) || defined(LTC_MECC) || defined(MKATJA)) && !defined(LTC_DER)
    #error PK requires ASN.1 DER functionality, make sure LTC_DER is enabled
 #endif
-
 
 /* THREAD management */
 #if defined(CFG_LTC_OPTEE_THREAD)
