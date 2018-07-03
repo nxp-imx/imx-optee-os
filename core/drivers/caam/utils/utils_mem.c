@@ -233,6 +233,50 @@ void caam_free_buf(struct caambuf *buf)
 }
 
 /**
+ * @brief   Copy source data into the block buffer
+ *
+ * @param[in/out] block  Block buffer
+ * @param[in]     src    Source to copy
+ * @param[in]     offset Source offset to start
+ *
+ * @retval CAAM_NO_ERROR       Success
+ * @retval CAAM_OUT_MEMORY     Out of memory
+ */
+enum CAAM_Status caam_cpy_block_src(struct caamblock *block,
+				struct imxcrypt_buf *src,
+				size_t offset)
+{
+	enum CAAM_Status ret;
+	size_t cpy_size;
+
+	/* Check if the temporary buffer is allocted, else allocate it */
+	if (!block->buf.data) {
+		ret = caam_alloc_align_buf(&block->buf, block->max);
+		if (ret != CAAM_NO_ERROR) {
+			MEM_TRACE("Allocation Block buffer error");
+			goto end_cpy;
+		}
+	}
+
+	/* Calculate the number of bytes to copy in the block buffer */
+	MEM_TRACE("Current buffer is %d (%d) bytes", block->filled, block->max);
+
+	cpy_size = block->max - block->filled;
+	cpy_size = MIN(cpy_size, (src->length - offset));
+
+	MEM_TRACE("Copy %d of src %d bytes", cpy_size, src->length);
+
+	memcpy(&block->buf.data[block->filled], &src->data[offset], cpy_size);
+
+	block->filled += cpy_size;
+
+	ret = CAAM_NO_ERROR;
+
+end_cpy:
+	return ret;
+}
+
+/**
  * @brief   Memory utilities initialization
  *
  * @retval  CAAM_NO_ERROR   Success

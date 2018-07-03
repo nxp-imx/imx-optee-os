@@ -11,6 +11,9 @@
 #ifndef __UTILS_MEM_H__
 #define __UTILS_MEM_H__
 
+/* Library i.MX includes */
+#include <libimxcrypt.h>
+
 /* Local includes */
 #include "common.h"
 
@@ -91,6 +94,20 @@ enum CAAM_Status caam_alloc_align_buf(struct caambuf *buf, size_t size);
  *
  */
 void caam_free_buf(struct caambuf *buf);
+
+/**
+ * @brief   Copy source data into the block buffer
+ *
+ * @param[in/out] block  Block buffer
+ * @param[in]     src    Source to copy
+ * @param[in]     offset Source offset to start
+ *
+ * @retval CAAM_NO_ERROR       Success
+ * @retval CAAM_OUT_MEMORY     Out of memory
+ */
+enum CAAM_Status caam_cpy_block_src(struct caamblock *block,
+			struct imxcrypt_buf *src,
+			size_t offset);
 
 /**
  * @brief   Memory utilities initialization

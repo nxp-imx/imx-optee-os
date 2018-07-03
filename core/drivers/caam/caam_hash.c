@@ -12,6 +12,7 @@
 #include <string.h>
 
 /* Global includes */
+#include <kernel/panic.h>
 #include <mm/core_memprot.h>
 #include <tee/cache.h>
 #include <utee_defines.h>
@@ -36,8 +37,8 @@
  */
 //#define HASH_DEBUG
 #ifdef HASH_DEBUG
-#define DUMP_DESC
-#define DUMP_BUF
+//#define DUMP_DESC
+//#define DUMP_BUF
 #define HASH_TRACE		DRV_TRACE
 #else
 #define HASH_TRACE(...)
@@ -124,11 +125,6 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 };
 
 /**
- * @brief   Define the number of circular buffers to handle
- */
-#define NB_CIRC_BUFFER		2
-
-/**
  * @brief    Maximum number of entry in the descriptor
  */
 #define MAX_DESC_ENTRIES	20
@@ -145,21 +141,18 @@ enum keytype {
  * @brief   Full hashing data SW context
  */
 struct hashdata {
-	descPointer_t descriptor;      ///< Job descriptor
+	descPointer_t descriptor;       ///< Job descriptor
 
-	struct caambuf circbuf[NB_CIRC_BUFFER];  ///< Circular buffers
-	uint8_t active_buf;            ///< Current in use circular buffer
+	struct caamblock blockbuf;      ///< Temporary Block buffer
 
-	struct caambuf ctx;            ///< Hash Context used by the CAAM
+	struct caambuf ctx;             ///< Hash Context used by the CAAM
 
-	struct caambuf key;            ///< HMAC split key
-	enum keytype   key_type;       ///< HMAC key type
+	struct caambuf key;             ///< HMAC split key
+	enum keytype   key_type;        ///< HMAC key type
 
-	enum imxcrypt_hash_id algo_id; ///< Hash Algorithm Id
+	enum imxcrypt_hash_id algo_id;  ///< Hash Algorithm Id
+	const struct hashalg  *alg;     ///< Reference to the algo constants
 };
-
-static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
-					const uint8_t *data, size_t len);
 
 /**
  * @brief   Reduce key to be a hash algorithm block size maximum
@@ -244,7 +237,7 @@ static TEE_Result do_split_key(void *ctx, const uint8_t *ikey, size_t ilen)
 
 	struct hashdata *hashdata = ctx;
 
-	const struct hashalg *alg = &hash_alg[hashdata->algo_id];
+	const struct hashalg *alg = hashdata->alg;
 
 	struct caambuf     inkey;
 	struct caambuf     key     = {0};
@@ -361,21 +354,16 @@ static void do_free_intern(struct hashdata *ctx)
 	if (ctx) {
 		/* Free the descriptor */
 		caam_free_desc(&ctx->descriptor);
-		ctx->descriptor = NULL;
 
-		/* Free the circular buffer */
-		caam_free_buf(&ctx->circbuf[0]);
-
-		/* Clear the other circular buffer data address */
-		ctx->circbuf[1].data  = NULL;
-		ctx->circbuf[1].paddr = 0;
+		/* Free the Temporary buffer */
+		caam_free_buf(&ctx->blockbuf.buf);
 
 		/* Free the context register */
 		caam_free_buf(&ctx->ctx);
 
 		/* Free the HMAC Key */
 		caam_free_buf(&ctx->key);
-		ctx->key_type   = KEY_EMPTY;
+		ctx->key_type = KEY_EMPTY;
 	}
 }
 
@@ -392,8 +380,6 @@ static enum CAAM_Status do_allocate_intern(struct hashdata *ctx)
 {
 	TEE_Result ret = CAAM_OUT_MEMORY;
 
-	struct caambuf  buf;
-
 	HASH_TRACE("Allocate Context (0x%"PRIxPTR")", (uintptr_t)ctx);
 
 	/* Allocate the descriptor */
@@ -403,26 +389,13 @@ static enum CAAM_Status do_allocate_intern(struct hashdata *ctx)
 		goto exit_alloc;
 	}
 
-	/* Allocate the Circular buffers - size = 2x blocks */
-	ret = caam_alloc_align_buf(&buf, 2 * hash_alg[ctx->algo_id].size_block);
-	if (ret != CAAM_NO_ERROR) {
-		HASH_TRACE("Allocation circular buffer error");
-		goto exit_alloc;
-	}
-
-	ctx->circbuf[0].data   = buf.data;
-	ctx->circbuf[0].paddr  = buf.paddr;
-	/* Ensure buffer length is 0 */
-	ctx->circbuf[0].length = 0;
-	ctx->circbuf[1].data   = ctx->circbuf[0].data +
-					hash_alg[ctx->algo_id].size_block;
-	ctx->circbuf[1].paddr  = ctx->circbuf[0].paddr +
-					hash_alg[ctx->algo_id].size_block;
-	/* Ensure buffer length is 0 */
-	ctx->circbuf[1].length = 0;
+	/* Initialize the block buffer */
+	ctx->blockbuf.filled = 0;
+	ctx->blockbuf.max    = ctx->alg->size_block;
 
 	/* Allocate the CAAM Context register */
-	ret = caam_alloc_align_buf(&ctx->ctx, hash_alg[ctx->algo_id].size_ctx);
+	ret = caam_alloc_align_buf(&ctx->ctx, ctx->alg->size_ctx);
+
 #ifdef HASH_DEBUG
 	if (ret != CAAM_NO_ERROR)
 		HASH_TRACE("Allocation context register error");
@@ -480,6 +453,7 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
 	HASH_TRACE("Allocated Context (0x%"PRIxPTR")", (uintptr_t)hashdata);
 
 	hashdata->algo_id = algo;
+	hashdata->alg     = &hash_alg[algo];
 
 	*ctx = hashdata;
 
@@ -501,10 +475,10 @@ static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
 
 	/* Check if the algorithm is equal to the context one's */
 	if (hashdata->algo_id == algo) {
-		/* Reset the software context */
-		hashdata->active_buf = 0;
-		hashdata->circbuf[0].length = 0;
-		hashdata->circbuf[1].length = 0;
+		/* Initialize the block buffer */
+		hashdata->blockbuf.filled = 0;
+
+		/* Ensure Context length is 0 */
 		hashdata->ctx.length = 0;
 
 		hashdata->key.length = 0;
@@ -536,18 +510,18 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 	enum CAAM_Status retstatus;
 
 	struct hashdata      *hashdata = ctx;
-	struct caambuf       *circbuf;
-	const struct hashalg *alg = &hash_alg[algo];
+	const struct hashalg *alg = hashdata->alg;
 
 	struct jr_jobctx jobctx = {0};
 	descPointer_t    desc;
 	uint8_t          desclen = 1;
 
-	uint8_t       next_active_buf;
+	size_t fullSize;
+	size_t size_topost;
+	size_t size_todo;
+	size_t size_inmade;
+
 	paddr_t       paddr_data;
-	size_t        size_todo;
-	size_t        size_topost;
-	const uint8_t *in_topost  = data;
 
 	if (hashdata->algo_id != algo) {
 		HASH_TRACE("Context algo is %d and asked for %d",
@@ -574,58 +548,13 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 	HASH_TRACE("Update Algo %d - Input @0x%08"PRIxPTR"-%d",
 				algo, (uintptr_t)data, len);
 
-	/* Set next active buffer to current active buffer */
-	next_active_buf = hashdata->active_buf;
-	circbuf = &hashdata->circbuf[hashdata->active_buf];
-
-	/* Check if there are data postponed */
-	if (circbuf->length) {
-		/*
-		 * Calculate the maximum size of data that can be done
-		 * function of the postponed data and the blocksize
-		 */
-		HASH_TRACE("Add Data to circbuf %d - %d",
-					hashdata->active_buf, circbuf->length);
-
-		size_todo   = len + circbuf->length;
-		size_topost = size_todo % alg->size_block;
-		size_todo  -= size_topost;
-
-		/* If size_todo is null, complete the circular buffer */
-		if (size_todo == 0) {
-			HASH_TRACE("Complete Circular with %d", len);
-
-			memcpy((circbuf->data + circbuf->length), data, len);
-			circbuf->length += len;
-			size_topost = 0;
-		}
-	} else {
-		size_todo   = len;
-		size_topost = len % alg->size_block;
-		size_todo  -= size_topost;
-	}
-
-	HASH_TRACE("Data size to do %d - Postpone %d", size_todo, size_topost);
-
-	if (size_topost) {
-		next_active_buf += 1;
-		next_active_buf %= NB_CIRC_BUFFER;
-
-		/* Calculate the input pointer for the postponed data */
-		if (size_todo > 0)
-			in_topost += (len - size_topost);
-
-		/* Some data to be saved for the next block size to update */
-		memcpy(hashdata->circbuf[next_active_buf].data,
-			in_topost, size_topost);
-
-		hashdata->circbuf[next_active_buf].length = size_topost;
-
-		HASH_TRACE("Save postponed data to buffer #%d",
-			next_active_buf);
-		HASH_DUMPBUF("Cirbuf", hashdata->circbuf[next_active_buf].data,
-			hashdata->circbuf[next_active_buf].length)
-	}
+	/* Calculate the total data to be handled */
+	fullSize = hashdata->blockbuf.filled + len;
+	size_topost = fullSize  % alg->size_block;
+	size_todo   = fullSize - size_topost;
+	size_inmade = len - size_topost;
+	HASH_TRACE("FullSize %d - posted %d - todo %d",
+			fullSize, size_topost, size_todo);
 
 	if (size_todo) {
 		desc = hashdata->descriptor;
@@ -664,38 +593,27 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 
 			hashdata->ctx.length = alg->size_ctx;
 		}
-			/* Data to be hashed */
-		if (circbuf->length) {
-			size_todo -= circbuf->length;
 
-			/* Add the saved data in the circular buffer */
-			if (size_todo) {
-				desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG,
-						NOACTION);
-			} else {
-				desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG,
-						LAST_C2);
-			}
-			desc[desclen++] = circbuf->paddr;
-			desc[desclen++] = circbuf->length;
+		if (hashdata->blockbuf.filled != 0) {
+			/* Add the temporary buffer */
+			desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG, NOACTION);
+			desc[desclen++] = hashdata->blockbuf.buf.paddr;
+			desc[desclen++] = hashdata->blockbuf.filled;
 
 			/* Clean the circular buffer data to be loaded */
-			cache_operation(TEE_CACHECLEAN, circbuf->data,
-					circbuf->length);
-
-			circbuf->length = 0;
+			cache_operation(TEE_CACHECLEAN,
+					hashdata->blockbuf.buf.data,
+					hashdata->blockbuf.filled);
+			hashdata->blockbuf.filled = 0;
 		}
 
 		/* Add the input data multiple of blocksize */
-		if (size_todo) {
-			desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG, LAST_C2);
-			desc[desclen++] = paddr_data;
-			desc[desclen++] = size_todo;
+		desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG, LAST_C2);
+		desc[desclen++] = paddr_data;
+		desc[desclen++] = size_inmade;
 
-			/* Clean the input data to be loaded */
-			cache_operation(TEE_CACHECLEAN, (void *)data,
-					size_todo);
-		}
+		/* Clean the input data to be loaded */
+		cache_operation(TEE_CACHECLEAN, (void *)data, size_inmade);
 
 		/* Save the running context */
 		desc[desclen++] = ST_NOIMM(CLASS_2, REG_CTX,
@@ -723,17 +641,31 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 			ret = TEE_ERROR_GENERIC;
 		}
 	} else {
-		/* Return success, all data postponed */
 		ret = TEE_SUCCESS;
+
+		if (size_topost) {
+			/* All input data must be saved */
+			size_inmade = 0;
+		}
 	}
 
-	hashdata->active_buf = next_active_buf;
+	if (size_topost) {
+		struct imxcrypt_buf indata = {
+			.data = (uint8_t *)data,
+			.length = len};
+
+		HASH_TRACE("Post %d of input len %d made %d",
+				size_topost, len, size_inmade);
+		ret = caam_cpy_block_src(&hashdata->blockbuf, &indata,
+				size_inmade);
+	}
 
 exit_update:
 	if (ret != TEE_SUCCESS)
 		do_free_intern(hashdata);
 
 	return ret;
+
 }
 
 /**
@@ -757,8 +689,7 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	enum CAAM_Status retstatus;
 
 	struct hashdata      *hashdata = ctx;
-	struct caambuf       *circbuf;
-	const struct hashalg *alg = &hash_alg[algo];
+	const struct hashalg *alg = hashdata->alg;
 
 	struct jr_jobctx jobctx = {0};
 	descPointer_t    desc;
@@ -795,7 +726,6 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	HASH_TRACE("Final Algo %d - Digest @0x%08"PRIxPTR"-%d",
 				algo, (uintptr_t)digest, len);
 
-	circbuf = &hashdata->circbuf[hashdata->active_buf];
 	desc = hashdata->descriptor;
 
 	/* Check if there is a key to load it */
@@ -825,6 +755,7 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 		cache_operation(TEE_CACHEINVALIDATE, hashdata->ctx.data,
 						hashdata->ctx.length);
 		HASH_DUMPBUF("CTX", hashdata->ctx.data, hashdata->ctx.length);
+		hashdata->ctx.length = 0;
 	} else {
 		HASH_TRACE("Init/Final Operation");
 		if (hashdata->key_type == KEY_PRECOMP)
@@ -833,11 +764,14 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 			desc[desclen++] = HASH_INITFINAL(alg->type);
 	}
 
-	HASH_DUMPBUF("Cirbuf", circbuf->data, circbuf->length);
+	HASH_DUMPBUF("Temporary Block", hashdata->blockbuf.buf.data,
+					hashdata->blockbuf.filled);
 	desc[desclen++] = FIFO_LD_EXT(CLASS_2, MSG, LAST_C2);
-	desc[desclen++] = circbuf->paddr;
-	desc[desclen++] = circbuf->length;
-	cache_operation(TEE_CACHECLEAN, circbuf->data, circbuf->length);
+	desc[desclen++] = hashdata->blockbuf.buf.paddr;
+	desc[desclen++] = hashdata->blockbuf.filled;
+	cache_operation(TEE_CACHECLEAN, hashdata->blockbuf.buf.data,
+					hashdata->blockbuf.filled);
+	hashdata->blockbuf.filled = 0;
 
 	/* Save the final digest */
 	desc[desclen++] = ST_NOIMM(CLASS_2, REG_CTX, alg->size_digest);
@@ -852,7 +786,6 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	cache_operation(TEE_CACHEFLUSH, digest, len);
 
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
-
 	if (retstatus == CAAM_NO_ERROR) {
 		ret = TEE_SUCCESS;
 		HASH_DUMPBUF("Digest", digest, alg->size_digest);
@@ -862,7 +795,6 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	}
 
 exit_final:
-	do_free_intern(hashdata);
 	return ret;
 }
 
@@ -876,38 +808,35 @@ exit_final:
  */
 static void do_cpy_state(void *dst_ctx, void *src_ctx)
 {
-	uint8_t idx;
 	struct hashdata *dst = dst_ctx;
 	struct hashdata *src = src_ctx;
 
 	HASH_TRACE("Copy State context (0x%"PRIxPTR") to (0x%"PRIxPTR")",
 			 (uintptr_t)src_ctx, (uintptr_t)dst_ctx);
 
+	dst->algo_id = src->algo_id;
+	dst->alg     = src->alg;
+
 	if (!dst->ctx.data)
 		do_allocate_intern(dst_ctx);
-
-	dst->active_buf = src->active_buf;
-	dst->algo_id    = src->algo_id;
 
 	memcpy(dst->ctx.data, src->ctx.data, src->ctx.length);
 	dst->ctx.length = src->ctx.length;
 	cache_operation(TEE_CACHECLEAN, dst->ctx.data, dst->ctx.length);
 
-	for (idx = 0; idx < NB_CIRC_BUFFER; idx++) {
-		dst->circbuf[idx].length = src->circbuf[idx].length;
-		if (src->circbuf[idx].length != 0) {
-			memcpy(dst->circbuf[idx].data, src->circbuf[idx].data,
-						src->circbuf[idx].length);
-		}
+	if (src->blockbuf.filled) {
+		struct imxcrypt_buf srcdata = {
+				.data   = src->blockbuf.buf.data,
+				.length = src->blockbuf.filled};
+
+		caam_cpy_block_src(&dst->blockbuf, &srcdata, 0);
 	}
 
 	dst->key_type   = src->key_type;
 	if (src->key.length) {
 		if (caam_alloc_align_buf(&dst->key,
-					hash_alg[src->algo_id].size_key) ==
-			CAAM_NO_ERROR) {
+					dst->alg->size_key) == CAAM_NO_ERROR)
 			memcpy(dst->key.data, src->key.data, src->key.length);
-		}
 	}
 }
 

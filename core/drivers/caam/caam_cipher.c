@@ -305,11 +305,12 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_cipher_id algo)
 		goto err_allocate;
 	}
 
-	/* Initialize the block buffer */
-	cipherdata->blockbuf.filled = 0;
-
 	/* Setup the Algorithm pointer */
 	cipherdata->alg = &alg[algo - IMX_CIPHER_ID(algo)];
+
+	/* Initialize the block buffer */
+	cipherdata->blockbuf.max    = cipherdata->alg->size_block;
+	cipherdata->blockbuf.filled = 0;
 
 	*ctx = cipherdata;
 
@@ -381,7 +382,38 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 	CIPHER_TRACE("Copy State context (0x%"PRIxPTR") to (0x%"PRIxPTR")",
 			 (uintptr_t)src_ctx, (uintptr_t)dst_ctx);
 
-	memcpy(dst, src, sizeof(struct cipherdata));
+	dst->algo_id = src->algo_id;
+	dst->alg     = src->alg;
+
+	if (src->blockbuf.filled) {
+		struct imxcrypt_buf srcdata = {
+				.data = src->blockbuf.buf.data,
+				.length = src->blockbuf.filled};
+
+		caam_cpy_block_src(&dst->blockbuf, &srcdata, 0);
+	}
+
+	if (src->key1.length) {
+		struct imxcrypt_buf key1 = {
+				.data   = src->key1.data,
+				.length = src->key1.length};
+		copy_ctx_data(&dst->key1, &key1);
+	}
+
+	if (src->key2.length) {
+		struct imxcrypt_buf key2 = {
+				.data   = src->key2.data,
+				.length = src->key2.length};
+		copy_ctx_data(&dst->key2, &key2);
+	}
+
+	if (src->ctx.length) {
+		struct imxcrypt_buf ctx = {
+				.data   = src->ctx.data,
+				.length = src->ctx.length};
+		copy_ctx_data(&dst->ctx, &ctx);
+
+	}
 }
 
 /**
@@ -423,55 +455,6 @@ static TEE_Result do_get_blocksize(enum imxcrypt_cipher_id algo, size_t *size)
 		ret = TEE_SUCCESS;
 	}
 
-	return ret;
-}
-
-/**
- * @brief   Copy source data into the block buffer
- *
- * @param[in/out] ctx    Cipher data context
- * @param[in]     src    Source to copy
- * @param[in]     offset Source offset to start
- *
- * @retval CAAM_NO_ERROR       Success
- * @retval CAAM_OUT_MEMORY     Out of memory
- */
-static enum CAAM_Status do_cpy_block_src(struct cipherdata *ctx,
-				struct imxcrypt_buf *src,
-				size_t offset)
-{
-	enum CAAM_Status ret;
-
-	struct caamblock       *block = &ctx->blockbuf;
-	const struct cipheralg *alg   = ctx->alg;
-
-	size_t cpy_size;
-
-	/* Check if the temporary buffer is allocted, else allocate it */
-	if (!block->buf.data) {
-		ret = caam_alloc_align_buf(&block->buf, alg->size_block);
-		if (ret != CAAM_NO_ERROR) {
-			CIPHER_TRACE("Allocation Block buffer error");
-			goto end_cpy;
-		}
-	}
-
-	/* Calculate the number of bytes to copy in the block buffer */
-	CIPHER_TRACE("Current buffer is %d (%d) bytes",
-					block->filled, alg->size_block);
-
-	cpy_size = alg->size_block - block->filled;
-	cpy_size = MIN(cpy_size, (src->length - offset));
-
-	CIPHER_TRACE("Copy %d of src %d bytes", cpy_size, src->length);
-
-	memcpy(&block->buf.data[block->filled], &src->data[offset], cpy_size);
-
-	block->filled += cpy_size;
-
-	ret = CAAM_NO_ERROR;
-
-end_cpy:
 	return ret;
 }
 
@@ -693,8 +676,8 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 
 		if (fullSize < alg->size_block) {
 			CIPHER_TRACE("Copy input into context block buffer");
-			retstatus = do_cpy_block_src(cipherdata,
-						&dupdate->src, 0);
+			retstatus = caam_cpy_block_src(&cipherdata->blockbuf,
+							&dupdate->src, 0);
 
 			noctxbackup = true;
 			if (retstatus != CAAM_NO_ERROR) {

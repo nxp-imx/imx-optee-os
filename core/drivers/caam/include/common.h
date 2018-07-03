@@ -70,6 +70,7 @@ struct caambuf {
 struct caamblock {
 	struct caambuf buf;     ///< Data buffer
 	size_t         filled;  ///< Current length filled in the buffer
+	size_t         max;     ///< Maximum size of the block
 };
 
 /**
