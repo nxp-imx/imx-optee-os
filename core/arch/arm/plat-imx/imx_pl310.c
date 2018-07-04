@@ -23,6 +23,7 @@
 #define PL310_DEBUG_CTRL_DISABLE_LINEFILL	BIT(0)
 
 register_phys_mem(MEM_AREA_IO_SEC, PL310_BASE, CORE_MMU_DEVICE_SIZE);
+register_phys_mem(MEM_AREA_IO_NSEC, PL310_BASE, CORE_MMU_DEVICE_SIZE);
 
 void arm_cl2_config(vaddr_t pl310_base)
 {
@@ -83,6 +84,11 @@ vaddr_t pl310_base(void)
 	return core_mmu_get_va(PL310_BASE, MEM_AREA_IO_SEC);
 }
 
+vaddr_t pl310_nsbase(void)
+{
+	return core_mmu_get_va(PL310_BASE, MEM_AREA_IO_NSEC);
+}
+
 #ifdef CFG_PL310_SIP_PROTOCOL
 uint32_t pl310_enable(void)
 {
@@ -123,3 +129,4 @@ uint32_t pl310_enable_wflz(void)
 	return OPTEE_SMC_RETURN_OK;
 }
 #endif
+
