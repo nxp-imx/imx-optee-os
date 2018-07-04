@@ -1465,6 +1465,14 @@ TEE_Result cache_op_outer(enum cache_op op, paddr_t pa, size_t len)
 {
 	TEE_Result ret = TEE_SUCCESS;
 	uint32_t exceptions = thread_mask_exceptions(THREAD_EXCP_FOREIGN_INTR);
+	bool sec = tee_pbuf_is_sec(pa, len);
+
+	vaddr_t pl310_addr;
+
+	if (sec)
+		pl310_addr = pl310_base();
+	else
+		pl310_addr = pl310_nsbase();
 
 	tee_l2cc_mutex_lock();
 	switch (op) {
@@ -1473,21 +1481,21 @@ TEE_Result cache_op_outer(enum cache_op op, paddr_t pa, size_t len)
 		break;
 	case DCACHE_AREA_INVALIDATE:
 		if (len)
-			arm_cl2_invbypa(pl310_base(), pa, pa + len - 1);
+			arm_cl2_invbypa(pl310_addr, pa, pa + len - 1);
 		break;
 	case DCACHE_CLEAN:
 		arm_cl2_cleanbyway(pl310_base());
 		break;
 	case DCACHE_AREA_CLEAN:
 		if (len)
-			arm_cl2_cleanbypa(pl310_base(), pa, pa + len - 1);
+			arm_cl2_cleanbypa(pl310_addr, pa, pa + len - 1);
 		break;
 	case DCACHE_CLEAN_INV:
 		arm_cl2_cleaninvbyway(pl310_base());
 		break;
 	case DCACHE_AREA_CLEAN_INV:
 		if (len)
-			arm_cl2_cleaninvbypa(pl310_base(), pa, pa + len - 1);
+			arm_cl2_cleaninvbypa(pl310_addr, pa, pa + len - 1);
 		break;
 	default:
 		ret = TEE_ERROR_NOT_IMPLEMENTED;
