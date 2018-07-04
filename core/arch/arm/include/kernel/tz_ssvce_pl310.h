@@ -11,6 +11,7 @@
 #include <types_ext.h>
 
 vaddr_t pl310_base(void);
+vaddr_t pl310_nsbase(void);
 /*
  * End address is included in the range (last address in range)
  */
