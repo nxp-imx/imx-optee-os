@@ -24,6 +24,7 @@
 #define PL310_PREFETCH_DOUBLE_LINEFILL		BIT(30)
 
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, PL310_BASE, CORE_MMU_PGDIR_SIZE);
+register_phys_mem_pgdir(MEM_AREA_IO_NSEC, PL310_BASE, CORE_MMU_PGDIR_SIZE);
 
 void arm_cl2_config(vaddr_t pl310_base)
 {
@@ -86,7 +87,12 @@ void arm_cl2_enable(vaddr_t pl310_base)
 
 vaddr_t pl310_base(void)
 {
-	return core_mmu_get_va(PL310_BASE, MEM_AREA_IO_SEC, 1);
+	return core_mmu_get_va(PL310_BASE, MEM_AREA_IO_SEC, PL310_SIZE);
+}
+
+vaddr_t pl310_nsbase(void)
+{
+	return core_mmu_get_va(PL310_BASE, MEM_AREA_IO_NSEC, PL310_SIZE);
 }
 
 #ifdef CFG_PL310_SIP_PROTOCOL
