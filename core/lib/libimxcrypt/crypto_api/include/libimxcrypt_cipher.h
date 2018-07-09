@@ -33,12 +33,17 @@ enum imxcrypt_cipher_id {
 	AES_CBC_NOPAD,                ///< AES Algo mode CBC NO PAD
 	AES_CTR,                      ///< AES Algo mode CTR
 	AES_CTS,                      ///< AES Algo mode CTS
+	AES_XTS,                      ///< AES Algo mode XTS
+	AES_CBC_MAC,                  ///< AES Algo mode CBC MAC
+	AES_CMAC,                     ///< AES Algo mode CMAC
 	MAX_AES_ID,                   ///< Maximum AES ID
 	DES_ECB_NOPAD = IMX_DES_ID,   ///< DES Algo mode ECB NO PAD
 	DES_CBC_NOPAD,                ///< DES Algo mode CBC NO PAD
+	DES_CBC_MAC,                  ///< DES Algo mode CBC MAC
 	MAX_DES_ID,                   ///< Maximum DES ID
 	DES3_ECB_NOPAD = IMX_DES3_ID, ///< Triple-DES Algo mode ECB NO PAD
 	DES3_CBC_NOPAD,               ///< Triple-DES Algo mode CBC NO PAD
+	DES3_CBC_MAC,                 ///< Triple-DES Algo mode CBC MAC
 	MAX_DES3_ID,                  ///< Maximum Triple-DES ID
 };
 

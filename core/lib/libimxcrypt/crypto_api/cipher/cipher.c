@@ -60,7 +60,7 @@ static struct imxcrypt_cipher *do_check_algo(uint32_t algo,
 		switch (algo_id) {
 		case TEE_MAIN_ALGO_AES:
 			min_id = IMX_AES_ID;
-			max_id = MAX_AES_ID;
+			max_id = AES_CBC_MAC;
 			break;
 
 		case TEE_MAIN_ALGO_DES:

@@ -96,6 +96,24 @@ enum CAAM_Status caam_alloc_align_buf(struct caambuf *buf, size_t size);
 void caam_free_buf(struct caambuf *buf);
 
 /**
+ * @brief   Free data of type struct sgtbuf
+ *
+ * @parm[in/out] data    Data sgtbuf to free
+ */
+void caam_sgtbuf_free(struct sgtbuf *data);
+
+/**
+ * @brief   Allocate data of type struct sgtbuf
+ *
+ * @parm[in/out] data    Data sgtbuf to fill
+ *
+ * @retval CAAM_NO_ERROR    Success
+ * @retval CAAM_OUT_MEMORY  Allocation error
+ * @retval CAAM_BAD_PARAM   Bad parameters
+ */
+enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data);
+
+/**
  * @brief   Copy source data into the block buffer
  *
  * @param[in/out] block  Block buffer

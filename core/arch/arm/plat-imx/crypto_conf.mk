@@ -23,7 +23,7 @@ $(call force, CFG_CRYPTO_GCM_HW,n)
 
 $(call force, CFG_CRYPTO_PKCS_HW,n)
 $(call force, CFG_CRYPTO_PK_HW,n)
-$(call force, CFG_CRYPTO_CMAC_HW,n)
+$(call force, CFG_CRYPTO_CMAC_HW,y)
 
 # Asymmetric ciphers
 $(call force, CFG_CRYPTO_DSA,n)

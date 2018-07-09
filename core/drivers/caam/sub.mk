@@ -8,5 +8,5 @@ srcs-y += caam_ctrl.c
 srcs-y += caam_jr.c
 srcs-y += caam_rng.c
 srcs-$(CFG_CRYPTO_HASH_HW)   += caam_hash.c
-srcs-$(CFG_CRYPTO_CIPHER_HW) += caam_cipher.c
+subdirs-$(CFG_CRYPTO_CIPHER_HW) += cipher
 

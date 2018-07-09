@@ -103,4 +103,14 @@ struct sgt {
 	uint32_t res_w3 :19;  ///< Not used
 };
 
+/**
+ * @brief   Data buffer encoded in SGT format
+ */
+struct sgtbuf {
+	struct sgt     *sgt;      ///< SGT Array
+	struct caambuf *buf;      ///< Buffer Array
+	uint8_t        number;    ///< Number of SGT/Buf
+	bool           sgt_type;  ///< Define the data format
+};
+
 #endif /* __COMMON_H__ */

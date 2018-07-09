@@ -9,6 +9,9 @@
 #ifndef __CAAM_CIPHER_H__
 #define __CAAM_CIPHER_H__
 
+/* Library i.MX includes */
+#include <libimxcrypt.h>
+
 /**
  * @brief   Initialize the Cipher module
  *

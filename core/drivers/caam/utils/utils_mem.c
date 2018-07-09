@@ -233,6 +233,51 @@ void caam_free_buf(struct caambuf *buf)
 }
 
 /**
+ * @brief   Free data of type struct sgtbuf
+ *
+ * @parm[in/out] data    Data sgtbuf to free
+ */
+void caam_sgtbuf_free(struct sgtbuf *data)
+{
+	if (data->sgt_type)
+		caam_free((void **)&data->sgt);
+	else
+		caam_free((void **)&data->buf);
+}
+
+/**
+ * @brief   Allocate data of type struct sgtbuf
+ *
+ * @parm[in/out] data    Data sgtbuf to fill
+ *
+ * @retval CAAM_NO_ERROR    Success
+ * @retval CAAM_OUT_MEMORY  Allocation error
+ * @retval CAAM_BAD_PARAM   Bad parameters
+ */
+enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data)
+{
+	if (!data)
+		return CAAM_BAD_PARAM;
+
+	if (data->sgt_type) {
+		data->sgt = caam_alloc(data->number *
+				(sizeof(struct sgt) + sizeof(struct caambuf)));
+		data->buf = (void *)(((uint8_t *)data->sgt) +
+				(data->number * sizeof(struct sgt)));
+	} else {
+		data->buf = caam_alloc(data->number * sizeof(struct caambuf));
+		data->sgt = NULL;
+	}
+
+	if ((!data->buf) || ((!data->sgt) && (data->sgt_type))) {
+		caam_sgtbuf_free(data);
+		return CAAM_OUT_MEMORY;
+	}
+
+	return CAAM_NO_ERROR;
+}
+
+/**
  * @brief   Copy source data into the block buffer
  *
  * @param[in/out] block  Block buffer

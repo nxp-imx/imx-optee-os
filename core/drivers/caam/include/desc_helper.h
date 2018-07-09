@@ -108,13 +108,22 @@ static inline void dump_desc(void *desc)
 			LOAD_OFFSET(off) | LOAD_LENGTH(len))
 
 /**
- * @brief  FIFO Load to register \a dst class \a cla with action \a act. \n
- *         The length is externally defined
+ * @brief  FIFO Load to register \a dst class \a cla with action \a act.
  *
  */
 #define FIFO_LD(cla, dst, act, len) \
 			(CMD_FIFO_LOAD_TYPE | CMD_CLASS(cla) |		\
 			FIFO_LOAD_INPUT(dst) | FIFO_LOAD_ACTION(act) |	\
+			FIFO_LOAD_LENGTH(len))
+
+/**
+ * @brief  FIFO Load to register \a dst class \a cla with action \a act.
+ *         Pointer is a Scatter/Gatter Table
+ *
+ */
+#define FIFO_LD_SGT(cla, dst, act, len) \
+			(CMD_FIFO_LOAD_TYPE | CMD_CLASS(cla) | CMD_SGT | \
+			FIFO_LOAD_INPUT(dst) | FIFO_LOAD_ACTION(act) |   \
 			FIFO_LOAD_LENGTH(len))
 
 /**
@@ -261,6 +270,22 @@ static inline void dump_desc(void *desc)
 #define CIPHER_INIT(algo, encrypt) \
 			(CMD_OP_TYPE | OP_TYPE(CLASS1) | (algo) | \
 			 ALGO_AS(INIT) | \
+			((encrypt == true) ? ALGO_ENCRYPT : ALGO_DECRYPT))
+
+/**
+ * @brief  Cipher Update Operation of algorithm \a algo
+ */
+#define CIPHER_UPDATE(algo, encrypt) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS1) | (algo) | \
+			 ALGO_AS(UPDATE) | \
+			((encrypt == true) ? ALGO_ENCRYPT : ALGO_DECRYPT))
+
+/**
+ * @brief  Cipher Final Operation of algorithm \a algo
+ */
+#define CIPHER_FINAL(algo, encrypt) \
+			(CMD_OP_TYPE | OP_TYPE(CLASS1) | (algo) | \
+			 ALGO_AS(FINAL) | \
 			((encrypt == true) ? ALGO_ENCRYPT : ALGO_DECRYPT))
 
 /**
