@@ -112,13 +112,13 @@ static int dsa_make_params(prng_state *prng, int wprng, int group_size, int modu
   else                { mr_tests_q = 27; }
 
   if (N <= 256) {
-    hash = register_hash(&sha256_desc);
+    hash = find_hash("sha256");
   }
   else if (N <= 384) {
-    hash = register_hash(&sha384_desc);
+    hash = find_hash("sha384");
   }
   else if (N <= 512) {
-    hash = register_hash(&sha512_desc);
+    hash = find_hash("sha512");
   }
   else {
     return CRYPT_INVALID_ARG; /* group_size too big */
