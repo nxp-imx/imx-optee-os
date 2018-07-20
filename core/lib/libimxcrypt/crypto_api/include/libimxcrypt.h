@@ -24,6 +24,9 @@ enum imxcrypt_algo_id {
 	CRYPTO_HMAC_SW,      ///< HMAC SW driver
 	CRYPTO_CIPHER,       ///< Cipher driver
 	CRYPTO_RSA,          ///< Assymetric RSA driver
+	CRYPTO_DSA,          ///< Assymetric DSA driver
+	CRYPTO_ECC,          ///< Assymetric ECC driver
+	CRYPTO_DH,           ///< Assymetric DH driver
 	CRYPTO_AUTHENC,      ///< Cipher Authentication driver
 	CRYPTO_AUTHENC_SW,   ///< Cipher Authentication SW driver
 	CRYPTO_MAX_ALGO      ///< Maximum numer of algo supported

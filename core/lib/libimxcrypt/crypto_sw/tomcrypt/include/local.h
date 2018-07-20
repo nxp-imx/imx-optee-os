@@ -31,7 +31,6 @@ struct ltc_prng {
 	prng_state state;
 };
 
-
 /**
  * @brief   Initialize the RSA module
  *
@@ -39,6 +38,30 @@ struct ltc_prng {
  * @retval  (-1) Otherwise
  */
 int libsoft_rsa_init(void);
+
+/**
+ * @brief   Initialize the DSA module
+ *
+ * @retval  0    Success
+ * @retval  (-1) Otherwise
+ */
+int libsoft_dsa_init(void);
+
+/**
+ * @brief   Initialize the ECC module
+ *
+ * @retval  0    Success
+ * @retval  (-1) Otherwise
+ */
+int libsoft_ecc_init(void);
+
+/**
+ * @brief   Initialize the DH module
+ *
+ * @retval  0    Success
+ * @retval  (-1) Otherwise
+ */
+int libsoft_dh_init(void);
 
 /**
  * @brief   Initialize the RNG module

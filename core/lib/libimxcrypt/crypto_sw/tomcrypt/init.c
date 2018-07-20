@@ -46,6 +46,18 @@ TEE_Result imxcrypt_libsoft_init(void)
 	LIB_TRACE("libsoft_rsa_init ret %d", status);
 	ret |= status;
 
+	status = libsoft_dsa_init();
+	LIB_TRACE("libsoft_dsa_init ret %d", status);
+	ret |= status;
+
+	status = libsoft_ecc_init();
+	LIB_TRACE("libsoft_ecc_init ret %d", status);
+	ret |= status;
+
+	status = libsoft_dh_init();
+	LIB_TRACE("libsoft_dh_init ret %d", status);
+	ret |= status;
+
 	status = libsoft_hash_init();
 	LIB_TRACE("libsoft_hash_init ret %d", status);
 	ret |= status;

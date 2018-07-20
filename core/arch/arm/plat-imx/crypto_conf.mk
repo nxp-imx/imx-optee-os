@@ -13,7 +13,14 @@ $(call force, CFG_IMXCRYPT,y)
 $(call force, CFG_IMXCRYPT_TOMCRYPT,y)
 endif
 
-ifeq ($(CFG_IMXCRYPT), y)
+ifeq ($(CFG_IMXCRYPT_TOMCRYPT), y)
+# Enable LTC GCM mode
+$(call force, CFG_CRYPTO_AES_GCM_FROM_CRYPTOLIB,y)
+endif
+
+#
+# Definition of all HW accelerations for all i.MX
+#
 $(call force, CFG_CRYPTO_RNG_HW,y)
 $(call force, CFG_CRYPTO_HASH_HW,y)
 $(call force, CFG_CRYPTO_CIPHER_HW,y)
@@ -25,19 +32,7 @@ $(call force, CFG_CRYPTO_PKCS_HW,n)
 $(call force, CFG_CRYPTO_PK_HW,n)
 $(call force, CFG_CRYPTO_CMAC_HW,y)
 
-# Enable LTC GCM mode
-$(call force, CFG_CRYPTO_AES_GCM_FROM_CRYPTOLIB,y)
-
-# Asymmetric ciphers
-$(call force, CFG_CRYPTO_DSA,n)
-$(call force, CFG_CRYPTO_DH,n)
-$(call force, CFG_CRYPTO_ECC,n)
-
-endif
-
-#
-# Definition of the HASH Algorithm supported by HW
-#
+# Definition of the HASH Algorithm supported by all i.MX
 ifeq ($(CFG_CRYPTO_HASH_HW), y)
 CFG_CRYPTO_HASH_HW_MD5    ?= y
 CFG_CRYPTO_HASH_HW_SHA1   ?= y
