@@ -25,13 +25,13 @@ $(call force, CFG_CRYPTO_PKCS_HW,n)
 $(call force, CFG_CRYPTO_PK_HW,n)
 $(call force, CFG_CRYPTO_CMAC_HW,y)
 
+# Enable LTC GCM mode
+$(call force, CFG_CRYPTO_AES_GCM_FROM_CRYPTOLIB,y)
+
 # Asymmetric ciphers
 $(call force, CFG_CRYPTO_DSA,n)
 $(call force, CFG_CRYPTO_DH,n)
 $(call force, CFG_CRYPTO_ECC,n)
-
-# Authenticated encryption
-$(call force, CFG_CRYPTO_CCM,n)
 
 endif
 
@@ -47,10 +47,17 @@ CFG_CRYPTO_HASH_HW_SHA384 ?= n
 CFG_CRYPTO_HASH_HW_SHA512 ?= n
 endif
 
+cryp-one-hw-enabled =                                               \
+	$(call cfg-one-enabled, $(foreach cfg, $(1),                    \
+               CFG_CRYPTO_$(strip $(cfg))_HW))
+
 cryp-full-hw-enabled =												\
 	$(call cfg-all-enabled, 										\
 		$(patsubst %, CFG_CRYPTO_$(strip $(1))_HW_%, $(strip $(2))))
 
 $(call force, CFG_CRYPTO_HMAC_FULL_HW, $(call cryp-full-hw-enabled, HASH, \
 	MD5 SHA1 SHA224 SHA256 SHA384 SHA512))
+
+
+$(call force, CFG_CRYPTO_AUTHENC_HW, $(call cryp-one-hw-enabled, CCM GCM))
 

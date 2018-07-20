@@ -64,6 +64,14 @@ TEE_Result imxcrypt_libsoft_init(void)
 	LIB_TRACE("libsoft_mpa_init ret %d", status);
 	ret |= status;
 
+	status = libsoft_cipher_init();
+	LIB_TRACE("libsoft_cipher_init ret %d", status);
+	ret |= status;
+
+	status = libsoft_authenc_init();
+	LIB_TRACE("libsoft_authenc_init ret %d", status);
+	ret |= status;
+
 	LIB_TRACE("Software part of i.MX Crypto Lib ret 0x%"PRIx32"", ret);
 	if (ret)
 		return TEE_ERROR_GENERIC;

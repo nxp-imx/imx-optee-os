@@ -14,7 +14,9 @@
 #include <tee_api_types.h>
 
 /* Library i.MX includes */
+#include <libimxcrypt.h>
 #include <libimxcrypt_hash.h>
+#include <libimxcrypt_cipher.h>
 
 /* Library TomCrypt includes */
 #include <tomcrypt.h>
@@ -79,6 +81,22 @@ int libsoft_hmac_sw_init(void);
 int libsoft_mpa_init(void);
 
 /**
+ * @brief   Initialize the Cipher module
+ *
+ * @retval  0    Success
+ * @retval  (-1) Otherwise
+ */
+int libsoft_cipher_init(void);
+
+/**
+ * @brief   Initialize the Authentication module
+ *
+ * @retval  0    Success
+ * @retval  (-1) Otherwise
+ */
+int libsoft_authenc_init(void);
+
+/**
  * @brief   Find SW hash index into the LibTomCrypt. If supported
  *          be HW, returns (-1)
  *
@@ -98,6 +116,16 @@ int get_sw_hashindex(enum imxcrypt_hash_id algo);
  * @retval  (-1) if not found
  */
 int get_ltc_hashindex(enum imxcrypt_hash_id algo);
+
+/**
+ * @brief   Find Cipher index into the LibTomCrypt hash registered
+ *
+ * @param[in]      algo   Algorithm ID of the context
+ *
+ * @retval  >=0 if found
+ * @retval  (-1) if not found
+ */
+int get_ltc_cipherindex(enum imxcrypt_cipher_id algo);
 
 /**
  * @brief   Return the reference to the PRNG

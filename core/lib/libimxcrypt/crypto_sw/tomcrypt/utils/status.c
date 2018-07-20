@@ -67,6 +67,7 @@ TEE_Result conv_CRYPT_to_TEE_Result(int code)
 		break;
 
 	case CRYPT_NOP:
+	case CRYPT_INVALID_CIPHER:
 		ret = TEE_ERROR_NOT_IMPLEMENTED;
 		break;
 
