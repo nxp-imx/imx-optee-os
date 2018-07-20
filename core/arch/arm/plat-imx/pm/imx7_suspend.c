@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
 
 #include <arm.h>
-#include <arm32.h>
 #include <console.h>
 #include <drivers/imx_uart.h>
 #include <io.h>
@@ -23,8 +22,6 @@
 #include <sm/psci.h>
 #include <stdint.h>
 
-static int suspended_init;
-
 int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		     uint32_t context_id __unused, struct sm_nsec_ctx *nsec)
 {
@@ -33,11 +30,6 @@ int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 						      MEM_AREA_TEE_COHERENT);
 	struct imx7_pm_info *p = (struct imx7_pm_info *)suspend_ocram_base;
 	int ret;
-
-	if (!suspended_init) {
-		imx7_suspend_init();
-		suspended_init = 1;
-	}
 
 	/* Store non-sec ctx regs */
 	sm_save_modes_regs(&nsec->mode_regs);
@@ -53,10 +45,14 @@ int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		return 0;
 	}
 
-	plat_cpu_reset_late();
-
 	/* Restore register of different mode in secure world */
 	sm_restore_modes_regs(&nsec->mode_regs);
+
+	/*
+	 * Call the Wakeup Late function to restore some
+	 * HW configuration (e.g. TZASC)
+	 */
+	plat_cpu_wakeup_late();
 
 	/* Set entry for back to Linux */
 	nsec->mon_lr = (uint32_t)entry;

@@ -16,6 +16,7 @@
 #endif
 #include <io.h>
 #include <imx.h>
+#include <kernel/cache_helpers.h>
 #include <kernel/generic_boot.h>
 #include <kernel/misc.h>
 #include <kernel/panic.h>
@@ -208,3 +209,21 @@ void plat_cpu_reset_late(void)
 #endif
 	}
 }
+
+#ifdef CFG_PSCI_ARM32
+/*
+ * Platform Wakeup late function executed with MMU
+ * ON after suspend.
+ */
+void plat_cpu_wakeup_late(void)
+{
+#ifdef CFG_SCU
+	scu_init();
+	dcache_op_all(DCACHE_OP_CLEAN_INV);
+#endif
+
+#ifdef CFG_TZC380
+	tzasc_init();
+#endif
+}
+#endif

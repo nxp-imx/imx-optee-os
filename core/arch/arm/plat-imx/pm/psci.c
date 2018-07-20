@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (C) 2016 Freescale Semiconductor, Inc.
+ * Copyright 2018 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -152,15 +153,57 @@ int psci_affinity_info(uint32_t affinity,
 
 void __noreturn psci_system_off(void)
 {
+#ifndef CFG_MX7ULP
 	vaddr_t snvs_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC);
 
 	write32(SNVS_LPCR_TOP_MASK |
 		SNVS_LPCR_DP_EN_MASK |
 		SNVS_LPCR_SRTC_ENV_MASK, snvs_base + SNVS_LPCR_OFF);
 	dsb();
+#endif
 
 	while (1)
 		;
+}
+
+__weak int imx6ul_lowpower_idle(uint32_t power_state __unused,
+				uintptr_t entry __unused,
+				uint32_t context_id __unused,
+				struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx6sx_lowpower_idle(uint32_t power_state __unused,
+				uintptr_t entry __unused,
+				uint32_t context_id __unused,
+				struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx6sl_lowpower_idle(uint32_t power_state __unused,
+				uintptr_t entry __unused,
+				uint32_t context_id __unused,
+				struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx6sll_lowpower_idle(uint32_t power_state __unused,
+				uintptr_t entry __unused,
+				uint32_t context_id __unused,
+				struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx6_cpu_suspend(uint32_t power_state __unused,
+			    uintptr_t entry __unused,
+			    uint32_t context_id __unused,
+			    struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
 }
 
 __weak int imx7d_lowpower_idle(uint32_t power_state __unused,
@@ -172,6 +215,14 @@ __weak int imx7d_lowpower_idle(uint32_t power_state __unused,
 }
 
 __weak int imx7_cpu_suspend(uint32_t power_state __unused,
+			    uintptr_t entry __unused,
+			    uint32_t context_id __unused,
+			    struct sm_nsec_ctx *nsec __unused)
+{
+	return 0;
+}
+
+__weak int imx7ulp_cpu_suspend(uint32_t power_state __unused,
 			    uintptr_t entry __unused,
 			    uint32_t context_id __unused,
 			    struct sm_nsec_ctx *nsec __unused)
@@ -202,20 +253,129 @@ int psci_cpu_suspend(uint32_t power_state,
 	 * TODO: follow PSCI StateID sample encoding.
 	 */
 	DMSG("ID = %d\n", id);
+
+	/*
+	 * For i.MX6SL, the cpuidle need the state of LDO 2P5 and
+	 * the busfreq mode. these info is packed in the power_state,
+	 * when doing 'id' check, the LDO 2P5 and busfreq mode info need
+	 * to be removed from 'id'.
+	 */
+	if (soc_is_imx6sl())
+		id &= ~(0x6);
+
 	if (id == 1) {
-		if (soc_is_imx7ds())
+		if (soc_is_imx6ul() || soc_is_imx6ull())
+			return imx6ul_lowpower_idle(power_state, entry,
+						    context_id, nsec);
+		else if (soc_is_imx7ds())
 			return imx7d_lowpower_idle(power_state, entry,
 						   context_id, nsec);
-		return ret;
+		else if (soc_is_imx6sx())
+			return imx6sx_lowpower_idle(power_state, entry,
+						    context_id, nsec);
+		else if (soc_is_imx6sl())
+			return imx6sl_lowpower_idle(power_state, entry,
+						    context_id, nsec);
+		else if (soc_is_imx6sll())
+			return imx6sll_lowpower_idle(power_state, entry,
+						    context_id, nsec);
+		else {
+			EMSG("Not supported now\n");
+			return ret;
+		}
 	} else if (id == 0) {
-		if (soc_is_imx7ds()) {
+		if (soc_is_imx7ds())
 			return imx7_cpu_suspend(power_state, entry,
 						context_id, nsec);
+		else if (soc_is_imx6()) 
+			return imx6_cpu_suspend(power_state, entry,
+						context_id, nsec);
+		else if (soc_is_imx7ulp())
+			return imx7ulp_cpu_suspend(power_state, entry,
+						context_id, nsec);
+		else {
+			EMSG("Not supported now\n");
+			return ret;
 		}
-		return ret;
 	}
 
 	DMSG("ID %d not supported\n", id);
+
+	return ret;
+}
+
+/* Weak functions because files are not all built */
+__weak int imx6ul_cpuidle_init(void)
+{
+	return 0;
+}
+
+__weak int imx6sx_cpuidle_init(void)
+{
+	return 0;
+}
+
+__weak int imx6sll_cpuidle_init(void)
+{
+	return 0;
+}
+
+__weak int imx6_suspend_init(void)
+{
+	return 0;
+}
+
+__weak int imx7d_cpuidle_init(void)
+{
+	return 0;
+}
+
+__weak int imx7_suspend_init(void)
+{
+	return 0;
+}
+
+__weak int imx7ulp_suspend_init(void)
+{
+	return 0;
+}
+
+static TEE_Result init_psci(void)
+{
+	TEE_Result ret = TEE_SUCCESS;
+	int err = 0;
+
+	/*
+	 * Initialize the power management data.
+	 * It must be done after the OCRAM initialization.
+	 */
+#ifdef CFG_MX7ULP
+	err = imx7ulp_suspend_init();
+#else
+	if (soc_is_imx6ul() || soc_is_imx6ull()) {
+		err = imx6ul_cpuidle_init();
+	} else if (soc_is_imx6sx()) {
+		err = imx6sx_cpuidle_init();
+	} else if (soc_is_imx6sll()) {
+		err = imx6sll_cpuidle_init();
+	} else if (soc_is_imx7ds()) {
+		err = imx7d_cpuidle_init();
+	}
+
+	if (!err) {
+		if (soc_is_imx6()) {
+			err = imx6_suspend_init();
+		} else {
+			if (soc_is_imx7ds()) {
+				err = imx7_suspend_init();
+			}
+		}
+	}
+#endif
+
+	if (err) {
+		ret = TEE_ERROR_GENERIC;
+	}
 
 	return ret;
 }
@@ -224,3 +384,5 @@ void psci_system_reset(void)
 {
 	imx_wdog_restart();
 }
+
+service_init(init_psci);
