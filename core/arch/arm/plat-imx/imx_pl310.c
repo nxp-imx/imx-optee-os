@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (C) 2016 Freescale Semiconductor, Inc.
+ * Copyright 2018 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -15,7 +16,7 @@
 #include <sm/optee_smc.h>
 #include <platform_config.h>
 #include <stdint.h>
-#include "imx_pl310.h"
+#include <imx_pl310.h>
 
 #define PL310_AUX_CTRL_FLZW			BIT(0)
 #define PL310_DEBUG_CTRL_DISABLE_WRITEBACK	BIT(1)
@@ -62,6 +63,11 @@ void arm_cl2_config(vaddr_t pl310_base)
 
 	/* invalidate all cache ways */
 	arm_cl2_invbyway(pl310_base);
+}
+
+bool pl310_enabled(vaddr_t pl310_base)
+{
+	return io_read32(pl310_base + PL310_CTRL) & 1;
 }
 
 void arm_cl2_enable(vaddr_t pl310_base)
