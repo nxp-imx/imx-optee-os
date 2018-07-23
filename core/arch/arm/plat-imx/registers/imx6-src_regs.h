@@ -7,6 +7,7 @@
 
 #define SRC_SCR				0x0000
 #define SRC_GPR1			0x0020
+#define SRC_GPR2			0x0024
 
 #define BP_SRC_SCR_CORE1_RST		14
 #define BM_SRC_SCR_CORE1_RST		BIT32(BP_SRC_SCR_CORE1_RST)
