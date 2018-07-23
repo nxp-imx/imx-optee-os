@@ -7,6 +7,7 @@
 
 uint32_t pl310_enable(void);
 uint32_t pl310_disable(void);
+bool pl310_enabled(vaddr_t pl310_base);
 uint32_t pl310_enable_writeback(void);
 uint32_t pl310_disable_writeback(void);
 uint32_t pl310_enable_wflz(void);

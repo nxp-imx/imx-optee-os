@@ -7,7 +7,7 @@
 #include <sm/optee_smc.h>
 #include <sm/sm.h>
 #include <trace.h>
-#include "imx_pl310.h"
+#include <imx_pl310.h>
 
 #define IMX_SIP_PL310_ENABLE			1
 #define IMX_SIP_PL310_DISABLE			2

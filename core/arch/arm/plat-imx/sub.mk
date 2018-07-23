@@ -1,7 +1,6 @@
 global-incdirs-y += .
 srcs-y += main.c imx-common.c
 
-srcs-$(CFG_PL310) += imx_pl310.c
 ifneq (,$(filter y, $(CFG_MX6Q) $(CFG_MX6QP) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6SX)))
 srcs-y += a9_plat_init.S
@@ -13,3 +12,4 @@ srcs-y += a7_plat_init.S
 endif
 
 subdirs-y += drivers
+srcs-$(CFG_PL310) += imx_pl310.c
