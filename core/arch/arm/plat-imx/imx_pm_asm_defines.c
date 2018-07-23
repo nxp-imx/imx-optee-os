@@ -145,4 +145,52 @@ DEFINES
 	       offsetof(struct imx6_pm_info, mmdc_num));
 	DEFINE(PM_INFO_MMDC_VAL_OFF,
 	       offsetof(struct imx6_pm_info, mmdc_val));
+
+	DEFINE(PM_INFO_MX7ULP_M4_RESERVE0_OFF,
+	       offsetof(struct imx7ulp_pm_info, m4_reserve0));
+	DEFINE(PM_INFO_MX7ULP_M4_RESERVE1_OFF,
+	       offsetof(struct imx7ulp_pm_info, m4_reserve1));
+	DEFINE(PM_INFO_MX7ULP_M4_RESERVE2_OFF,
+	       offsetof(struct imx7ulp_pm_info, m4_reserve2));
+	DEFINE(PM_INFO_MX7ULP_PBASE_OFF,
+	       offsetof(struct imx7ulp_pm_info, pbase));
+	DEFINE(PM_INFO_MX7ULP_RESUME_ADDR_OFF,
+	       offsetof(struct imx7ulp_pm_info, resume_addr));
+	DEFINE(PM_INFO_MX7ULP_SIZE_OFF,
+	       offsetof(struct imx7ulp_pm_info, pm_info_size));
+	DEFINE(PM_INFO_MX7ULP_SIM_VBASE_OFF,
+	       offsetof(struct imx7ulp_pm_info, sim_base));
+	DEFINE(PM_INFO_MX7ULP_SCG1_VBASE_OFF,
+	       offsetof(struct imx7ulp_pm_info, scg1_base));
+	DEFINE(PM_INFO_MX7ULP_MMDC_VBASE_OFF,
+	       offsetof(struct imx7ulp_pm_info, mmdc_base));
+	DEFINE(PM_INFO_MX7ULP_MMDC_IO_VBASE_OFF,
+	       offsetof(struct imx7ulp_pm_info, mmdc_io_base));
+	DEFINE(PM_INFO_MX7ULP_SMC1_VBASE_OFF,
+	       offsetof(struct imx7ulp_pm_info, smc1_base));
+	DEFINE(PM_INFO_MX7ULP_SCG1_VAL_OFF,
+	       offsetof(struct imx7ulp_pm_info, scg1));
+	DEFINE(PM_INFO_MX7ULP_TTBR0_V_OFF,
+	       offsetof(struct imx7ulp_pm_info, ttbr0));
+	DEFINE(PM_INFO_MX7ULP_TTBR1_V_OFF,
+	       offsetof(struct imx7ulp_pm_info, ttbr1));
+	DEFINE(PM_INFO_MX7ULP_GPIO_REG_OFF,
+	       offsetof(struct imx7ulp_pm_info, gpio));
+	DEFINE(PM_INFO_MX7ULP_IOMUX_NUM_OFF,
+	       offsetof(struct imx7ulp_pm_info, iomux_num));
+	DEFINE(PM_INFO_MX7ULP_IOMUX_VAL_OFF,
+	       offsetof(struct imx7ulp_pm_info, iomux_val));
+	DEFINE(PM_INFO_MX7ULP_SELECT_INPUT_NUM_OFF,
+	       offsetof(struct imx7ulp_pm_info, select_input_num));
+	DEFINE(PM_INFO_MX7ULP_SELECT_INPUT_VAL_OFF,
+	       offsetof(struct imx7ulp_pm_info, select_input_val));
+	DEFINE(PM_INFO_MX7ULP_MMDC_IO_NUM_OFF,
+	       offsetof(struct imx7ulp_pm_info, mmdc_io_num));
+	DEFINE(PM_INFO_MX7ULP_MMDC_IO_VAL_OFF,
+	       offsetof(struct imx7ulp_pm_info, mmdc_io_val));
+/* below offsets depends on MX7ULP_MAX_MMDC_IO_NUM(36) definition */
+	DEFINE(PM_INFO_MX7ULP_MMDC_NUM_OFF,
+	       offsetof(struct imx7ulp_pm_info, mmdc_num));
+	DEFINE(PM_INFO_MX7ULP_MMDC_VAL_OFF,
+	       offsetof(struct imx7ulp_pm_info, mmdc_val));
 }

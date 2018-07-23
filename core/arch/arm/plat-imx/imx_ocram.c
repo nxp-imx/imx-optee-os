@@ -315,13 +315,22 @@ static TEE_Result init_ocram(void)
 
 	return TEE_SUCCESS;
 }
-#elif defined(CFG_MX7)
+#elif defined(CFG_MX7) || defined(CFG_MX7ULP)
 
+#ifdef CFG_MX7
 static const paddr_t phys_addr_imx7[] = {
 	AIPS1_BASE, AIPS2_BASE, AIPS3_BASE, 0
 };
+#endif
+#ifdef CFG_MX7ULP
+static const paddr_t phys_addr_imx7ulp[] = {
+	AIPS0_BASE, AIPS1_BASE, 0
+};
+#endif
+
 static void init_tz_ocram(void)
 {
+#ifndef CFG_MX7ULP
 	/* Configure the Secure OCRAM granularity */
 	vaddr_t  iomux_base;
 	uint32_t val;
@@ -368,6 +377,7 @@ static void init_tz_ocram(void)
 		io_read32(iomux_base + IOMUX_GPRx_OFFSET(IOMUX_GPR_OCRAM_ID));
 	if ((lock_val & lock) != (val & lock))
 		panic("OCRAM TZ Configuration Lock Mismatch");
+#endif
 }
 
 static TEE_Result init_ocram(void)
@@ -398,6 +408,11 @@ static TEE_Result init_ocram(void)
 	iram_tlb_phys_addr = imx_get_ocram_tz_start_addr() + IRAM_TBL_OFFSET;
 	phys_addr = phys_addr_imx7;
 	size_area = AIPS1_SIZE; /* 4M for AIPS1/2/3 */
+#endif
+#ifdef CFG_MX7ULP
+	iram_tlb_phys_addr = LP_OCRAM_START;
+	phys_addr = phys_addr_imx7ulp;
+	size_area = AIPS1_SIZE; /* 8M for AIPS0/1 */
 #endif
 
 	iram_tlb_vaddr =
@@ -450,7 +465,35 @@ static TEE_Result init_ocram(void)
 	 * hang system.
 	 */
 #endif
+#ifdef CFG_MX7ULP
+	map.pa = M4_AIPS_BASE;
+	map.va = (vaddr_t)phys_to_virt(map.pa, MEM_AREA_IO_SEC, 0x100000);
+	map.region_size = 0x100000;
+	map.size = 0x100000;
+	map.type = MEM_AREA_TEE_COHERENT;
+	map.attr = TEE_MATTR_VALID_BLOCK | TEE_MATTR_PRW | TEE_MATTR_GLOBAL |
+				 TEE_MATTR_SECURE;
+	map_memarea_sections(&map, (uint32_t *)iram_tlb_vaddr);
 
+	map.pa = ROUNDDOWN(IRAM_BASE, 0x100000);
+	map.va = (vaddr_t)phys_to_virt(map.pa, MEM_AREA_TEE_COHERENT, 0x100000);
+	map.region_size = 0x100000;
+	map.size = 0x100000;
+	map.type = MEM_AREA_TEE_COHERENT;
+	map.attr = TEE_MATTR_VALID_BLOCK | TEE_MATTR_PRW | TEE_MATTR_GLOBAL |
+				TEE_MATTR_SECURE | TEE_MATTR_PX;
+	map_memarea_sections(&map, (uint32_t *)iram_tlb_vaddr);
+
+	/*
+	 * We no need to give GIC a standalone entry, because AIPS0 has
+	 * already included GIC space. If not, map_memarea will
+	 * panic.
+	 *
+	 * Note: No map DRAM space, DRAM is in auto-selfrefresh,
+	 * If map DRAM in to MMU, mmu will access DRAM which
+	 * hang system.
+	 */
+#endif
 	return TEE_SUCCESS;
 }
 #else

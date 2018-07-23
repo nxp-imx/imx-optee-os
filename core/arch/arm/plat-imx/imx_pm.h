@@ -116,6 +116,45 @@ struct imx7_pm_info {
 	uint32_t	ddrc_phy_val[MX7_DDRC_NUM][2];
 } __aligned(8);
 
+#define MX7ULP_MAX_IOMUX_NUM		116
+#define MX7ULP_MAX_SELECT_INPUT_NUM	78
+#define MX7ULP_MAX_MMDC_IO_NUM		36
+#define MX7ULP_MAX_MMDC_NUM		50
+struct imx7ulp_pm_info {
+	uint32_t m4_reserve0;
+	uint32_t m4_reserve1;
+	uint32_t m4_reserve2;
+	paddr_t pbase; /* The physical address of pm_info. */
+	paddr_t resume_addr; /* The physical resume address for asm code */
+	uint32_t pm_info_size; /* Size of pm_info. */
+	vaddr_t sim_base;
+	vaddr_t scg1_base;
+	vaddr_t mmdc_base;
+	vaddr_t mmdc_io_base;
+	vaddr_t smc1_base;
+	uint32_t scg1[17];
+	uint32_t ttbr0;
+	uint32_t ttbr1;
+	uint32_t gpio[4][2];
+	uint32_t iomux_num;
+	uint32_t iomux_val[MX7ULP_MAX_IOMUX_NUM];
+	uint32_t select_input_num;
+	uint32_t select_input_val[MX7ULP_MAX_SELECT_INPUT_NUM];
+	uint32_t mmdc_io_num;
+	uint32_t mmdc_io_val[MX7ULP_MAX_MMDC_IO_NUM][2];
+	uint32_t mmdc_num;
+	uint32_t mmdc_val[MX7ULP_MAX_MMDC_NUM][2];
+} __aligned(8);
+
+
+struct imx7ulp_pm_data {
+	uint32_t ddr_type;
+	uint32_t mmdc_io_num;
+	uint32_t *mmdc_io_offset;
+	uint32_t mmdc_num;
+	uint32_t *mmdc_offset;
+};
+
 struct imx7_pm_data {
 	uint32_t ddr_type;
 	uint32_t ddrc_num;
@@ -175,6 +214,18 @@ void imx7d_low_power_idle(struct imx7_pm_info *info);
 
 int imx7ulp_cpu_suspend(uint32_t power_state, uintptr_t entry,
 			uint32_t context_id, struct sm_nsec_ctx *nsec);
-#endif
+void imx7ulp_suspend(struct imx7ulp_pm_info *info);
+void imx7ulp_cpu_resume(void);
 
+enum imx7ulp_sys_pwr_mode {
+	HSRUN,
+	RUN,
+	VLPR,
+	WAIT,
+	VLPW,
+	STOP,
+	VLPS,
+	VLLS,
+};
+#endif
 #endif
