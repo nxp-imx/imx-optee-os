@@ -11,8 +11,10 @@
 #include <initcall.h>
 #include <tee_api_types.h>
 
+#ifdef CFG_IMXCRYPT
 /* Library i.MX includes */
 #include <libimxcrypt.h>
+#endif
 
 /* Local includes */
 #include "common.h"
@@ -49,7 +51,11 @@
  * @retval  TEE_ERROR_GENERIC        Generic Error (driver init failure)
  * @retval  TEE_ERROR_NOT_SUPPORTED  Driver not supported
  */
+#ifdef CFG_IMXCRYPT
 TEE_Result crypto_driver_init(void)
+#else
+static TEE_Result crypto_driver_init(void)
+#endif
 {
 	TEE_Result       retresult = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
@@ -116,3 +122,6 @@ exit_init:
 	return retresult;
 }
 
+#ifndef CFG_IMXCRYPT
+driver_init(crypto_driver_init);
+#endif

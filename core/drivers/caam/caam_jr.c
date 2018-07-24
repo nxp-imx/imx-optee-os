@@ -112,13 +112,13 @@ static struct jr_privdata *jr_privdata;
  *
  * @param[in] jr_priv   Reference to the module private data
  */
-static void do_jr_free(struct jr_privdata **jr_priv)
+static void do_jr_free(struct jr_privdata *jr_priv)
 {
-	if (*jr_priv) {
-		caam_free((void **)&(*jr_priv)->inrings);
-		caam_free((void **)&(*jr_priv)->outrings);
-		caam_free((void **)&(*jr_priv)->callers);
-		caam_free((void **)jr_priv);
+	if (jr_priv) {
+		caam_free(jr_priv->inrings);
+		caam_free(jr_priv->outrings);
+		caam_free(jr_priv->callers);
+		caam_free(jr_priv);
 	}
 }
 
@@ -183,7 +183,7 @@ static enum CAAM_Status do_jr_alloc(struct jr_privdata **privdata,
 	retstatus = CAAM_NO_ERROR;
 end_alloc:
 	if (retstatus != CAAM_NO_ERROR)
-		do_jr_free(&jr_priv);
+		do_jr_free(jr_priv);
 
 	*privdata = jr_priv;
 
@@ -334,7 +334,7 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 {
 	enum CAAM_Status retstatus = CAAM_BUSY;
 
-	struct caller_info *caller;
+	struct caller_info *caller = NULL;
 	uint32_t exceptions;
 	uint32_t job_mask = 0;
 	uint8_t  idx_jr;
@@ -671,7 +671,7 @@ enum CAAM_Status caam_jr_init(struct jr_cfg *jr_cfg)
 
 end_init:
 	if (retstatus != CAAM_NO_ERROR)
-		do_jr_free(&jr_privdata);
+		do_jr_free(jr_privdata);
 
 	return retstatus;
 }

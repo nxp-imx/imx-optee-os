@@ -115,12 +115,11 @@ void *caam_alloc_align(size_t size)
  * @param[in] ptr  reference to the object to free
  *
  */
-void caam_free(void **ptr)
+void caam_free(void *ptr)
 {
-	if (*ptr) {
-		MEM_TRACE("FREE 0x%"PRIxPTR"", (uintptr_t)*ptr);
-		free(*ptr);
-		*ptr = NULL;
+	if (ptr) {
+		MEM_TRACE("FREE 0x%"PRIxPTR"", (uintptr_t)ptr);
+		free(ptr);
 	}
 }
 
@@ -240,9 +239,9 @@ void caam_free_buf(struct caambuf *buf)
 void caam_sgtbuf_free(struct sgtbuf *data)
 {
 	if (data->sgt_type)
-		caam_free((void **)&data->sgt);
+		caam_free(data->sgt);
 	else
-		caam_free((void **)&data->buf);
+		caam_free(data->buf);
 }
 
 /**
@@ -277,6 +276,7 @@ enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data)
 	return CAAM_NO_ERROR;
 }
 
+#ifdef CFG_IMXCRYPT
 /**
  * @brief   Copy source data into the block buffer
  *
@@ -320,6 +320,7 @@ enum CAAM_Status caam_cpy_block_src(struct caamblock *block,
 end_cpy:
 	return ret;
 }
+#endif
 
 /**
  * @brief   Memory utilities initialization

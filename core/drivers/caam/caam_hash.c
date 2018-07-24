@@ -425,7 +425,7 @@ static void do_free(void *ctx)
 
 	if (ctx) {
 		do_free_intern(ctx);
-		caam_free(&ctx);
+		caam_free(ctx);
 	}
 }
 

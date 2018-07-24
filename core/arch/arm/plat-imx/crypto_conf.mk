@@ -2,7 +2,7 @@
 # Define the cryptographic algorithm to be built
 #
 
-ifeq ($(CFG_IMX_CAAM), y)
+ifeq ($(CFG_IMX_CAAM),y)
 $(call force, CFG_CRYPTO_WITH_HW_ACC,y)
 $(call force, CFG_IMXCRYPT,y)
 
@@ -13,9 +13,11 @@ $(call force, CFG_IMXCRYPT,y)
 $(call force, CFG_IMXCRYPT_TOMCRYPT,y)
 endif
 
+ifeq ($(CFG_IMXCRYPT), y)
 ifeq ($(CFG_IMXCRYPT_TOMCRYPT), y)
-# Enable LTC GCM mode
-$(call force, CFG_CRYPTO_AES_GCM_FROM_CRYPTOLIB,y)
+# Don't enable LTC GCM mode which seems to be slower than
+# Core/Crypto ones
+$(call force, CFG_CRYPTO_AES_GCM_FROM_CRYPTOLIB,n)
 endif
 
 #
@@ -55,4 +57,4 @@ $(call force, CFG_CRYPTO_HMAC_FULL_HW, $(call cryp-full-hw-enabled, HASH, \
 
 
 $(call force, CFG_CRYPTO_AUTHENC_HW, $(call cryp-one-hw-enabled, CCM GCM))
-
+endif

@@ -413,7 +413,7 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_cipher_id algo)
 
 err_allocate:
 	caam_free_desc(&cipherdata->descriptor);
-	caam_free((void **)&cipherdata);
+	caam_free(cipherdata);
 
 	return ret;
 }
@@ -461,7 +461,7 @@ static void do_free(void *ctx)
 
 	if (ctx) {
 		do_free_intern(ctx);
-		caam_free(&ctx);
+		caam_free(ctx);
 	}
 }
 

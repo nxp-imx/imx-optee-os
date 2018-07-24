@@ -11,8 +11,10 @@
 #ifndef __UTILS_MEM_H__
 #define __UTILS_MEM_H__
 
+#ifdef CFG_IMXCRYPT
 /* Library i.MX includes */
 #include <libimxcrypt.h>
+#endif
 
 /* Local includes */
 #include "common.h"
@@ -44,7 +46,7 @@ void *caam_alloc_align(size_t size);
  * @param[in] ptr  reference to the object to free
  *
  */
-void caam_free(void **ptr);
+void caam_free(void *ptr);
 
 /**
  * @brief   Allocate Job descriptor and initialize it with 0s
@@ -113,6 +115,7 @@ void caam_sgtbuf_free(struct sgtbuf *data);
  */
 enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data);
 
+#ifdef CFG_IMXCRYPT
 /**
  * @brief   Copy source data into the block buffer
  *
@@ -126,6 +129,7 @@ enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data);
 enum CAAM_Status caam_cpy_block_src(struct caamblock *block,
 			struct imxcrypt_buf *src,
 			size_t offset);
+#endif
 
 /**
  * @brief   Memory utilities initialization

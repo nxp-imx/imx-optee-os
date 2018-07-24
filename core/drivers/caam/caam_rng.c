@@ -141,7 +141,7 @@ static enum CAAM_Status do_allocate(void)
 static void do_free(void)
 {
 	struct rngdata *rng;
-	uint8_t    idx;
+	uint8_t        idx;
 
 	if (rng_privdata) {
 		for (idx = 0; idx < RNG_DATABUF_NB; idx++) {
@@ -152,10 +152,12 @@ static void do_free(void)
 				caam_jr_cancel(rng->jobId);
 
 			caam_free_desc(&rng->jobctx.desc);
-			caam_free((void **)&rng->data);
+			caam_free(rng->data);
+			rng->data = NULL;
 		}
 
-		caam_free((void **)&rng_privdata);
+		caam_free(rng_privdata);
+		rng_privdata = NULL;
 	}
 }
 

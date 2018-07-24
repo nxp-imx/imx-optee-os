@@ -238,8 +238,10 @@ int libsoft_cipher_init(void)
 {
 	int ret = 0;
 
+#ifdef CFG_CRYPTO_CIPHER_HW
 	/* Register the Cipher descriptor into libTomCrypt Software */
-	ret |= register_cipher(&aes_wrap_desc);
+	ret = register_cipher(&aes_wrap_desc);
+#endif
 
 	return (ret == (-1)) ? ret : 0;
 }
