@@ -4,6 +4,7 @@
  */
 #ifndef __IMX7_REGS_H__
 #define __IMX7_REGS_H__
+#include <registers/imx7-crm_regs.h>
 #include <registers/imx7-gpc_regs.h>
 #include <registers/imx7-src_regs.h>
 #include <registers/imx7-iomux_regs.h>

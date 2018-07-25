@@ -28,6 +28,7 @@
  */
 #ifndef __IMX6_REGS_H__
 #define __IMX6_REGS_H__
+#include <registers/imx6-crm_regs.h>
 #include <registers/imx6-src_regs.h>
 #include <registers/imx6-iomux_regs.h>
 #include <registers/imx6-mmdc_regs.h>
@@ -36,6 +37,7 @@
 #define IOMUXC_BASE		0x020E0000
 #define IOMUXC_GPR_BASE		0x020E4000
 #define SRC_BASE		0x020D8000
+#define CCM_BASE		0x020C4000
 #define ANATOP_BASE		0x020C8000
 #define SNVS_BASE		0x020CC000
 #define UART2_BASE		0x021E8000
