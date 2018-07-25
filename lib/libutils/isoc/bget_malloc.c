@@ -441,6 +441,7 @@ static void brel_before(char *orig_buf, char *new_buf, struct bpoolset *poolset)
 
 		/* Make it negative since it's an allocated buffer */
 		b->bsize = -(orig_size - size);
+		b->prevfree = 0;
 
 		create_free_block(bf, size, b, poolset);
 	}
