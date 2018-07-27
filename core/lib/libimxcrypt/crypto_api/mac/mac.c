@@ -493,7 +493,7 @@ TEE_Result crypto_mac_update(void *ctx, uint32_t algo,
 	LIB_TRACE("mac update len %d", len);
 
 	/* Check the parameters */
-	if ((!ctx) || (!data) || (!len))
+	if ((!ctx) || ((!data) && (len != 0)))
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	switch (algo) {

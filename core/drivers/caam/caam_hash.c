@@ -521,7 +521,8 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 	size_t size_todo;
 	size_t size_inmade;
 
-	paddr_t       paddr_data;
+	size_t  inLength   = 0;
+	paddr_t paddr_data = 0;
 
 	if (hashdata->algo_id != algo) {
 		HASH_TRACE("Context algo is %d and asked for %d",
@@ -530,11 +531,14 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 		goto exit_update;
 	}
 
-	paddr_data = virt_to_phys((void *)data);
-	if (!paddr_data) {
-		HASH_TRACE("Bad input data physical address");
-		ret = TEE_ERROR_BAD_PARAMETERS;
-		goto exit_update;
+	if (data) {
+		paddr_data = virt_to_phys((void *)data);
+		if (!paddr_data) {
+			HASH_TRACE("Bad input data physical address");
+			ret = TEE_ERROR_BAD_PARAMETERS;
+			goto exit_update;
+		}
+		inLength = len;
 	}
 
 	if (!hashdata->ctx.data) {
@@ -546,13 +550,13 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 	}
 
 	HASH_TRACE("Update Algo %d - Input @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)data, len);
+				algo, (uintptr_t)data, inLength);
 
 	/* Calculate the total data to be handled */
-	fullSize = hashdata->blockbuf.filled + len;
+	fullSize = hashdata->blockbuf.filled + inLength;
 	size_topost = fullSize  % alg->size_block;
 	size_todo   = fullSize - size_topost;
-	size_inmade = len - size_topost;
+	size_inmade = inLength - size_topost;
 	HASH_TRACE("FullSize %d - posted %d - todo %d",
 			fullSize, size_topost, size_todo);
 
@@ -649,10 +653,10 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 		}
 	}
 
-	if (size_topost) {
+	if ((size_topost) && (data)) {
 		struct imxcrypt_buf indata = {
 			.data = (uint8_t *)data,
-			.length = len};
+			.length = inLength};
 
 		HASH_TRACE("Post %d of input len %d made %d",
 				size_topost, len, size_inmade);

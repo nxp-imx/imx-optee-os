@@ -194,7 +194,7 @@ TEE_Result crypto_hash_update(void *ctx, uint32_t algo,
 	enum imxcrypt_hash_id hash_id;
 
 	/* Check the parameters */
-	if ((!ctx) || (!data))
+	if ((!ctx) || ((!data) && (len != 0)))
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	hash = do_check_algo(algo, &hash_id);
