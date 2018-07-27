@@ -45,6 +45,13 @@
 	#ifdef CFG_CRYPTO_XTS
 		#define LTC_XTS_MODE
 	#endif
+#else
+	#ifdef CFG_CRYPTO_WITH_CE
+	/* Define the following constant used in the files
+	 * implemented in ARM Crypto Acceleration
+	 */
+	#define CTR_COUNTER_LITTLE_ENDIAN    0x0000
+	#endif
 #endif
 
 /*

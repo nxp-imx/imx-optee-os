@@ -20,11 +20,6 @@
 #include <utee_defines.h>
 #include <util.h>
 
-#if defined(CFG_WITH_VFP)
-#include <tomcrypt_arm_neon.h>
-#include <kernel/thread.h>
-#endif
-
 /* Random generator */
 static int prng_mpa_start(union Prng_state *prng __unused)
 {
@@ -2793,18 +2788,6 @@ TEE_Result crypto_init(void)
 
 	return TEE_SUCCESS;
 }
-
-#if defined(CFG_WITH_VFP)
-void tomcrypt_arm_neon_enable(struct tomcrypt_arm_neon_state *state)
-{
-	state->state = thread_kernel_enable_vfp();
-}
-
-void tomcrypt_arm_neon_disable(struct tomcrypt_arm_neon_state *state)
-{
-	thread_kernel_disable_vfp(state->state);
-}
-#endif
 
 #if defined(CFG_CRYPTO_SHA256)
 TEE_Result hash_sha256_check(const uint8_t *hash, const uint8_t *data,

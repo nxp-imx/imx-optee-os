@@ -10,6 +10,8 @@ ifneq ($(CFG_CRYPTO_WITH_HW_ACC),y)
 srcs-y += tee_ltc_provider.c
 endif
 
+srcs-y += utils.c
+
 subdirs-$(_CFG_CRYPTO_WITH_CIPHER) += ciphers
 subdirs-$(_CFG_CRYPTO_WITH_AUTHENC) += encauth
 subdirs-y += hashes
