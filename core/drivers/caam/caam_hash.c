@@ -891,9 +891,16 @@ enum CAAM_Status caam_hash_init(vaddr_t ctrl_addr)
 		driver_hash.max_hash = hash_limit;
 		driver_hmac.max_hash = hash_limit;
 
-		if ((imxcrypt_register(CRYPTO_HASH, &driver_hash) == 0) &&
-			(imxcrypt_register(CRYPTO_HMAC, &driver_hmac) == 0))
+		if (imxcrypt_register(CRYPTO_HASH, &driver_hash) == 0) {
 			retstatus = CAAM_NO_ERROR;
+
+			/* Check if the HW support the HMAC Split key */
+			if (hal_ctrl_splitkey(ctrl_addr)) {
+				if (imxcrypt_register(CRYPTO_HMAC, &driver_hmac) != 0)
+					retstatus = CAAM_FAILURE;
+			}
+		}
+
 	}
 
 	return retstatus;

@@ -120,17 +120,6 @@ int libsoft_cipher_init(void);
 int libsoft_authenc_init(void);
 
 /**
- * @brief   Find SW hash index into the LibTomCrypt. If supported
- *          be HW, returns (-1)
- *
- * @param[in]      algo   Algorithm ID of the context
- *
- * @retval  >=0 if found
- * @retval  (-1) if not found
- */
-int get_sw_hashindex(enum imxcrypt_hash_id algo);
-
-/**
  * @brief   Find Hash index into the LibTomCrypt hash registered
  *
  * @param[in]      algo   Algorithm ID of the context

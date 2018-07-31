@@ -43,7 +43,7 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
 
 	LIB_TRACE("HMAC_SW: Allocate Context (0x%"PRIxPTR")", (uintptr_t)ctx);
 
-	if (get_sw_hashindex(algo) == (-1))
+	if (get_ltc_hashindex(algo) == (-1))
 		return TEE_ERROR_NOT_IMPLEMENTED;
 
 	hmac_ctx = calloc(1, sizeof(hmac_state));
@@ -87,7 +87,7 @@ static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
 	LIB_TRACE("HMAC_SW: Init Algo %d - Context @0x%08"PRIxPTR"",
 				algo, (uintptr_t)ctx);
 
-	hash_idx = get_sw_hashindex(algo);
+	hash_idx = get_ltc_hashindex(algo);
 
 	if (hash_idx == (-1))
 		return TEE_ERROR_NOT_IMPLEMENTED;
@@ -144,10 +144,13 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 	LIB_TRACE("HMAC_SW: Update Algo %d - Input @0x%08"PRIxPTR"-%d",
 				algo, (uintptr_t)data, len);
 
-	hash_idx = get_sw_hashindex(algo);
+	hash_idx = get_ltc_hashindex(algo);
 
 	if (hash_idx == (-1))
 		return TEE_ERROR_NOT_IMPLEMENTED;
+
+	if ((!data) || (!len))
+		return TEE_SUCCESS;
 
 	ret = hmac_process(ctx, data, len);
 
@@ -178,7 +181,7 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	LIB_TRACE("HMAC_SW: Final Algo %d - Digest @0x%08"PRIxPTR"-%d",
 				algo, (uintptr_t)digest, len);
 
-	hash_idx = get_sw_hashindex(algo);
+	hash_idx = get_ltc_hashindex(algo);
 
 	if (hash_idx == (-1))
 		return TEE_ERROR_NOT_IMPLEMENTED;

@@ -36,7 +36,7 @@
  * @retval  >=0 if found
  * @retval  (-1) if not found
  */
-int get_sw_hashindex(enum imxcrypt_hash_id algo)
+static int get_sw_hashindex(enum imxcrypt_hash_id algo)
 {
 	int index = (-1);
 

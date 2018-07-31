@@ -35,4 +35,15 @@ uint8_t hal_ctrl_jrnum(vaddr_t baseaddr);
  */
 int hal_ctrl_hash_limit(vaddr_t baseaddr);
 
+/**
+ * @brief   Returns if the HW support the split key operation.
+ *          Split key is supported if CAAM Version is > 3
+ *
+ * @param[in] baseaddr  Controller base address
+ *
+ * @retval  true  if split key is supported
+ * @retval  false otherwise
+ */
+bool hal_ctrl_splitkey(vaddr_t baseaddr);
+
 #endif /* __HAL_CTRL_H__ */

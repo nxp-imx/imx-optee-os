@@ -66,4 +66,27 @@ int hal_ctrl_hash_limit(vaddr_t baseaddr)
 
 	return (-1);
 }
+
+/**
+ * @brief   Returns if the HW support the split key operation.
+ *          Split key is supported if CAAM Version is > 3
+ *
+ * @param[in] baseaddr  Controller base address
+ *
+ * @retval  true  if split key is supported
+ * @retval  false otherwise
+ */
+bool hal_ctrl_splitkey(vaddr_t baseaddr)
+{
+	uint32_t val;
+
+	/* Read the number of instance */
+	val = read32(baseaddr + CAAMVID_MS);
+
+	if (GET_CAAMVID_MS_MAJ_REV(val) < 3) {
+		return false;
+	}
+
+	return true;
+}
 #endif // CFG_CRYPTO_HASH_HW

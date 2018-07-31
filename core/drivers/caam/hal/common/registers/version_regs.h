@@ -12,6 +12,11 @@
 /* Global includes */
 #include <util.h>
 
+/* CAAM Version ID */
+#define CAAMVID_MS					0x0BF8
+#define BM_CAAMVID_MS_MAJ_REV		SHIFT_U32(0xFF, 8)
+#define GET_CAAMVID_MS_MAJ_REV(val)	((val & BM_CAAMVID_MS_MAJ_REV) >> 8)
+
 /* Compile Time Parameters */
 #define CTPR_MS						0x0FA8
 #define BM_CTPR_MS_RNG_I			SHIFT_U32(0x7, 8)
