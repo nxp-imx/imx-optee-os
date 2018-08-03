@@ -146,7 +146,8 @@
 #define FIFO_LOAD_ACTION(act)	SHIFT_U32((FIFO_LOAD_##act & 0x3F), 16)
 
 /* Length */
-#define FIFO_LOAD_LENGTH(len)	SHIFT_U32((len & 0xFFFF), 0)
+#define FIFO_LOAD_MAX			0xFFFF
+#define FIFO_LOAD_LENGTH(len)	SHIFT_U32((len & FIFO_LOAD_MAX), 0)
 
 /*
  * Define the FIFO Load Type Input
@@ -181,11 +182,15 @@
  */
 #define CMD_FIFO_STORE_TYPE		CMD_TYPE(0x0C)
 
+/* Extended Length */
+#define FIFO_STORE_EXT			BIT32(22)
+
 /* Output data */
 #define FIFO_STORE_OUTPUT(reg)	SHIFT_U32((FIFO_STORE_##reg & 0x3F), 16)
 
 /* Length */
-#define FIFO_STORE_LENGTH(len)	SHIFT_U32((len & 0xFFFF), 0)
+#define FIFO_STORE_MAX			0xFFFF
+#define FIFO_STORE_LENGTH(len)	SHIFT_U32((len & FIFO_STORE_MAX), 0)
 
 /*
  * Define the FIFO Store Type Output

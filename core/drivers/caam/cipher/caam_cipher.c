@@ -286,9 +286,15 @@ enum CAAM_Status do_block(struct cipherdata *ctx,
 		desc[desclen++] = virt_to_phys(src->sgt);
 		caam_cache_op_sgt(TEE_CACHECLEAN, src);
 	} else {
-		desc[desclen++] = FIFO_LD(CLASS_1, MSG, LAST_C1,
-				src->buf->length);
-		desc[desclen++] = src->buf->paddr;
+		if (src->buf->length > FIFO_LOAD_MAX) {
+			desc[desclen++] = FIFO_LD_EXT(CLASS_1, MSG, LAST_C1);
+			desc[desclen++] = src->buf->paddr;
+			desc[desclen++] = src->buf->length;
+		} else {
+			desc[desclen++] = FIFO_LD(CLASS_1, MSG, LAST_C1,
+					src->buf->length);
+			desc[desclen++] = src->buf->paddr;
+		}
 		cache_operation(TEE_CACHECLEAN, src->buf->data,
 				src->buf->length);
 	}
@@ -303,8 +309,14 @@ enum CAAM_Status do_block(struct cipherdata *ctx,
 			caam_cache_op_sgt(TEE_CACHEFLUSH, dst);
 		} else {
 			/* Store the destination data */
-			desc[desclen++] = FIFO_ST(MSG_DATA, dst->buf->length);
-			desc[desclen++] = dst->buf->paddr;
+			if (dst->buf->length > FIFO_STORE_MAX) {
+				desc[desclen++] = FIFO_ST_EXT(MSG_DATA);
+				desc[desclen++] = dst->buf->paddr;
+				desc[desclen++] = dst->buf->length;
+			} else {
+				desc[desclen++] = FIFO_ST(MSG_DATA, dst->buf->length);
+				desc[desclen++] = dst->buf->paddr;
+			}
 			cache_operation(TEE_CACHEFLUSH, dst->buf->data,
 				dst->buf->length);
 		}

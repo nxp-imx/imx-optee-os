@@ -170,6 +170,14 @@ static inline void dump_desc(void *desc)
 			FIFO_STORE_LENGTH(len))
 
 /**
+ * @brief  FIFO Store from register \a src. \n
+ *         The length is externally defined
+ */
+#define FIFO_ST_EXT(src) \
+			(CMD_FIFO_STORE_TYPE | FIFO_LOAD_EXT | \
+			 FIFO_STORE_OUTPUT(src))
+
+/**
  * @brief  FIFO Store from register \a src of length \a len. Pointer is
  *         a Scatter/Gatter Table
  */
