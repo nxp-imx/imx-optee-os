@@ -43,6 +43,16 @@
 #endif
 
 /**
+ * @brief   Check if pointer \a p is aligned with \a align
+ */
+#define IS_PTR_ALIGN(p, align)	(((uintptr_t)(p) & (align - 1)) == 0)
+
+/**
+ * @brief   Check if size \a size is aligned with \a align
+ */
+#define IS_SIZE_ALIGN(size, align)	(ROUNDUP(size, align) == size)
+
+/**
  * @brief   Cache line size in bytes
  */
 static uint16_t cacheline_size;
@@ -274,6 +284,37 @@ enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data)
 	}
 
 	return CAAM_NO_ERROR;
+}
+
+/**
+ * @brief   Re-Allocate a buffer if it's not align on a cache line
+ *
+ * @param[in]  orig  Buffer origin
+ * @param[out] dst   Buffer address reallocated or same as origin
+ * @param[in]  size  Size in bytes of the buffer
+ *
+ * @retval  0    if destination is the same as origin
+ * @retval  1    if reallocation of the buffer
+ * @retval  (-1) if allocation error
+ */
+int caam_realloc_align(void *orig, void **dst, size_t size)
+{
+	/*
+	 * Check if either orig pointer or size are aligned on the
+	 * cache line size.
+	 * If no, reallocate a buffer aligned on cache line
+	 */
+	if (!IS_PTR_ALIGN(orig, cacheline_size) ||
+		!IS_SIZE_ALIGN(size, cacheline_size)) {
+		*dst = caam_alloc_align(size);
+		if (!*dst)
+			return (-1);
+
+		return 1;
+	}
+
+	*dst = orig;
+	return 0;
 }
 
 #ifdef CFG_IMXCRYPT

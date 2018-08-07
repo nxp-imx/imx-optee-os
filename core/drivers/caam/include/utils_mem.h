@@ -115,6 +115,19 @@ void caam_sgtbuf_free(struct sgtbuf *data);
  */
 enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data);
 
+/**
+ * @brief   Re-Allocate a buffer if it's not align on a cache line
+ *
+ * @param[in]  orig  Buffer origin
+ * @param[out] dst   Buffer address reallocated or same as origin
+ * @param[in]  size  Size in bytes of the buffer
+ *
+ * @retval  0    if destination is the same as origin
+ * @retval  1    if reallocation of the buffer
+ * @retval  (-1) if allocation error
+ */
+int caam_realloc_align(void *orig, void **dst, size_t size);
+
 #ifdef CFG_IMXCRYPT
 /**
  * @brief   Copy source data into the block buffer

@@ -198,17 +198,19 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
  *
  * @retval TEE_SUCCESS               Success
  * @retval TEE_ERROR_GENERIC         Other Error
- * @retval TEE_ERROR_SHORT_BUFFER    Digest buffer too short
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
+ * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
 static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 					uint8_t *digest, size_t len)
 {
 	int hash_idx;
 	int ret;
+	uint8_t *block_digest = NULL;
+	uint8_t *tmp_digest   = digest;
 
 	LIB_TRACE("HASH_SW: Final Algo %d - Digest @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)digest, len);
+				algo, (uintptr_t)tmp_digest, len);
 
 	hash_idx = get_sw_hashindex(algo);
 
@@ -216,10 +218,23 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 		return TEE_ERROR_NOT_IMPLEMENTED;
 
 	/* Check the length of the digest */
-	if (hash_descriptor[hash_idx]->hashsize > len)
-		return TEE_ERROR_SHORT_BUFFER;
+	if (hash_descriptor[hash_idx]->hashsize > len) {
+		/* Allocate a temporary block digest */
+		block_digest = malloc(hash_descriptor[hash_idx]->hashsize);
+		if (!block_digest)
+			return TEE_ERROR_OUT_OF_MEMORY;
 
-	ret = hash_descriptor[hash_idx]->done(ctx, digest);
+		tmp_digest = block_digest;
+	}
+
+	ret = hash_descriptor[hash_idx]->done(ctx, tmp_digest);
+
+	if (block_digest) {
+		if (ret == CRYPT_OK)
+			memcpy(digest, tmp_digest, len);
+
+		free(block_digest);
+	}
 
 	return conv_CRYPT_to_TEE_Result(ret);
 }

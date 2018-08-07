@@ -34,6 +34,7 @@
  * @retval TEE_ERROR_GENERIC         Other Error
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad Parameters
  * @retval TEE_ERROR_SHORT_BUFFER    Output buffer too short
+ * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
 TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 {
@@ -53,6 +54,9 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 
 	paddr_t psrc = 0;
 	paddr_t pdst = 0;
+
+	int  realloc    = 0;
+	void *dst_align = NULL;
 
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
 				dupdate->src.length,
@@ -77,10 +81,19 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 		if (dupdate->dst.length < ctx->alg->size_block)
 			return TEE_ERROR_SHORT_BUFFER;
 
-		pdst  = virt_to_phys(dupdate->dst.data);
+		realloc = caam_realloc_align(dupdate->dst.data, &dst_align,
+				dupdate->dst.length);
+		if (realloc == (-1)) {
+			CIPHER_TRACE("Destination buffer reallocation error");
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto end_cmac;
+		}
+
+		pdst  = virt_to_phys(dst_align);
 		if (!pdst) {
 			CIPHER_TRACE("Bad Dst address");
-			return TEE_ERROR_GENERIC;
+			ret = TEE_ERROR_GENERIC;
+			goto end_cmac;
 		}
 	}
 
@@ -94,8 +107,9 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 		if (size_topost == 0)
 			size_topost = ctx->alg->size_block;
 	}
+
 	/* Total size that is a cipher block multiple */
-	size_todo = fullSize - size_topost;
+	size_todo   = fullSize - size_topost;
 	size_inmade = dupdate->src.length - size_topost;
 
 	CIPHER_TRACE("FullSize %d - posted %d - todo %d",
@@ -181,7 +195,10 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 			}
 		} else {
 			if ((dupdate->last) && (ctx->blockbuf.filled == 0)) {
-				/* Add the input data multiple of blocksize */
+				/*
+				 * Add the input data of 0 bytes to start
+				 * algorithm by setting the input data size
+				 */
 				desc[desclen++] = FIFO_LD(CLASS_1, MSG,
 					LAST_C1, 0);
 				desc[desclen++] = 0;
@@ -213,7 +230,7 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 
 		if (dupdate->last) {
 			/* Flush the destination register */
-			cache_operation(TEE_CACHEFLUSH, dupdate->dst.data,
+			cache_operation(TEE_CACHEFLUSH, dst_align,
 							dupdate->dst.length);
 		}
 		if (ctx->ctx.length) {
@@ -227,15 +244,21 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 
 		if (retstatus == CAAM_NO_ERROR) {
 			ret = TEE_SUCCESS;
-#ifdef CIPHER_DEBUG
-			if (!dupdate->last) {
-				CIPHER_DUMPBUF("CTX", ctx->ctx.data,
-					ctx->ctx.length);
-			} else {
+
+			if (dupdate->last) {
+				cache_operation(TEE_CACHEINVALIDATE, dst_align,
+						dupdate->dst.length);
+
+				if (realloc)
+					memcpy(dupdate->dst.data, dst_align,
+							dupdate->dst.length);
+
 				CIPHER_DUMPBUF("DST", dupdate->dst.data,
 					dupdate->dst.length);
+			} else {
+				CIPHER_DUMPBUF("CTX", ctx->ctx.data,
+					ctx->ctx.length);
 			}
-#endif
 		} else {
 			CIPHER_TRACE("CAAM Status 0x%08"PRIx32"",
 				jobctx.status);
@@ -253,7 +276,7 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 
 	if (size_topost) {
 		struct imxcrypt_buf indata = {
-			.data = (uint8_t *)dupdate->src.data,
+			.data   = (uint8_t *)dupdate->src.data,
 			.length = dupdate->src.length};
 
 		CIPHER_TRACE("Post %d of input len %d made %d",
@@ -264,6 +287,10 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 		if (retstatus != CAAM_NO_ERROR)
 			ret = TEE_ERROR_GENERIC;
 	}
+
+end_cmac:
+	if (realloc == 1)
+		caam_free(dst_align);
 
 	return ret;
 }

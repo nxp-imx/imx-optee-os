@@ -217,9 +217,9 @@ TEE_Result crypto_hash_update(void *ctx, uint32_t algo,
  *
  * @retval TEE_SUCCESS               Success
  * @retval TEE_ERROR_GENERIC         Other Error
- * @retval TEE_ERROR_SHORT_BUFFER    Digest buffer too short
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_NOT_IMPLEMENTED Algorithm is not implemented
+ * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
 TEE_Result crypto_hash_final(void *ctx, uint32_t algo,
 					uint8_t *digest, size_t len)

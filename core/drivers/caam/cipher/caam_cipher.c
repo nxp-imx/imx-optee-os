@@ -732,9 +732,11 @@ exit_init:
  *
  * @retval TEE_SUCCESS               Success
  * @retval TEE_ERROR_GENERIC         Other Error
+ * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
 static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 {
+	TEE_Result ret;
 	enum CAAM_Status retstatus;
 
 	struct cipherdata *ctx = dupdate->ctx;
@@ -752,18 +754,31 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 	size_t size_todo;
 	size_t size_indone = 0;
 
+	int    realloc    = 0;
+	void   *dst_align = NULL;
+
+
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
 				dupdate->src.length,
 				(dupdate->encrypt ? "Encrypt" : " Decrypt"));
 
+	realloc = caam_realloc_align(dupdate->dst.data, &dst_align,
+			dupdate->dst.length);
+	if (realloc == (-1)) {
+		CIPHER_TRACE("Destination buffer reallocation error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto end_streaming;
+	}
+
 	psrc = virt_to_phys(dupdate->src.data);
-	pdst = virt_to_phys(dupdate->dst.data);
+	pdst = virt_to_phys(dst_align);
 
 	/* Check the payload/cipher physical addresses */
 	if ((!psrc) || (!pdst)) {
 		CIPHER_TRACE("Bad Addr (src 0x%"PRIxPA") (dst 0x%"PRIxPA")",
 				psrc, pdst);
-		return TEE_ERROR_GENERIC;
+		ret = TEE_ERROR_GENERIC;
+		goto end_streaming;
 	}
 
 	/* Calculate the total data to be handled */
@@ -792,13 +807,16 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 			dst.number   = 2;
 			dst.sgt_type = true;
 			retstatus = caam_sgtbuf_alloc(&src);
-			if (retstatus != CAAM_NO_ERROR)
-				return TEE_ERROR_GENERIC;
+			if (retstatus != CAAM_NO_ERROR) {
+				ret = TEE_ERROR_GENERIC;
+				goto end_streaming;
+			}
 
 			retstatus = caam_sgtbuf_alloc(&dst);
 			if (retstatus != CAAM_NO_ERROR) {
 				caam_sgtbuf_free(&src);
-				return TEE_ERROR_GENERIC;
+				ret = TEE_ERROR_GENERIC;
+				goto end_streaming;
 			}
 
 			src.buf[0].data   = ctx->blockbuf.buf.data;
@@ -809,7 +827,7 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 
 			dst.buf[0].data   = ctx->blockbuf.buf.data;
 			dst.buf[0].length = ctx->blockbuf.filled;
-			dst.buf[1].data   = dupdate->dst.data;
+			dst.buf[1].data   = dst_align;
 			dst.buf[1].length = (dupdate->dst.length -
 				size_topost);
 
@@ -867,7 +885,7 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 			srcbuf.length = size_todo;
 			srcbuf.paddr  = psrc;
 
-			dstbuf.data   = dupdate->dst.data;
+			dstbuf.data   = dst_align;
 			dstbuf.length = size_todo;
 			dstbuf.paddr  = pdst;
 		}
@@ -881,12 +899,14 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 		if (dst.sgt_type)
 			caam_sgtbuf_free(&dst);
 
-		if (retstatus != CAAM_NO_ERROR)
-			return TEE_ERROR_GENERIC;
+		if (retstatus != CAAM_NO_ERROR) {
+			ret = TEE_ERROR_GENERIC;
+			goto end_streaming;
+		}
 
 		CIPHER_DUMPBUF("Source", dupdate->src.data,
 				(dupdate->src.length - size_topost));
-		CIPHER_DUMPBUF("Result", dupdate->dst.data,
+		CIPHER_DUMPBUF("Result", dst_align,
 				(dupdate->dst.length - size_topost));
 	}
 
@@ -896,8 +916,10 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 
 		retstatus = caam_cpy_block_src(&ctx->blockbuf,
 				&dupdate->src, size_indone);
-		if (retstatus != CAAM_NO_ERROR)
-			return TEE_ERROR_GENERIC;
+		if (retstatus != CAAM_NO_ERROR) {
+			ret = TEE_ERROR_GENERIC;
+			goto end_streaming;
+		}
 
 		src.sgt      = NULL;
 		src.buf      = &srcbuf;
@@ -914,15 +936,17 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 		srcbuf.length = ctx->blockbuf.filled;
 		srcbuf.paddr  = ctx->blockbuf.buf.paddr;
 
-		dstbuf.data   = dupdate->dst.data + size_indone;
+		dstbuf.data   = (uint8_t *)dst_align + size_indone;
 		dstbuf.length = ctx->blockbuf.filled;
 		dstbuf.paddr  = pdst + size_indone;
 
 		retstatus = do_block(ctx, false, NEED_KEY1, dupdate->encrypt,
 			&src, &dst);
 
-		if (retstatus != CAAM_NO_ERROR)
-			return TEE_ERROR_GENERIC;
+		if (retstatus != CAAM_NO_ERROR) {
+			ret = TEE_ERROR_GENERIC;
+			goto end_streaming;
+		}
 
 		CIPHER_DUMPBUF("Source", ctx->blockbuf.buf.data,
 					ctx->blockbuf.filled);
@@ -930,7 +954,17 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 					ctx->blockbuf.filled);
 	}
 
-	return TEE_SUCCESS;
+	cache_operation(TEE_CACHEINVALIDATE, dst_align, dupdate->dst.length);
+	if (realloc)
+		memcpy(dupdate->dst.data, dst_align, dupdate->dst.length);
+
+	ret = TEE_SUCCESS;
+
+end_streaming:
+	if (realloc == 1)
+		caam_free(dst_align);
+
+	return ret;
 }
 
 /**
@@ -942,12 +976,14 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
  * @retval TEE_SUCCESS               Success
  * @retval TEE_ERROR_GENERIC         Other Error
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad Parameters
+ * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
 static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 {
+	TEE_Result ret;
 	enum CAAM_Status retstatus;
 
-	struct cipherdata      *ctx = dupdate->ctx;
+	struct cipherdata *ctx = dupdate->ctx;
 
 	struct caambuf srcbuf = {0};
 	struct caambuf dstbuf = {0};
@@ -965,6 +1001,9 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 	paddr_t psrc;
 	paddr_t pdst;
 
+	int  realloc    = 0;
+	void *dst_align = NULL;
+
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
 				dupdate->src.length,
 				(dupdate->encrypt ? "Encrypt" : " Decrypt"));
@@ -977,41 +1016,53 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
+	realloc = caam_realloc_align(dupdate->dst.data, &dst_align,
+			dupdate->dst.length);
+	if (realloc == (-1)) {
+		CIPHER_TRACE("Destination buffer reallocation error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto end_cipher;
+	}
+
 	psrc = virt_to_phys(dupdate->src.data);
-	pdst = virt_to_phys(dupdate->dst.data);
+	pdst = virt_to_phys(dst_align);
 
 	/* Check the payload/cipher physical addresses */
 	if ((!psrc) || (!pdst)) {
 		CIPHER_TRACE("Bad Addr (src 0x%"PRIxPA") (dst 0x%"PRIxPA")",
 				psrc, pdst);
-		return TEE_ERROR_GENERIC;
+		ret = TEE_ERROR_GENERIC;
+		goto end_cipher;
 	}
-
 
 	srcbuf.data   = dupdate->src.data;
 	srcbuf.length = dupdate->src.length;
 	srcbuf.paddr  = psrc;
 
-	dstbuf.data   = dupdate->dst.data;
+	dstbuf.data   = dst_align;
 	dstbuf.length = dupdate->dst.length;
 	dstbuf.paddr  = pdst;
-
-	/* Payload/cipher physical addresses */
-	if ((!srcbuf.paddr) || (!dstbuf.paddr)) {
-		CIPHER_TRACE("Bad Addr (src 0x%"PRIxPA") (dst 0x%"PRIxPA")",
-			src.buf->paddr, dst.buf->paddr);
-		return TEE_ERROR_GENERIC;
-	}
 
 	retstatus = do_block(ctx, true, NEED_KEY1, dupdate->encrypt,
 		&src, &dst);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		CIPHER_DUMPBUF("Result", dst.buf->data, dst.buf->length);
-		return TEE_SUCCESS;
+		cache_operation(TEE_CACHEINVALIDATE, dst_align,
+				dupdate->dst.length);
+		if (realloc)
+			memcpy(dupdate->dst.data, dst_align,
+				dupdate->dst.length);
+
+		ret = TEE_SUCCESS;
 	} else {
-		return TEE_ERROR_GENERIC;
+		ret = TEE_ERROR_GENERIC;
 	}
+
+end_cipher:
+	if (realloc == 1)
+		caam_free(dst_align);
+
+	return ret;
 }
 
 /**
@@ -1024,6 +1075,7 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
  * @retval TEE_ERROR_GENERIC         Other Error
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad Parameters
  * @retval TEE_ERROR_SHORT_BUFFER    Output buffer too short
+ * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
 static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 {
@@ -1051,6 +1103,9 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 	size_t fullSize;
 	size_t size_topost;
 	size_t size_todo;
+
+	int  realloc    = 0;
+	void *dst_align = NULL;
 
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
 				dupdate->src.length,
@@ -1088,16 +1143,28 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 		if (dupdate->dst.length < ctx->alg->size_block)
 			return TEE_ERROR_SHORT_BUFFER;
 
-		dstbuf.data   = dupdate->dst.data;
-		dstbuf.length = dupdate->dst.length;
-		dstbuf.paddr  = virt_to_phys(dupdate->dst.data);
+		if (size_todo) {
+			realloc = caam_realloc_align(dupdate->dst.data,
+				&dst_align,
+				dupdate->dst.length);
+			if (realloc == (-1)) {
+				CIPHER_TRACE("Dest buffer reallocation error");
+				ret = TEE_ERROR_OUT_OF_MEMORY;
+				goto end_mac;
+			}
 
-		if (!dstbuf.paddr) {
-			CIPHER_TRACE("Bad dst address");
-			return TEE_ERROR_GENERIC;
+			dstbuf.data   = dst_align;
+			dstbuf.length = dupdate->dst.length;
+			dstbuf.paddr  = virt_to_phys(dst_align);
+
+			if (!dstbuf.paddr) {
+				CIPHER_TRACE("Bad dst address");
+				ret = TEE_ERROR_GENERIC;
+				goto end_mac;
+			}
+
+			dst_cipher = &dst;
 		}
-
-		dst_cipher = &dst;
 	}
 
 	if (size_topost) {
@@ -1111,9 +1178,9 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 		 * buffer.
 		 */
 		if (ctx->blockbuf.filled != 0) {
-			/* Complete temporary buffer to make a complete block */
+			/* Complete temporary buffer to make a full block */
 			struct imxcrypt_buf indata = {
-				.data = (uint8_t *)srcbuf.data,
+				.data   = (uint8_t *)srcbuf.data,
 				.length = srcbuf.length};
 
 			struct caambuf tmpbuf = {0};
@@ -1144,18 +1211,19 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 			retstatus = do_block(ctx, true, NEED_KEY1, true,
 				&tmpsrc, dst_cipher);
 
-			if (retstatus != CAAM_NO_ERROR)
-				return TEE_ERROR_GENERIC;
+			if (retstatus != CAAM_NO_ERROR) {
+				ret = TEE_ERROR_GENERIC;
+				goto end_mac;
+			}
 
 #ifdef CIPHER_DEBUG
 			CIPHER_DUMPBUF("Source", tmpbuf.data, tmpbuf.length);
-			if (dst_cipher) {
+			if (dst_cipher)
 				CIPHER_DUMPBUF("Cipher", dstbuf.data,
 					dstbuf.length);
-			}
+
 			CIPHER_DUMPBUF("Ctx", ctx->ctx.data, ctx->ctx.length);
 #endif
-
 			size_todo -= ctx->alg->size_block;
 		}
 
@@ -1182,11 +1250,13 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 		/*
 		 * There is no complete block to do:
 		 *   - either input size + already saved data < block size
-		 *   - or no inpute data and this is the last block
+		 *   - or no input data and this is the last block
 		 */
-		if (dupdate->last)
+		if (dupdate->last) {
 			memcpy(dupdate->dst.data, ctx->ctx.data,
 					dupdate->dst.length);
+			ret = TEE_SUCCESS;
+		}
 	}
 
 	ret = TEE_SUCCESS;
@@ -1199,6 +1269,19 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 		if (retstatus != CAAM_NO_ERROR)
 			ret = TEE_ERROR_GENERIC;
 	}
+
+	if (dst_align) {
+		cache_operation(TEE_CACHEINVALIDATE, dst_align,
+			dupdate->dst.length);
+
+		if (realloc)
+			memcpy(dupdate->dst.data, dst_align,
+				dupdate->dst.length);
+	}
+
+end_mac:
+	if (realloc == 1)
+		caam_free(dst_align);
 
 	return ret;
 }
