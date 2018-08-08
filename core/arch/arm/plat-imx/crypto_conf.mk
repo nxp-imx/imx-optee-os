@@ -2,18 +2,14 @@
 # Define the cryptographic algorithm to be built
 #
 
-ifeq ($(CFG_IMX_CAAM),y)
+ifeq ($(CFG_IMXCRYPT), y)
 $(call force, CFG_CRYPTO_WITH_HW_ACC,y)
-$(call force, CFG_IMXCRYPT,y)
-
 #
 # Define the TomCrypt as the Software library used to do
 # algorithm not done by the HW
 #
 $(call force, CFG_IMXCRYPT_TOMCRYPT,y)
-endif
 
-ifeq ($(CFG_IMXCRYPT), y)
 ifeq ($(CFG_IMXCRYPT_TOMCRYPT), y)
 # Don't enable LTC GCM mode which seems to be slower than
 # Core/Crypto ones
@@ -44,12 +40,12 @@ CFG_CRYPTO_HASH_HW_SHA384 ?= n
 CFG_CRYPTO_HASH_HW_SHA512 ?= n
 endif
 
-cryp-one-hw-enabled =                                               \
-	$(call cfg-one-enabled, $(foreach cfg, $(1),                    \
+cryp-one-hw-enabled =						\
+	$(call cfg-one-enabled, $(foreach cfg, $(1),		\
                CFG_CRYPTO_$(strip $(cfg))_HW))
 
-cryp-full-hw-enabled =												\
-	$(call cfg-all-enabled, 										\
+cryp-full-hw-enabled =								\
+	$(call cfg-all-enabled,							\
 		$(patsubst %, CFG_CRYPTO_$(strip $(1))_HW_%, $(strip $(2))))
 
 $(call force, CFG_CRYPTO_HMAC_FULL_HW, $(call cryp-full-hw-enabled, HASH, \

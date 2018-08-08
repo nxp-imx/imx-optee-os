@@ -362,6 +362,13 @@ CFG_IMX_WDOG ?= y
 $(call force,CFG_IMX_OCRAM,y)
 endif
 
+ifeq ($(CFG_IMX_CAAM),y)
+# currently disable the use of CAAM in OP-TEE
+CFG_IMXCRYPT ?= n
 
 # Cryptographic configuration
 include core/arch/arm/plat-imx/crypto_conf.mk
+else
+$(call force,CFG_IMXCRYPT,n)
+endif
+
