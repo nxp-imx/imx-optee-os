@@ -72,6 +72,7 @@ include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_TEE_CORE_NB_CORE,8)
 $(call force,CFG_DRAM0_SIZE,0x80000000)
 $(call force,CFG_CORE_CLUSTER_SHIFT,2)
+$(call force,CFG_ARM_GICV3,y)
 CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
@@ -81,6 +82,7 @@ include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_TEE_CORE_NB_CORE,8)
 $(call force,CFG_DRAM0_SIZE,0x80000000)
 $(call force,CFG_CORE_CLUSTER_SHIFT,1)
+$(call force,CFG_ARM_GICV3,y)
 CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
