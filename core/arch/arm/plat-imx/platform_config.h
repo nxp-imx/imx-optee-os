@@ -77,7 +77,13 @@
 #endif
 
 #ifndef CFG_TZDRAM_START
+#if defined CFG_ARM64_core 
+/* put optee end of ddr for AARCH64 */
 #define  CFG_TZDRAM_START (DRAM0_BASE + CFG_DDR_SIZE - CFG_TEE_RESERVED_SIZE)
+#else
+/* put optee at DDR base address + 64MB for AARCH32 */
+#define  CFG_TZDRAM_START (DRAM0_BASE + 0x04000000) 
+#endif
 #endif
 
 #ifndef CFG_SHMEM_SIZE

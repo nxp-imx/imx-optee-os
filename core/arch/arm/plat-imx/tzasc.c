@@ -98,10 +98,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 		| TZC_ATTR_SUBREGION_DIS(5)
 		| TZC_ATTR_SUBREGION_DIS(6)
 		| TZC_ATTR_SUBREGION_DIS(7));
-	tzc_configure_region(2, 0x4e000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0x4fc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -128,10 +128,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 	tzc_configure_region(2, 0x80000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_256M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(3, 0x8e000000,
+	tzc_configure_region(3, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(4, 0x8fc00000,
+	tzc_configure_region(4, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -146,13 +146,13 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_512M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0x9e000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0x9fc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -167,13 +167,13 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_256M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0x8e000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0x8fc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -188,13 +188,13 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_512M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0x9e000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0x9fc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -209,13 +209,13 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_1G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0xbe000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0xbfc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -230,13 +230,13 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0xfe000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0xffc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -251,13 +251,13 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_1G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0xbe000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0xbfc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -273,13 +273,13 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0xfe000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0xffc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -294,13 +294,13 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	tzc_configure_region(1, 0x80000000,
+	tzc_configure_region(1, DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_1G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
-	tzc_configure_region(2, 0xbe000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0xbfc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -326,10 +326,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 		| TZC_ATTR_SUBREGION_DIS(7)
 		);
 
-	tzc_configure_region(2, 0xbe000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0xbfc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -350,10 +350,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
 
-	tzc_configure_region(2, 0x7e000000,
+	tzc_configure_region(2, CFG_TZDRAM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, 0x7fc00000,
+	tzc_configure_region(3, CFG_SHMEM_START,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 

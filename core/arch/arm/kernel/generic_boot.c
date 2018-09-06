@@ -766,6 +766,13 @@ static int mark_static_shm_as_reserved(void *fdt)
 	return -1;
 }
 
+static int mark_optee_core_as_reserved(void *fdt)
+{
+	return add_res_mem_dt_node(fdt, "optee_core",
+					  CFG_TZDRAM_START,
+					  CFG_TZDRAM_SIZE);
+}
+
 static void init_fdt(unsigned long phys_fdt)
 {
 	void *fdt;
@@ -817,6 +824,9 @@ static void update_fdt(void)
 
 	if (mark_static_shm_as_reserved(fdt))
 		panic("Failed to config non-secure memory");
+
+	if (mark_optee_core_as_reserved(fdt))
+		panic("Failed to config secure memory");
 
 	ret = fdt_pack(fdt);
 	if (ret < 0) {
