@@ -266,11 +266,16 @@ void hal_cfg_setup_nsjobring(vaddr_t ctrl_base)
 
 	/* Configure the other Job ring to be Non-Secure */
 	do {
+#ifdef CFG_IMXCRYPT
 		if (jrnum != (CFG_JR_INDEX + 1)) {
 			jr_offset = jrnum * JRx_BLOCK_SIZE;
 			status = hal_jr_setowner(ctrl_base, jr_offset,
 				JROWN_ARM_NS);
 		}
+#else
+		jr_offset = jrnum * JRx_BLOCK_SIZE;
+		status = hal_jr_setowner(ctrl_base, jr_offset, JROWN_ARM_NS);
+#endif
 	} while (--jrnum);
 
 #endif // CFG_DT

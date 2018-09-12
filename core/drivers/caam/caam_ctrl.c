@@ -81,8 +81,6 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the CAAM Controller */
 	hal_ctrl_init(jr_cfg.base);
 
-	hal_cfg_setup_nsjobring(jr_cfg.base);
-
 	/* Initialize the Job Ring to be used */
 	retstatus = caam_jr_init(&jr_cfg);
 	if (retstatus != CAAM_NO_ERROR) {
@@ -118,6 +116,13 @@ static TEE_Result crypto_driver_init(void)
 	retresult = TEE_SUCCESS;
 
 exit_init:
+	/*
+	 * Configure Job Rings to NS World
+	 * If the Crypto IMX Library is not used (CFG_IMXCRYPT = n)
+	 * JR0 is freed to be Non-Secure
+	 */
+	hal_cfg_setup_nsjobring(jr_cfg.base);
+
 	CTRL_TRACE("CAAM Driver initialization (0x%x)\n", retresult);
 	return retresult;
 }

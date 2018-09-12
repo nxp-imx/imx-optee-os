@@ -45,7 +45,9 @@
 /**
  * @brief  Enable the interrupt mode or not
  */
+#ifdef CFG_IMXCRYPT
 //#define IT_MODE
+#endif
 
 /**
  * @brief   Definition of input ring object
@@ -664,7 +666,9 @@ enum CAAM_Status caam_jr_init(struct jr_cfg *jr_cfg)
 	jr_privdata->it_handler.handler = caam_jr_irqhandler;
 	jr_privdata->it_handler.data    = jr_privdata;
 
+#ifdef CFG_IMXCRYPT
 	itr_add(&jr_privdata->it_handler);
+#endif
 	hal_jr_enableIT(jr_privdata->baseaddr);
 
 	retstatus = CAAM_NO_ERROR;

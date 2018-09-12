@@ -62,9 +62,12 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 		/* Configuration only lock for the Secure JR */
 		cfg_ms  = JRxDID_MS_PRIM_DID(owner & ~JROWNER_SECURE);
 		cfg_ms |= JRxDID_MS_PRIM_TZ | JRxDID_MS_TZ_OWN;
-		cfg_ms |= JRxDID_MS_AMTD | JRxDID_MS_LAMTD;
+		cfg_ms |= JRxDID_MS_AMTD;
 		cfg_ms |= JRxDID_MS_PRIM_ICID(owner & ~JROWNER_SECURE);
+#ifdef CFG_IMXCRYPT
 		cfg_ms |= JRxDID_MS_LDID;
+		cfg_ms |= JRxDID_MS_LAMTD;
+#endif
 	} else {
 		cfg_ms  = JRxDID_MS_PRIM_DID(owner);
 		cfg_ms |= JRxDID_MS_PRIM_ICID(owner);
