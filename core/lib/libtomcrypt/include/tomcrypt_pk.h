@@ -383,6 +383,9 @@ int ltc_ecc_map(ecc_point *P, void *modulus, void *mp);
 /* Max DSA group size in bytes (default allows 4k-bit groups) */
 #define LTC_MDSA_MAX_GROUP 512
 
+/* Max DSA key sizes (in bits) */
+#define MAX_DSA_SIZE 4096
+
 /** DSA key structure */
 typedef struct {
    /** The key type, PK_PRIVATE or PK_PUBLIC */
