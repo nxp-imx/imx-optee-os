@@ -27,27 +27,55 @@ enum imxcrypt_rsa_id {
 };
 
 /**
+ * @brief   RSA Key object
+ */
+struct rsakey {
+	void   *key;      ///< Public or Private key
+	size_t n_size;    ///< Size in bytes of the Modulus N
+	bool   isprivate; ///< True if private key
+};
+
+/**
+ * @brief   RSA Mask Generation data
+ */
+struct imxcrypt_rsa_mgf {
+	enum imxcrypt_hash_id hash_id;     ///< HASH Algorithm Id
+	size_t                digest_size; ///< Hash Digest Size
+	struct imxcrypt_buf   seed;        ///< Seed to generate mask
+	struct imxcrypt_buf   mask;        ///< Mask generated
+
+};
+
+/**
  * @brief   RSA Encoded Signature data
  */
 struct imxcrypt_rsa_ssa {
-	uint32_t              algo;       ///< Operation algorithm
-	enum imxcrypt_hash_id hash_id;    ///< HASH Algorithm Id
-	void                  *key;       ///< Public or Private Key
-	struct imxcrypt_buf   message;    ///< Message to sign or signed
-	struct imxcrypt_buf   signature;  ///< Signature of the message
-	size_t                salt_len;   ///< Signature Salt length
+	uint32_t              algo;        ///< Operation algorithm
+	enum imxcrypt_hash_id hash_id;     ///< HASH Algorithm Id
+	size_t                digest_size; ///< Hash Digest Size
+	struct rsakey         key;         ///< Public or Private Key
+	struct imxcrypt_buf   message;     ///< Message to sign or signed
+	struct imxcrypt_buf   signature;   ///< Signature of the message
+	size_t                salt_len;    ///< Signature Salt length
+
+	///< RSA Mask Generation function
+	TEE_Result (*mgf)(struct imxcrypt_rsa_mgf *mgf_data);
 };
 
 /**
  * @brief   RSA Encrypt/Decript data
  */
 struct imxcrypt_rsa_ed {
-	enum imxcrypt_rsa_id  rsa_id;  ///< RSA Algorithm Id
-	enum imxcrypt_hash_id hash_id; ///< HASH Algorithm Id
-	void                  *key;    ///< Public or Private key
-	struct imxcrypt_buf   message; ///< Message to encrypt or decrypted
-	struct imxcrypt_buf   cipher;  ///< Cipher text encrypted or to decrypt
-	struct imxcrypt_buf   label;   ///< Additional Label encryption (RSAES)
+	enum imxcrypt_rsa_id  rsa_id;      ///< RSA Algorithm Id
+	enum imxcrypt_hash_id hash_id;     ///< HASH Algorithm Id
+	size_t                digest_size; ///< Hash Digest Size
+	struct rsakey         key;         ///< Public or Private key
+	struct imxcrypt_buf   message;     ///< Message to encrypt or decrypted
+	struct imxcrypt_buf   cipher;      ///< Cipher encrypted or to decrypt
+	struct imxcrypt_buf   label;       ///< Additional Label (RSAES)
+
+	///< RSA Mask Generation function
+	TEE_Result (*mgf)(struct imxcrypt_rsa_mgf *mgf_data);
 };
 
 /**
@@ -74,6 +102,7 @@ struct imxcrypt_rsa {
 	TEE_Result (*ssa_sign)(struct imxcrypt_rsa_ssa *ssa_data);
 	///< RSA Encoded Signature Verification
 	TEE_Result (*ssa_verify)(struct imxcrypt_rsa_ssa *ssa_data);
+
 };
 
 /**

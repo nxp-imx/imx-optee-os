@@ -42,9 +42,11 @@ TEE_Result imxcrypt_libsoft_init(void)
 	LIB_TRACE("libsoft_rng_init ret %d", status);
 	ret |= status;
 
+#ifndef CFG_CRYPTO_RSA_HW
 	status = libsoft_rsa_init();
 	LIB_TRACE("libsoft_rsa_init ret %d", status);
 	ret |= status;
+#endif
 
 	status = libsoft_dsa_init();
 	LIB_TRACE("libsoft_dsa_init ret %d", status);

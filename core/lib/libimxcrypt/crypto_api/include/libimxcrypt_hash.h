@@ -10,6 +10,7 @@
 #ifndef __LIBIMXCRYPT_HASH_H__
 #define __LIBIMXCRYPT_HASH_H__
 
+/* Global includes */
 #include <tee_api_types.h>
 
 /**

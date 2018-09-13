@@ -22,6 +22,11 @@
 #define BM_CTPR_MS_RNG_I			SHIFT_U32(0x7, 8)
 #define GET_CTPR_MS_RNG_I(val)		((val & BM_CTPR_MS_RNG_I) >> 8)
 
+/* CHA Cluster Block Version ID */
+#define CCBVID						0x0FE4
+#define BM_CCBVID_CAAM_ERA			SHIFT_U32(0xFF, 24)
+#define GET_CCBVID_CAAM_ERA(val)	((val & BM_CCBVID_CAAM_ERA) >> 24)
+
 /* CHA Version ID */
 #define CHAVID_LS					0x0FEC
 #define BM_CHAVID_LS_RNGVID			SHIFT_U32(0xF, 16)

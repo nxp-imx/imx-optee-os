@@ -90,3 +90,23 @@ bool hal_ctrl_splitkey(vaddr_t baseaddr)
 	return true;
 }
 #endif // CFG_CRYPTO_HASH_HW
+
+#ifdef CFG_CRYPTO_PK_HW
+/**
+ * @brief   Returns the CAAM Era
+ *
+ * @param[in] baseaddr  Controller base address
+ *
+ * @retval  Era version
+ */
+uint8_t hal_ctrl_caam_era(vaddr_t baseaddr)
+{
+	uint32_t val;
+
+	/* Read the number of instance */
+	val = read32(baseaddr + CCBVID);
+
+	return GET_CCBVID_CAAM_ERA(val);
+}
+#endif
+

@@ -487,8 +487,8 @@ static void prepare_inst_desc(uint32_t nbSH, uint32_t sh_status,
 			 * followed by a reset the done status to execute next
 			 * command
 			 */
-			*pdesc++ = JUMP_C1_LOCAL(TST_ALL_COND_TRUE,
-					JUMP_TST_COND(NONE), 1);
+			*pdesc++ = JUMP_C1_LOCAL(ALL_COND_TRUE,
+						JMP_COND(NONE), 1);
 			*pdesc++ = LD_NOCLASS_IMM(REG_CLEAR_WRITTEN,
 					sizeof(uint32_t));
 			*pdesc++ = 1;
@@ -506,8 +506,7 @@ static void prepare_inst_desc(uint32_t nbSH, uint32_t sh_status,
 		 * Add a wait loop followed by a reset the done status
 		 * to execute next command
 		 */
-		*pdesc++ = JUMP_C1_LOCAL(TST_ALL_COND_TRUE,
-				JUMP_TST_COND(NONE), 1);
+		*pdesc++ = JUMP_C1_LOCAL(ALL_COND_TRUE, JMP_COND(NONE), 1);
 		*pdesc++ = LD_NOCLASS_IMM(REG_CLEAR_WRITTEN,
 				sizeof(uint32_t));
 		*pdesc++ = 1;

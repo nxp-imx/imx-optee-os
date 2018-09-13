@@ -8,6 +8,7 @@
  *          i.MX cryptographic library and using the TomCrypt software
  *          driver
  */
+
 /* Global includes */
 #include <mpalib.h>
 #include <trace.h>
@@ -26,20 +27,9 @@
 #define LIB_TRACE(...)
 #endif
 
-/**
- * @brief   Allocate the maximum bignumber
- *
- * @retval bignumber allocated if success
- * @retval NULL if error
- */
-static struct bignum *do_allocate_max_bn(void)
-{
-	size_t max_size = (mpa_StaticVarSizeInU32(LTC_MAX_BITS_PER_VARIABLE)
-						* sizeof(uint32_t) * 8);
+#define MAX_BITS_EXP_E	256
 
-	return crypto_bignum_allocate(max_size);
-}
-
+#ifndef CFG_CRYPTO_RSA_HW
 /**
  * @brief   Allocate a RSA keypair
  *
@@ -56,42 +46,42 @@ static TEE_Result do_allocate_keypair(struct rsa_keypair *key,
 	memset(key, 0, sizeof(*key));
 
 	/* Allocate Public exponent */
-	key->e = do_allocate_max_bn();
+	key->e = crypto_bignum_allocate(MAX_BITS_EXP_E);
 	if (!key->e)
 		goto err_alloc_keypair;
 
 	/* Allocate Private exponent */
-	key->d = do_allocate_max_bn();
+	key->d = crypto_bignum_allocate(size_bits);
 	if (!key->d)
 		goto err_alloc_keypair;
 
 	/* Allocate modulus */
-	key->n = do_allocate_max_bn();
+	key->n = crypto_bignum_allocate(size_bits);
 	if (!key->n)
 		goto err_alloc_keypair;
 
 	/* Allocate prime p */
-	key->p = do_allocate_max_bn();
+	key->p = crypto_bignum_allocate(size_bits / 2);
 	if (!key->p)
 		goto err_alloc_keypair;
 
 	/* Allocate prime q */
-	key->q = do_allocate_max_bn();
+	key->q = crypto_bignum_allocate(size_bits / 2);
 	if (!key->q)
 		goto err_alloc_keypair;
 
 	/* Allocate qp = 1/q mod p */
-	key->qp = do_allocate_max_bn();
+	key->qp = crypto_bignum_allocate(size_bits);
 	if (!key->qp)
 		goto err_alloc_keypair;
 
 	/* Allocate dp = d mod (p - 1) */
-	key->dp = do_allocate_max_bn();
+	key->dp = crypto_bignum_allocate(size_bits);
 	if (!key->dp)
 		goto err_alloc_keypair;
 
 	/* Allocate dq = d mod (q - 1) */
-	key->dq = do_allocate_max_bn();
+	key->dq = crypto_bignum_allocate(size_bits);
 	if (!key->dq)
 		goto err_alloc_keypair;
 
@@ -127,12 +117,12 @@ static TEE_Result do_allocate_publickey(struct rsa_public_key *key,
 	memset(key, 0, sizeof(*key));
 
 	/* Allocate Public exponent */
-	key->e = do_allocate_max_bn();
+	key->e = crypto_bignum_allocate(MAX_BITS_EXP_E);
 	if (!key->e)
 		goto err_alloc_publickey;
 
 	/* Allocate modulus */
-	key->n = do_allocate_max_bn();
+	key->n = crypto_bignum_allocate(size_bits);
 	if (!key->n)
 		goto err_alloc_publickey;
 
@@ -427,7 +417,7 @@ static TEE_Result do_encrypt(struct imxcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct rsa_public_key *inkey = rsa_data->key;
+	struct rsa_public_key *inkey = rsa_data->key.key;
 	rsa_key ltc_key = {0};
 
 	/* Convert the input key to LibTomCrypt RSA key */
@@ -460,7 +450,7 @@ static TEE_Result do_decrypt(struct imxcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct rsa_keypair *inkey = rsa_data->key;
+	struct rsa_keypair *inkey = rsa_data->key.key;
 	rsa_key ltc_key = {0};
 
 	/* Convert the input key to LibTomCrypt RSA key */
@@ -502,7 +492,7 @@ static TEE_Result do_ssa_sign(struct imxcrypt_rsa_ssa *ssa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct rsa_keypair *inkey = ssa_data->key;
+	struct rsa_keypair *inkey = ssa_data->key.key;
 	struct ltc_prng *prng = get_ltc_prng();
 	rsa_key ltc_key = {0};
 	int     hash_idx;
@@ -587,7 +577,7 @@ static TEE_Result do_ssa_sign(struct imxcrypt_rsa_ssa *ssa_data)
  */
 static TEE_Result do_ssa_verify(struct imxcrypt_rsa_ssa *ssa_data)
 {
-	struct rsa_public_key *inkey = ssa_data->key;
+	struct rsa_public_key *inkey = ssa_data->key.key;
 	rsa_key ltc_key = {0};
 	int     hash_idx;
 	int     ltc_rsa_algo;
@@ -673,3 +663,6 @@ int libsoft_rsa_init(void)
 
 	return ret;
 }
+
+#endif /* CFG_CRYPTO_RSA_HW */
+

@@ -20,6 +20,9 @@
 #include "common.h"
 #include "caam_jr.h"
 #include "caam_rng.h"
+#ifdef CFG_CRYPTO_PK_HW
+#include "caam_acipher.h"
+#endif
 #ifdef CFG_CRYPTO_CIPHER_HW
 #include "caam_cipher.h"
 #endif
@@ -119,11 +122,31 @@ static TEE_Result crypto_driver_init(void)
 #ifdef CFG_CRYPTO_MP_HW
 	/* Initialize the MP Module */
 	retstatus = caam_mp_init(jr_cfg.base);
+
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
 #endif // CFG_CRYPTO_MP_HW
+
+#ifdef CFG_CRYPTO_PK_HW
+	/* Initialize the MATH Module */
+	retstatus = caam_math_init(jr_cfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+#endif
+
+	/* Initialize the Asymmetric Cipher Modules */
+#ifdef CFG_CRYPTO_RSA_HW
+	/* Initialize the RSA Module */
+	retstatus = caam_rsa_init(jr_cfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+#endif
 
 	retresult = TEE_SUCCESS;
 

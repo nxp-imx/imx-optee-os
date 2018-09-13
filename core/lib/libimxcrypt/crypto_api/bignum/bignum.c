@@ -20,6 +20,8 @@
 #define LIB_TRACE(...)
 #endif
 
+#define BYTES_PER_WORD          (MPA_WORD_SIZE >> 3)
+
 /**
  * @brief   Allocate a big number of \a size_bits bits size
  *
@@ -38,8 +40,9 @@ struct bignum *crypto_bignum_allocate(size_t size_bits)
 		return NULL;
 	}
 
-	bn->alloc = sz - MPA_NUMBASE_METADATA_SIZE_IN_U32 * sizeof(uint32_t);
-
+	bn->alloc = sz - (MPA_NUMBASE_METADATA_SIZE_IN_U32 * sizeof(uint32_t));
+	/* alloc fields counts the number of BYTES_PER_WORD allocated */
+	bn->alloc = bn->alloc / BYTES_PER_WORD;
 	return (struct bignum *)bn;
 }
 
@@ -189,13 +192,15 @@ void crypto_bignum_copy(struct bignum *dst, const struct bignum *src)
 void crypto_bignum_clear(struct bignum *bn)
 {
 	mpanum mpa_bn = (mpanum)bn;
+	size_t sz;
 
 	if (!bn) {
 		LIB_TRACE("Parameter is NULL");
 		return;
 	}
 
-	memset(mpa_bn->d, 0, mpa_bn->alloc);
+	sz = mpa_bn->alloc * BYTES_PER_WORD;
+	memset(mpa_bn->d, 0, sz);
 }
 
 /**

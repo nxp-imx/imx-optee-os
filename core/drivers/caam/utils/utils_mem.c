@@ -383,6 +383,37 @@ enum CAAM_Status caam_cpy_block_src(struct caamblock *block,
 end_cpy:
 	return ret;
 }
+
+/**
+ * @brief   Copy source data into the destination buffer
+ *          removing non-significant first zeros (left zeros)
+ *          If all src buffer is zero, left only one zero in the
+ *          destination.
+ *
+ * @param[in/out] dst    Destination buffer
+ * @param[in]     src    Source to copy
+ */
+void caam_cpy_ltrim_buf(struct imxcrypt_buf *dst,
+				struct caambuf *src)
+{
+	size_t offset = 0;
+	size_t cpy_size;
+
+	/* Calculate the offset to start the copy */
+	while ((src->data[offset] == 0) && (offset < src->length))
+		offset++;
+
+	if (offset >= src->length)
+		offset = src->length - 1;
+
+	cpy_size = MIN(dst->length, (src->length - offset));
+	MEM_TRACE("Copy %d of src %d bytes (offset = %d)",
+			cpy_size, src->length, offset);
+	memcpy(dst->data, &src->data[offset], cpy_size);
+
+	dst->length = cpy_size;
+}
+
 #endif
 
 /**

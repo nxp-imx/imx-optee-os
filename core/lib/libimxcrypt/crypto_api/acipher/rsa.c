@@ -17,6 +17,9 @@
 #include <libimxcrypt.h>
 #include <libimxcrypt_acipher.h>
 
+/* Local include */
+#include "local.h"
+
 //#define LIB_DEBUG
 #ifdef LIB_DEBUG
 #define LIB_TRACE	DMSG
@@ -153,7 +156,6 @@ TEE_Result crypto_acipher_gen_rsa_key(struct rsa_keypair *key, size_t size_bits)
  * @param[in/out] msg_len    Length of the buffer / Decrypted message in bytes
  *
  * @retval TEE_SUCCESS                 Success
- * @retval TEE_ERROR_SHORT_BUFFER      Result buffer too short
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
@@ -178,11 +180,14 @@ TEE_Result crypto_acipher_rsanopad_decrypt(struct rsa_keypair *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
+	rsa_data.key.key       = key;
+	rsa_data.key.isprivate = true;
+	rsa_data.key.n_size    = crypto_bignum_num_bytes(key->n);
+
 	rsa = imxcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/* Prepare the decryption data parameters */
 		rsa_data.rsa_id         = RSA_NOPAD;
-		rsa_data.key            = key;
 		rsa_data.message.data   = msg;
 		rsa_data.message.length = *msg_len;
 		rsa_data.cipher.data    = (uint8_t *)cipher;
@@ -235,11 +240,21 @@ TEE_Result crypto_acipher_rsanopad_encrypt(struct rsa_public_key *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
+	rsa_data.key.key       = key;
+	rsa_data.key.isprivate = false;
+	rsa_data.key.n_size    = crypto_bignum_num_bytes(key->n);
+
+	if (rsa_data.key.n_size > *cipher_len) {
+		LIB_TRACE("Cipher length (%d) too short expected %d bytes",
+					*cipher_len, rsa_data.key.n_size);
+		*cipher_len = rsa_data.key.n_size;
+		return TEE_ERROR_SHORT_BUFFER;
+	}
+
 	rsa = imxcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/* Prepare the encryption data parameters */
 		rsa_data.rsa_id         = RSA_NOPAD;
-		rsa_data.key            = key;
 		rsa_data.message.data   = (uint8_t *)msg;
 		rsa_data.message.length = msg_len;
 		rsa_data.cipher.data    = cipher;
@@ -309,9 +324,20 @@ TEE_Result crypto_acipher_rsaes_decrypt(uint32_t algo,
 			rsa_data.rsa_id   = RSA_OAEP;
 			rsa_data.hash_id  = TEE_ALG_GET_INTERNAL_HASH(algo);
 			rsa_data.hash_id -= 1;
+
+			ret = tee_hash_get_digest_size(
+					TEE_INTERNAL_HASH_TO_ALGO(algo),
+					&rsa_data.digest_size);
+			if (ret != TEE_SUCCESS)
+				return ret;
+
+			rsa_data.mgf = &rsa_mgf1;
 		}
 
-		rsa_data.key            = key;
+		rsa_data.key.key       = key;
+		rsa_data.key.isprivate = true;
+		rsa_data.key.n_size    = crypto_bignum_num_bytes(key->n);
+
 		rsa_data.message.data   = msg;
 		rsa_data.message.length = *msg_len;
 		rsa_data.cipher.data    = (uint8_t *)cipher;
@@ -361,7 +387,6 @@ TEE_Result crypto_acipher_rsaes_encrypt(uint32_t algo,
 
 	struct imxcrypt_rsa    *rsa = NULL;
 	struct imxcrypt_rsa_ed rsa_data;
-	size_t            modulus_size;
 
 	/* Check input parameters */
 	if ((!key) || (!msg) || (!cipher) || (!cipher_len) ||
@@ -376,11 +401,14 @@ TEE_Result crypto_acipher_rsaes_encrypt(uint32_t algo,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	modulus_size = crypto_bignum_num_bytes(key->n);
-	if (modulus_size > *cipher_len) {
+	rsa_data.key.key       = key;
+	rsa_data.key.isprivate = false;
+	rsa_data.key.n_size    = crypto_bignum_num_bytes(key->n);
+
+	if (rsa_data.key.n_size > *cipher_len) {
 		LIB_TRACE("Cipher length (%d) too short expected %d bytes",
-					*cipher_len, modulus_size);
-		*cipher_len = modulus_size;
+					*cipher_len, rsa_data.key.n_size);
+		*cipher_len = rsa_data.key.n_size;
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
@@ -389,17 +417,34 @@ TEE_Result crypto_acipher_rsaes_encrypt(uint32_t algo,
 		/* Prepare the encryption data parameters */
 		if (algo == TEE_ALG_RSAES_PKCS1_V1_5) {
 			rsa_data.rsa_id   = RSA_PKCS_V1_5;
+
+			/* Message length <= (modulus_size - 11) */
+			if (msg_len > (rsa_data.key.n_size - 11))
+				return TEE_ERROR_BAD_PARAMETERS;
+
 		} else {
 			rsa_data.rsa_id   = RSA_OAEP;
 			rsa_data.hash_id  = TEE_ALG_GET_INTERNAL_HASH(algo);
 			rsa_data.hash_id -= 1;
+
+			/* Message length <= (modulus_size - 2 * hLength - 2) */
+			ret = tee_hash_get_digest_size(
+					TEE_INTERNAL_HASH_TO_ALGO(algo),
+					&rsa_data.digest_size);
+			if (ret != TEE_SUCCESS)
+				return ret;
+
+			if (msg_len > (rsa_data.key.n_size -
+						(2 * rsa_data.digest_size) - 2))
+				return TEE_ERROR_BAD_PARAMETERS;
+
+			rsa_data.mgf = &rsa_mgf1;
 		}
 
-		rsa_data.key            = key;
 		rsa_data.message.data   = (uint8_t *)msg;
 		rsa_data.message.length = msg_len;
 		rsa_data.cipher.data    = cipher;
-		rsa_data.cipher.length  = modulus_size;
+		rsa_data.cipher.length  = rsa_data.key.n_size;
 		rsa_data.label.data     = ((label_len > 0) ?
 						(uint8_t *)label : NULL);
 		rsa_data.label.length   = label_len;
@@ -443,8 +488,6 @@ TEE_Result crypto_acipher_rsassa_sign(uint32_t algo,
 
 	struct imxcrypt_rsa     *rsa = NULL;
 	struct imxcrypt_rsa_ssa rsa_ssa;
-	size_t                  size_digest;
-	size_t                  modulus_size;
 
 	/* Verify first if the input parameters */
 	if ((!key) || (!msg) || (!sig) || (!sig_len)) {
@@ -452,23 +495,30 @@ TEE_Result crypto_acipher_rsassa_sign(uint32_t algo,
 		return ret;
 	}
 
+	/* Prepare the Digest */
+	rsa_ssa.hash_id = (TEE_ALG_GET_DIGEST_HASH(algo) - 1);
+
 	/* Check if the message length is digest hash size */
 	ret = tee_hash_get_digest_size(TEE_DIGEST_HASH_TO_ALGO(algo),
-					&size_digest);
+				&rsa_ssa.digest_size);
 	if (ret != TEE_SUCCESS)
 		return ret;
 
-	if (msg_len != size_digest) {
+	if (msg_len != rsa_ssa.digest_size) {
 		LIB_TRACE("Input message length incorrect (%d - expected %d)",
-					msg_len, size_digest);
+					msg_len, rsa_ssa.digest_size);
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	modulus_size = crypto_bignum_num_bytes(key->n);
-	if (modulus_size > *sig_len) {
+	/* Prepare the Key */
+	rsa_ssa.key.key       = key;
+	rsa_ssa.key.isprivate = true;
+	rsa_ssa.key.n_size    = crypto_bignum_num_bytes(key->n);
+
+	if (rsa_ssa.key.n_size > *sig_len) {
 		LIB_TRACE("Signature length (%d) too short expected %d bytes",
-					*sig_len, modulus_size);
-		*sig_len = modulus_size;
+					*sig_len, rsa_ssa.key.n_size);
+		*sig_len = rsa_ssa.key.n_size;
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
@@ -478,15 +528,17 @@ TEE_Result crypto_acipher_rsassa_sign(uint32_t algo,
 		 * Prepare the Encoded Signature structure data
 		 */
 		rsa_ssa.algo             = algo;
-		rsa_ssa.hash_id          = (TEE_ALG_GET_DIGEST_HASH(algo) - 1);
-		rsa_ssa.key              = key;
 		rsa_ssa.message.data     = (uint8_t *)msg;
 		rsa_ssa.message.length   = msg_len;
 		rsa_ssa.signature.data   = (uint8_t *)sig;
-		rsa_ssa.signature.length = modulus_size;
+		rsa_ssa.signature.length = rsa_ssa.key.n_size;
 		rsa_ssa.salt_len         = salt_len;
+		rsa_ssa.mgf              = &rsa_mgf1;
 
-		ret = rsa->ssa_sign(&rsa_ssa);
+		if (rsa->ssa_sign)
+			ret = rsa->ssa_sign(&rsa_ssa);
+		else
+			ret = rsassa_sign(&rsa_ssa);
 
 		/* Set the signature length */
 		*sig_len = rsa_ssa.signature.length;
@@ -527,7 +579,6 @@ TEE_Result crypto_acipher_rsassa_verify(uint32_t algo,
 
 	struct imxcrypt_rsa     *rsa = NULL;
 	struct imxcrypt_rsa_ssa rsa_ssa;
-	size_t                  size_digest;
 
 	/* Verify first if the input parameters */
 	if ((!key) || (!msg) || (!sig)) {
@@ -535,19 +586,27 @@ TEE_Result crypto_acipher_rsassa_verify(uint32_t algo,
 		return ret;
 	}
 
+	/* Prepare the Digest */
+	rsa_ssa.hash_id = (TEE_ALG_GET_DIGEST_HASH(algo) - 1);
+
 	/* Check if the message length is digest hash size */
 	ret = tee_hash_get_digest_size(TEE_DIGEST_HASH_TO_ALGO(algo),
-				&size_digest);
+				&rsa_ssa.digest_size);
 	if (ret != TEE_SUCCESS)
 		return ret;
 
-	if (msg_len != size_digest) {
+	if (msg_len != rsa_ssa.digest_size) {
 		LIB_TRACE("Input message length incorrect (%d - expected %d)",
-					msg_len, size_digest);
+					msg_len, rsa_ssa.digest_size);
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	if (crypto_bignum_num_bytes(key->n) > sig_len) {
+	/* Prepare the Key */
+	rsa_ssa.key.key       = key;
+	rsa_ssa.key.isprivate = false;
+	rsa_ssa.key.n_size    = crypto_bignum_num_bytes(key->n);
+
+	if (rsa_ssa.key.n_size > sig_len) {
 		LIB_TRACE("Signature is invalid");
 		return TEE_ERROR_SIGNATURE_INVALID;
 	}
@@ -558,15 +617,18 @@ TEE_Result crypto_acipher_rsassa_verify(uint32_t algo,
 		 * Prepare the Encoded Signature structure data
 		 */
 		rsa_ssa.algo             = algo;
-		rsa_ssa.hash_id          = (TEE_ALG_GET_DIGEST_HASH(algo) - 1);
-		rsa_ssa.key              = key;
 		rsa_ssa.message.data     = (uint8_t *)msg;
 		rsa_ssa.message.length   = msg_len;
 		rsa_ssa.signature.data   = (uint8_t *)sig;
 		rsa_ssa.signature.length = sig_len;
 		rsa_ssa.salt_len         = salt_len;
+		rsa_ssa.mgf              = &rsa_mgf1;
 
-		ret = rsa->ssa_verify(&rsa_ssa);
+		if (rsa->ssa_verify)
+			ret = rsa->ssa_verify(&rsa_ssa);
+		else
+			ret = rsassa_verify(&rsa_ssa);
+
 	} else {
 		ret = TEE_ERROR_NOT_IMPLEMENTED;
 	}

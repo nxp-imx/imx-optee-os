@@ -20,6 +20,7 @@
 #define CLASS_NO				0x0
 #define CLASS_1					0x1
 #define CLASS_2					0x2
+#define CLASS_DECO				0x3
 
 #define	CMD_SGT					BIT32(24)
 #define	CMD_IMM					BIT32(23)
@@ -84,7 +85,6 @@
 
 /* Length */
 #define STORE_LENGTH(len)		SHIFT_U32((len & 0xFF), 0)
-
 
 /*
  * Define the Load/Store Registers Source and Destination
@@ -228,6 +228,61 @@
 #define FIFO_STORE_SKIP                              0x3F
 
 /*
+ * MOVE Command fields
+ */
+#define CMD_MOVE_TYPE			CMD_TYPE(0x0F)
+
+/* Auxiliary */
+#define MOVE_AUX(val)			SHIFT_U32((val & 0x3), 25)
+
+/* Wait for completion */
+#define MOVE_WC					BIT32(24)
+
+/* Source */
+#define MOVE_SRC(src)			MOVE_SRC_##src
+#define MOVE_REG_SRC(reg)		SHIFT_U32((reg & 0xF), 20)
+#define MOVE_SRC_C1_CTX_REG		MOVE_REG_SRC(0x0)
+#define MOVE_SRC_C2_CTX_REG		MOVE_REG_SRC(0x1)
+#define MOVE_SRC_OFIFO			MOVE_REG_SRC(0x2)
+#define MOVE_SRC_DESC_BUF		MOVE_REG_SRC(0x3)
+#define MOVE_SRC_MATH_REG0		MOVE_REG_SRC(0x4)
+#define MOVE_SRC_MATH_REG1		MOVE_REG_SRC(0x5)
+#define MOVE_SRC_MATH_REG2		MOVE_REG_SRC(0x6)
+#define MOVE_SRC_MATH_REG3		MOVE_REG_SRC(0x7)
+#define MOVE_SRC_NFIFO_DECO_ALIGN	MOVE_REG_SRC(0x8)
+#define MOVE_SRC_NFIFO_C1_ALIGN		(MOVE_REG_SRC(0x9) | MOVE_AUX(0x0))
+#define MOVE_SRC_NFIFO_C2_ALIGN		(MOVE_REG_SRC(0x9) | MOVE_AUX(0x1))
+#define MOVE_SRC_DECO_ALIGN		(MOVE_REG_SRC(0xA) | MOVE_AUX(0x0))
+#define MOVE_SRC_C1_ALIGN		(MOVE_REG_SRC(0xA) | MOVE_AUX(0x1))
+#define MOVE_SRC_C2_ALIGN		(MOVE_REG_SRC(0xA) | MOVE_AUX(0x2))
+#define MOVE_SRC_C1_KEY			MOVE_REG_SRC(0xD)
+#define MOVE_SRC_C2_KEY			MOVE_REG_SRC(0xE)
+
+/* Destination */
+#define MOVE_DST(dst)			SHIFT_U32((MOVE_DST_##dst & 0xF), 16)
+#define MOVE_DST_C1_CTX_REG		0x0
+#define MOVE_DST_C2_CTX_REG		0x1
+#define MOVE_DST_OFIFO			0x2
+#define MOVE_DST_DESC_BUF		0x3
+#define MOVE_DST_MATH_REG0		0x4
+#define MOVE_DST_MATH_REG1		0x5
+#define MOVE_DST_MATH_REG2		0x6
+#define MOVE_DST_MATH_REG3		0x7
+#define MOVE_DST_IFIFO_C1		0x8
+#define MOVE_DST_IFIFO_C2		0x9
+#define MOVE_DST_IFIFO			0xA
+#define MOVE_DST_PKHA_A			0xC
+#define MOVE_DST_C1_KEY			0xD
+#define MOVE_DST_C2_KEY			0xE
+#define MOVE_DST_AUX_FIFO		0xF
+
+/* Offset */
+#define MOVE_OFFSET(off)		SHIFT_U32((off & 0xFF), 8)
+
+/* Length */
+#define MOVE_LENGTH(len)		SHIFT_U32((len & 0xFF), 0)
+
+/*
  * Operation Command fields
  * Algorithm/Protocol/PKHA
  */
@@ -246,6 +301,28 @@
 #define PROTID(id)			SHIFT_U32((PROTID_##id & 0xFF), 16)
 #define PROTID_MPKEY			0x14
 #define PROTID_MPSIGN			0x15
+
+/*
+ * Protocol Identifier
+ */
+#define OP_PROTID(id)			SHIFT_U32((PROTID_##id & 0xFF), 16)
+#define PROTID_RSA_ENC			0x18
+#define PROTID_RSA_DEC			0x19
+#define PROTID_RSA_FINISH_KEY	0x1A
+
+/*
+ * RSA Protocol Information
+ */
+#define PROT_RSA_FMT(format)	SHIFT_U32((PROT_RSA_FMT_##format & 0x1), 12)
+#define PROT_RSA_FMT_NO			0
+#define PROT_RSA_FMT_PKCS_V1_5	1
+
+#define PROT_RSA_DEC_KEYFORM(format)	SHIFT_U32(((format - 1) & 0x3), 0)
+
+/* RSA Key PROT ID */
+#define PROT_RSA_KEY(format)	SHIFT_U32((PROT_RSA_KEY_##format & 0x3), 0)
+#define PROT_RSA_KEY_ALL		0
+#define PROT_RSA_KEY_N_D		2
 
 /*
  * Algorithm Identifier
@@ -334,14 +411,14 @@
 #define JMP_HALT_USER_STATUS	0xC
 
 /* Test Type */
-#define JUMP_TST_TYPE(type)		SHIFT_U32((JMP_##type & 0x3), 16)
+#define JUMP_TST_TYPE(type)		SHIFT_U32((JMP_TST_##type & 0x3), 16)
 #define JMP_TST_ALL_COND_TRUE	0x0
 #define JMP_TST_ALL_COND_FALSE	0x1
 #define JMP_TST_ANY_COND_TRUE	0x2
 #define JMP_TST_ANY_COND_FALSE	0x3
 
 /* Test Condition */
-#define JUMP_TST_COND(cond)		SHIFT_U32((JMP_COND_##cond & 0xFF), 8)
+#define JMP_COND(cond)			SHIFT_U32((JMP_COND_##cond & 0xFF), 8)
 #define JMP_COND_NONE			0x00
 #define JMP_COND_PKHA_IS_ZERO	0x80
 #define JMP_COND_PKHA_GCD_1		0x40
@@ -361,5 +438,164 @@
 #define PDB_MP_CSEL_P384		0x04
 #define PDB_MP_CSEL_P521		0x05
 
+/*
+ * MATH Command fields
+ */
+#define CMD_MATH_TYPE			CMD_TYPE(0x15)
+#define CMD_MATHI_TYPE			CMD_TYPE(0x1D)
+
+/* Immediate Four Bytes */
+#define MATH_IFB				BIT32(26)
+
+/* Function Mathematical */
+#define MATH_FUNC(func)			SHIFT_U32((MATH_FUNC_##func & 0xF), 20)
+#define MATH_FUNC_ADD			0x0
+#define MATH_FUNC_ADD_W_CARRY	0x1
+#define MATH_FUNC_SUB			0x2
+#define MATH_FUNC_SUB_W_BORROW	0x3
+#define MATH_FUNC_OR			0x4
+#define MATH_FUNC_AND			0x5
+#define MATH_FUNC_XOR			0x6
+#define MATH_FUNC_SHIFT_L		0x7
+#define MATH_FUNC_SHIFT_R		0x8
+#define MATH_FUNC_SHLD			0x9
+#define MATH_FUNC_ZBYTE			0xA
+#define MATH_FUNC_SWAP_BYTES	0xB
+
+/* Source 0 */
+#define MATH_SRC0(reg)			SHIFT_U32((MATH_SRC0_##reg & 0xF), 16)
+#define MATH_SRC0_REG0			0x0
+#define MATH_SRC0_REG1			0x1
+#define MATH_SRC0_REG2			0x2
+#define MATH_SRC0_IMM_DATA		0x4
+#define MATH_SRC0_DPOVRD		0x7
+#define MATH_SRC0_SIL			0x8
+#define MATH_SRC0_SOL			0x9
+#define MATH_SRC0_VSIL			0xA
+#define MATH_SRC0_VSOL			0xB
+#define MATH_SRC0_ZERO			0xC
+#define MATH_SRC0_ONE			0xF
+
+/* Source 1 */
+#define MATH_SRC1(reg)			SHIFT_U32((MATH_SRC1_##reg & 0xF), 12)
+#define MATH_SRC1_REG0			0x0
+#define MATH_SRC1_REG1			0x1
+#define MATH_SRC1_REG2			0x2
+#define MATH_SRC1_IMM_DATA		0x4
+#define MATH_SRC1_DPOVRD		0x7
+#define MATH_SRC1_VSIL			0x8
+#define MATH_SRC1_VSOL			0x9
+#define MATH_SRC1_IFIFO			0xA
+#define MATH_SRC1_OFIFO			0xB
+#define MATH_SRC1_ONE			0xC
+#define MATH_SRC1_ZERO			0xF
+
+/* Destination */
+#define MATH_DST(reg)			SHIFT_U32((MATH_DST_##reg & 0xF), 8)
+#define MATH_DST_REG0			0x0
+#define MATH_DST_REG1			0x1
+#define MATH_DST_REG2			0x2
+#define MATH_DST_DPOVRD			0x7
+#define MATH_DST_SIL			0x8
+#define MATH_DST_SOL			0x9
+#define MATH_DST_VSIL			0xA
+#define MATH_DST_VSOL			0xB
+#define MATH_DST_NODEST			0xF
+
+/* Length */
+#define MATH_LENGTH(len)		SHIFT_U32((len & 0xF), 0)
+
+/* Immediate Value - MATHI operation */
+#define MATHI_SRC(reg)			SHIFT_U32((MATH_SRC0_##reg & 0xF), 16)
+#define MATHI_DST(reg)			SHIFT_U32((MATH_DST_##reg & 0xF), 12)
+#define MATHI_IMM_VALUE(val)	SHIFT_U32((val & 0xFF), 4)
+/*
+ * PKHA Operation
+ */
+#define PKHA_ALG				SHIFT_U32(0x8, 20)
+
+#define PKHA_F2M				BIT32(17)
+
+#define PKHA_OUTSEL(dst)		SHIFT_U32((PKHA_OUTSEL_##dst & 0x3), 8)
+#define PKHA_OUTSEL_B			0x0
+#define PKHA_OUTSEL_A			0x1
+
+#define PKHA_FUNC(func)			SHIFT_U32((PKHA_FUNC_##func & 0x3F), 0)
+#define PKHA_FUNC_CPY_SSIZE				0x11
+#define PKHA_FUNC_MOD_ADD_A_B			0x02
+#define PKHA_FUNC_MOD_SUB_A_B			0x03
+#define PKHA_FUNC_MOD_SUB_B_A			0x04
+#define PKHA_FUNC_MOD_MUL_A_B			0x05
+#define PKHA_FUNC_MOD_EXP_A_E			0x06
+#define PKHA_FUNC_MOD_AMODN				0x07
+#define PKHA_FUNC_MOD_INV_A				0x08
+#define PKHA_FUNC_ECC_POINT_ADD_P1_P2	0x09
+#define PKHA_FUNC_ECC_POINT_DBL_P1		0x0A
+#define PKHA_FUNC_ECC_POINT_MUL_E_P1	0x0B
+#define PKHA_FUNC_MONT_RADIX_R2_MODE_N	0x0C
+#define PKHA_FUNC_GCD_A_N				0x0E
+#define PKHA_FUNC_MR_PRIMER_TEST		0x0F
+#define PKHA_FUNC_MOD_CHECK_POINT		0x1C
+
+/* PKHA Copy Memory Source and Destination */
+#define PKHA_REG_SRC(reg)		SHIFT_U32((PKHA_REG_##reg & 0x7), 17)
+#define PKHA_REG_DST(reg)		SHIFT_U32((PKHA_REG_##reg & 0x3), 10)
+#define PKHA_REG_A				0x0
+#define PKHA_REG_B				0x1
+#define PKHA_REG_E				0x2
+#define PKHA_REG_N				0x3
+
+#define PKHA_SEG_SRC(seg)		SHIFT_U32((seg & 0x3), 8)
+#define PKHA_SEG_DST(seg)		SHIFT_U32((seg & 0x3), 6)
+
+#define PKHA_CPY_SRC(src)		PKHA_CPY_SRC_##src
+#define PKHA_CPY_SRC_A0			(PKHA_REG_SRC(A) | PKHA_SEG_SRC(0))
+#define PKHA_CPY_SRC_A1			(PKHA_REG_SRC(A) | PKHA_SEG_SRC(1))
+#define PKHA_CPY_SRC_A2			(PKHA_REG_SRC(A) | PKHA_SEG_SRC(2))
+#define PKHA_CPY_SRC_A3			(PKHA_REG_SRC(A) | PKHA_SEG_SRC(3))
+#define PKHA_CPY_SRC_B0			(PKHA_REG_SRC(B) | PKHA_SEG_SRC(0))
+#define PKHA_CPY_SRC_B1			(PKHA_REG_SRC(B) | PKHA_SEG_SRC(1))
+#define PKHA_CPY_SRC_B2			(PKHA_REG_SRC(B) | PKHA_SEG_SRC(2))
+#define PKHA_CPY_SRC_B3			(PKHA_REG_SRC(B) | PKHA_SEG_SRC(3))
+#define PKHA_CPY_SRC_N0			(PKHA_REG_SRC(N) | PKHA_SEG_SRC(0))
+#define PKHA_CPY_SRC_N1			(PKHA_REG_SRC(N) | PKHA_SEG_SRC(1))
+#define PKHA_CPY_SRC_N2			(PKHA_REG_SRC(N) | PKHA_SEG_SRC(2))
+#define PKHA_CPY_SRC_N3			(PKHA_REG_SRC(N) | PKHA_SEG_SRC(3))
+
+#define PKHA_CPY_DST(dst)		PKHA_CPY_DST_##dst
+#define PKHA_CPY_DST_A0			(PKHA_REG_DST(A) | PKHA_SEG_DST(0))
+#define PKHA_CPY_DST_A1			(PKHA_REG_DST(A) | PKHA_SEG_DST(1))
+#define PKHA_CPY_DST_A2			(PKHA_REG_DST(A) | PKHA_SEG_DST(2))
+#define PKHA_CPY_DST_A3			(PKHA_REG_DST(A) | PKHA_SEG_DST(3))
+#define PKHA_CPY_DST_B0			(PKHA_REG_DST(B) | PKHA_SEG_DST(0))
+#define PKHA_CPY_DST_B1			(PKHA_REG_DST(B) | PKHA_SEG_DST(1))
+#define PKHA_CPY_DST_B2			(PKHA_REG_DST(B) | PKHA_SEG_DST(2))
+#define PKHA_CPY_DST_B3			(PKHA_REG_DST(B) | PKHA_SEG_DST(3))
+#define PKHA_CPY_DST_N0			(PKHA_REG_DST(N) | PKHA_SEG_DST(0))
+#define PKHA_CPY_DST_N1			(PKHA_REG_DST(N) | PKHA_SEG_DST(1))
+#define PKHA_CPY_DST_N2			(PKHA_REG_DST(N) | PKHA_SEG_DST(2))
+#define PKHA_CPY_DST_N3			(PKHA_REG_DST(N) | PKHA_SEG_DST(3))
+#define PKHA_CPY_DST_E			(PKHA_REG_DST(E))
+
+/*
+ * Descriptor Protocol Data Block
+ */
+/* RSA Encryption */
+#define PDB_RSA_ENC_E_SIZE(len)		SHIFT_U32((len & 0xFFF), 12)
+#define PDB_RSA_ENC_N_SIZE(len)		SHIFT_U32((len & 0xFFF), 0)
+#define PDB_RSA_ENC_F_SIZE(len)		SHIFT_U32((len & 0xFFF), 0)
+
+/* RSA Decryption */
+#define PDB_RSA_DEC_D_SIZE(len)		SHIFT_U32((len & 0xFFF), 12)
+#define PDB_RSA_DEC_N_SIZE(len)		SHIFT_U32((len & 0xFFF), 0)
+#define PDB_RSA_DEC_Q_SIZE(len)		SHIFT_U32((len & 0xFFF), 12)
+#define PDB_RSA_DEC_P_SIZE(len)		SHIFT_U32((len & 0xFFF), 0)
+
+/* RSA Finalize Key */
+#define PDB_RSA_KEY_P_SIZE(len)		SHIFT_U32((len & 0x1FF), 0)
+#define PDB_RSA_KEY_E_SIZE(len)		SHIFT_U32((len & 0x3FF), 0)
+#define PDB_RSA_KEY_N_SIZE(len)		SHIFT_U32((len & 0x3FF), 16)
+
 #endif /* __DESC_DEFINES_H__ */
+
 

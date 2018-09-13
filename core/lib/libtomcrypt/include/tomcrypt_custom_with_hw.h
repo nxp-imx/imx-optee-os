@@ -124,42 +124,40 @@
 	#endif
 #endif
 
-#ifndef CFG_CRYPTO_PK_HW
-	#ifdef CFG_CRYPTO_RSA
-	   #define LTC_MRSA
-	#endif
-	#ifdef CFG_CRYPTO_DSA
-	   #define LTC_MDSA
-	#endif
-	#ifdef CFG_CRYPTO_DH
-	   #define LTC_MDH
-	#endif
+#if !defined(CFG_CRYPTO_RSA_HW) && defined(CFG_CRYPTO_RSA)
+   #define LTC_MRSA
+#endif
+#if !defined(CFG_CRYPTO_DSA_HW) && defined(CFG_CRYPTO_DSA)
+   #define LTC_MDSA
+#endif
+#if !defined(CFG_CRYPTO_DH_HW) && defined(CFG_CRYPTO_DH)
+   #define LTC_MDH
+#endif
 
-	#ifdef CFG_CRYPTO_ECC
-	   #define LTC_MECC
+#if !defined(CFG_CRYPTO_ECC_HW) && defined(CFG_CRYPTO_ECC)
+   #define LTC_MECC
 
-	   /* use Shamir's trick for point mul (speeds up signature verification) */
-	   #define LTC_ECC_SHAMIR
+   /* use Shamir's trick for point mul (speeds up signature verification) */
+   #define LTC_ECC_SHAMIR
 
-	   #if defined(TFM_LTC_DESC) && defined(LTC_MECC)
-	   #define LTC_MECC_ACCEL
-	   #endif
+   #if defined(TFM_LTC_DESC) && defined(LTC_MECC)
+   #define LTC_MECC_ACCEL
+   #endif
 
-	   /* do we want fixed point ECC */
-	   /* #define LTC_MECC_FP */
+   /* do we want fixed point ECC */
+   /* #define LTC_MECC_FP */
 
-	   /* Timing Resistant */
-	   #define LTC_ECC_TIMING_RESISTANT
+   /* Timing Resistant */
+   #define LTC_ECC_TIMING_RESISTANT
 
-	   #define LTC_ECC192
-	   #define LTC_ECC224
-	   #define LTC_ECC256
-	   #define LTC_ECC384
-	   #define LTC_ECC521
+   #define LTC_ECC192
+   #define LTC_ECC224
+   #define LTC_ECC256
+   #define LTC_ECC384
+   #define LTC_ECC521
 
-	   /* ECC 521 bits is the max supported key size */
-	   #define LTC_MAX_ECC 521
-	#endif
+   /* ECC 521 bits is the max supported key size */
+   #define LTC_MAX_ECC 521
 #endif
 
 #define LTC_RIJNDAEL

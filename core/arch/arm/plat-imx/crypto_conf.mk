@@ -34,7 +34,15 @@ $(call force, CFG_CRYPTO_CCM_HW,n)
 $(call force, CFG_CRYPTO_GCM_HW,n)
 
 $(call force, CFG_CRYPTO_PKCS_HW,n)
-$(call force, CFG_CRYPTO_PK_HW,n)
+
+ifeq ($(filter y, $(CFG_MX6UL) $(CFG_MX6ULL)$(CFG_MX7)),y)
+# Definition of the Asymmetric Cipher supported by HW
+$(call force, CFG_CRYPTO_RSA_HW,y)
+$(call force, CFG_CRYPTO_DSA_HW,n)
+$(call force, CFG_CRYPTO_DH_HW,n)
+$(call force, CFG_CRYPTO_ECC_HW,n)
+endif
+
 $(call force, CFG_CRYPTO_CMAC_HW,y)
 
 #
@@ -74,4 +82,6 @@ $(call force, CFG_CRYPTO_HMAC_FULL_HW, $(call cryp-full-hw-enabled, HASH, \
 
 
 $(call force, CFG_CRYPTO_AUTHENC_HW, $(call cryp-one-hw-enabled, CCM GCM))
+
+$(call force, CFG_CRYPTO_PK_HW, $(call cryp-one-hw-enabled, RSA))
 endif

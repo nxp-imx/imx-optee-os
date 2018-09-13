@@ -34,7 +34,7 @@
  */
 static struct bignum *do_allocate_max_bn(void)
 {
-	size_t max_size = (mpa_StaticVarSizeInU32(LTC_MAX_BITS_PER_VARIABLE)
+	size_t max_size = (mpa_StaticVarSizeInU32(MAX_DSA_SIZE)
 						* sizeof(uint32_t) * 8);
 
 	return crypto_bignum_allocate(max_size);

@@ -88,4 +88,13 @@ int hal_ctrl_hash_limit(vaddr_t baseaddr);
  */
 bool hal_ctrl_splitkey(vaddr_t baseaddr);
 
+/**
+ * @brief   Returns the CAAM Era
+ *
+ * @param[in] baseaddr  Controller base address
+ *
+ * @retval  Era version
+ */
+uint8_t hal_ctrl_caam_era(vaddr_t baseaddr);
+
 #endif /* __HAL_CTRL_H__ */

@@ -69,19 +69,47 @@ static inline void dump_desc(void *desc)
  */
 #define DESC_HEADER_IDX(len, idx) \
 			(DESC_HDR(idx) | HDR_JD_DESCLEN(len))
+
 /**
  * @brief  Jump Local of class \a cla to descriptor offset \a offset
  *          if test \a test meet the condition \a cond
  */
 #define JUMP_LOCAL(cla, test, cond, offset) \
-		(CMD_JUMP_TYPE | CMD_CLASS(cla) | JUMP_TYPE(LOCAL) |	\
-		JUMP_TST_TYPE(test) | cond | JMP_LOCAL_OFFSET(offset))
+		(CMD_JUMP_TYPE | CMD_CLASS(cla) | JUMP_TYPE(LOCAL) | \
+		JUMP_TST_TYPE(test) | cond | \
+		JMP_LOCAL_OFFSET(offset))
+
+/**
+ * @brief  Jump Local of no class to descriptor offset \a offset
+ *          if test \a test meet the condition \a cond
+ */
+#define JUMP_CNO_LOCAL(test, cond, offset) \
+			JUMP_LOCAL(CLASS_NO, test, cond, offset)
+
 /**
  * @brief  Jump Local of class 1 to descriptor offset \a offset
  *          if test \a test meet the condition \a cond
  */
 #define JUMP_C1_LOCAL(test, cond, offset) \
 			JUMP_LOCAL(CLASS_1, test, cond, offset)
+
+/**
+ * @brief  Jump No Local of class \a cla to descriptor offset \a offset
+ *          if test \a test meet the condition \a cond
+ */
+#define JUMP_NOTLOCAL(cla, test, cond) \
+		(CMD_JUMP_TYPE | CMD_CLASS(cla) | JUMP_TYPE(NON_LOCAL) | \
+		JUMP_TST_TYPE(test) | cond)
+
+
+/**
+ * @brief  User Halt with error \a error if test \a test meet
+ *         the condition \a cond
+ */
+#define HALT_USER(test, cond, error) \
+		(CMD_JUMP_TYPE | JUMP_TYPE(HALT_USER_STATUS) |	\
+		JUMP_TST_TYPE(test) | JMP_COND(cond) | \
+		JMP_LOCAL_OFFSET(error))
 
 /**
  * @brief  Load Immediate value of length \a len to register \a dst of
@@ -335,6 +363,84 @@ static inline void dump_desc(void *desc)
  */
 #define MPSIGN_OP \
 			(CMD_OP_TYPE | OP_TYPE(DECAPS) | PROTID(MPSIGN))
+
+/**
+ * @brief   Operation Mathematical of length \a len
+ *          \a dest = \a src0 (operation \a func) \a src1
+ */
+#define MATH(func, src0, src1, dst, len) \
+			(CMD_MATH_TYPE | MATH_FUNC(func) | \
+			MATH_SRC0(src0) | MATH_SRC1(src1) | \
+			MATH_DST(dst) | MATH_LENGTH(len))
+/**
+ * @brief   Operation Mathematical  of length \a len
+ *          using an immediate value as operand 1
+ *          \a dest = \a src (operation \a func) \a val
+ */
+#define MATHI_OP1(func, src, val, dst, len) \
+			(CMD_MATHI_TYPE | MATH_FUNC(func) | \
+			MATHI_SRC(src) | MATHI_IMM_VALUE(val) | \
+			MATHI_DST(dst) | MATH_LENGTH(len))
+
+/**
+ * @brief   PKHA Copy function from \a src to \a dst. Copy number
+ *          of words specified in Source size register
+ */
+#define PKHA_CPY_SSIZE(src, dst) \
+			(CMD_OP_TYPE | OP_TYPE(PKHA) | PKHA_ALG | \
+			PKHA_FUNC(CPY_SSIZE) | \
+			PKHA_CPY_SRC(src) | PKHA_CPY_DST(dst))
+
+/**
+ * @brief   PKHA Operation \a op result into \a dst
+ */
+#define PKHA_OP(op, dst) \
+			(CMD_OP_TYPE | OP_TYPE(PKHA) | PKHA_ALG | \
+			PKHA_FUNC(op) | PKHA_OUTSEL(dst))
+
+/**
+ * @brief   PKHA Binomial operation \a op result into \a dst
+ */
+#define PKHA_F2M_OP(op, dst) \
+			(CMD_OP_TYPE | OP_TYPE(PKHA) | PKHA_ALG | \
+			PKHA_F2M | PKHA_FUNC(op) | PKHA_OUTSEL(dst))
+
+/**
+ * @brief   Move \a src to \a dst
+ */
+#define MOVE(src, dst, off, len) \
+			(CMD_MOVE_TYPE | \
+			MOVE_SRC(src) | MOVE_DST(dst) | \
+			MOVE_OFFSET(off) | MOVE_LENGTH(len))
+
+/**
+ * @brief   Move \a src to \a dst and wait until completion
+ */
+#define MOVE_WAIT(src, dst, off, len) \
+			(CMD_MOVE_TYPE | MOVE_WC | \
+			MOVE_SRC(src) | MOVE_DST(dst) | \
+			MOVE_OFFSET(off) | MOVE_LENGTH(len))
+
+/**
+ * @brief   RSA Encryption using format \a format
+ */
+#define RSA_ENCRYPT(format) \
+			(CMD_OP_TYPE | OP_PROTID(RSA_ENC) | \
+			 PROT_RSA_FMT(format))
+
+/**
+ * @brief   RSA Decryption using format \a format
+ */
+#define RSA_DECRYPT(format) \
+			(CMD_OP_TYPE | OP_PROTID(RSA_DEC) | \
+			 PROT_RSA_FMT(format))
+
+/**
+ * @brief   RSA Finalize Key in format \a format
+ */
+#define RSA_FINAL_KEY(format) \
+			(CMD_OP_TYPE | OP_PROTID(RSA_FINISH_KEY) | \
+			 PROT_RSA_KEY(format))
 
 #endif /* __DESC_HELPER_H__ */
 
