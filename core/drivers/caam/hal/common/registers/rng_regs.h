@@ -19,6 +19,7 @@
 #define TRNG_MCTL						0x0600
 #define TRNG_MCTL_PRGM					BIT32(16)
 #define TRNG_MCTL_ERR					BIT32(12)
+#define TRNG_MCTL_ACC					BIT32(5)
 #define BM_TRNG_MCTL_SAMP_MODE			SHIFT_U32(0x3, 0)
 /* use raw data in both entropy shifter and statistical checker */
 #define TRNG_MCTL_SAMP_MODE_RAW_ES_SC	SHIFT_U32(1, 0)

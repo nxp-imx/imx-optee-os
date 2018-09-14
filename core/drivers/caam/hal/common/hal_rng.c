@@ -120,8 +120,14 @@ enum CAAM_Status hal_rng_kick(vaddr_t baseaddr, uint32_t inc_delay)
 	if (ent_delay > TRNG_SDCTL_ENT_DLY_MAX)
 		return CAAM_OUT_OF_BOUND;
 
-	/* Put RNG in program mode */
-	io_mask32(baseaddr + TRNG_MCTL, TRNG_MCTL_PRGM, TRNG_MCTL_PRGM);
+	/* Put RNG in program mode
+	 * Setting both RTMCTL:PRGM and RTMCTL:TRNG_ACC causes TRNG to
+	 * properly invalidate the entropy in the entropy register and
+	 * force re-generation
+	 */
+	io_mask32(baseaddr + TRNG_MCTL,
+			(TRNG_MCTL_PRGM | TRNG_MCTL_ACC),
+			(TRNG_MCTL_PRGM | TRNG_MCTL_ACC));
 
 	/* Configure the RNG Entropy Delay
 	 * Performance-wise, it does not make sense to
@@ -160,8 +166,8 @@ enum CAAM_Status hal_rng_kick(vaddr_t baseaddr, uint32_t inc_delay)
 	 */
 	val &= ~BM_TRNG_MCTL_SAMP_MODE;
 	val |= TRNG_MCTL_SAMP_MODE_RAW_ES_SC;
-	/* Put RNG4 into run mode */
-	val &= ~TRNG_MCTL_PRGM;
+	/* Put RNG4 into run mode with handling CAAM/RNG4-TRNG Errata */
+	val &= ~(TRNG_MCTL_PRGM | TRNG_MCTL_ACC);
 	write32(val, baseaddr + TRNG_MCTL);
 
 	/* Clear the ERR bit in RTMCTL if set. The TRNG error can occur when
