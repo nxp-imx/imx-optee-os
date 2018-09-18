@@ -45,14 +45,25 @@
  */
 #define JROWNER_SECURE	0x10
 
+#if !defined(CFG_MX7ULP)
 /**
  * @brief   Job Ring Owner. Enumerate Id (expect the Secure Flag) correspond
  *          to the HW ID.
  */
 enum jr_owner {
-	JROWN_ARM_NS = 0x01,                  ///< Non-Secure ARM
+	JROWN_ARM_NS = 0x1,                   ///< Non-Secure ARM
 	JROWN_ARM_S  = JROWNER_SECURE | 0x1,  ///< Secure ARM
 };
+#else
+/**
+ * @brief   Job Ring Owner. Enumerate Id (expect the Secure Flag) correspond
+ *          to the HW ID.
+ */
+enum jr_owner {
+	JROWN_ARM_NS = 0x4,                   ///< Non-Secure ARM
+	JROWN_ARM_S  = JROWNER_SECURE | 0x4,  ///< Secure ARM
+};
+#endif
 
 /**
  * @brief   Definition of a CAAM buffer type

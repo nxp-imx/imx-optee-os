@@ -28,6 +28,7 @@
 #define JRxMIDR_MS_LMID				BIT32(31)
 #define JRxMIDR_MS_LAMTD			BIT32(17)
 #define JRxMIDR_MS_AMTD				BIT32(16)
+#if !defined(CFG_MX7ULP)
 #define JRxMIDR_MS_JROWN_NS			BIT32(3)
 #define JRxMIDR_MS_JROWN_MID(val)	SHIFT_U32((val & 0x7), 0)
 
@@ -35,6 +36,15 @@
 #define JRxMIDR_LS_NONSEQ_MID(val)	SHIFT_U32((val & 0x7), 16)
 #define JRxMIDR_LS_SEQ_NS			BIT32(3)
 #define JRxMIDR_LS_SEQ_MID(val)		SHIFT_U32((val & 0x7), 0)
+#else
+#define JRxMIDR_MS_JROWN_NS			BIT32(4)
+#define JRxMIDR_MS_JROWN_MID(val)	SHIFT_U32((val & 0xF), 0)
+
+#define JRxMIDR_LS_NONSEQ_NS		BIT32(20)
+#define JRxMIDR_LS_NONSEQ_MID(val)	SHIFT_U32((val & 0xF), 16)
+#define JRxMIDR_LS_SEQ_NS			BIT32(4)
+#define JRxMIDR_LS_SEQ_MID(val)		SHIFT_U32((val & 0xF), 0)
+#endif
 
 #endif /* __CTRL_REGS_H__ */
 
