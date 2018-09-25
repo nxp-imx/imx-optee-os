@@ -14,11 +14,11 @@
 #define MX7_DDRC_NUM			32
 #define MX7_DDRC_PHY_NUM		16
 
-#define SUSPEND_OCRAM_SIZE		0x1000
+#define SUSPEND_OCRAM_SIZE			0xE00
 #define LOWPOWER_IDLE_OCRAM_SIZE	0x1000
 
 #define SUSPEND_OCRAM_OFFSET		0x0
-#define LOWPOWER_IDLE_OCRAM_OFFSET	0x1000
+#define LOWPOWER_IDLE_OCRAM_OFFSET	0xE00
 
 /*
  * Except i.MX6SX only 16KB ocram_s available, others use 16KB offset.
