@@ -559,8 +559,6 @@
 	/* save ttbr */
 	read_ttbr1 r7
 	str	r7, [r0, #PM_INFO_TTBR1_OFF]
-	read_ttbr0 r7
-	str	r7, [r0, #PM_INFO_TTBR0_OFF]
 
 	/*
 	 * To ensure no page table walks occur in DDR, we
@@ -591,12 +589,12 @@
 
 	/* Store the IRAM table in TTBR1/TTBR0 */
 	write_ttbr1 r7
-	write_ttbr0 r7
 
-	/* Read TTBCR and set PD0=1, N = 1 */
+	/* Read TTBCR and set PD0=1 and PD1=0 */
+	/* Warning: unknown behaviour if LPAE is enabled */
 	read_ttbcr r6
-	bic	r6, r6, #0x7
-	orr	r6, r6, #0x11
+	bic	r6, r6, #0x30
+	orr	r6, r6, #0x10
 	write_ttbcr r6
 
 	dsb
@@ -617,10 +615,9 @@
 	dsb
 	isb
 
-	/* Read TTBCR and set PD0=0, N = 7 */
+	/* Read TTBCR and set PD0=0 and PD1=0 */
 	read_ttbcr r6
-	bic	r6, r6, #0x11
-	orr	r6, r6, #0x7
+	bic	r6, r6, #0x30
 	write_ttbcr r6
 
 	dsb
@@ -643,8 +640,7 @@
 	/* restore ttbr */
 	ldr	r6, [r0, #PM_INFO_TTBR1_OFF]
 	write_ttbr1 r6
-	ldr	r6, [r0, #PM_INFO_TTBR0_OFF]
-	write_ttbr0 r6
+
 	isb
 
 	.endm
