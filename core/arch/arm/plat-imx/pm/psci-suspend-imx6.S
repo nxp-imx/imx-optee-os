@@ -254,10 +254,6 @@
 	read_ttbr1 r7
 	str	r7, [r0, #PM_INFO_TTBR1_OFF]
 
-	/* Store TTBR0 to pm_info->ttbr0 */
-	read_ttbr0 r7
-	str	r7, [r0, #PM_INFO_TTBR0_OFF]
-
 	/* Disable Branch Prediction, Z bit in SCTLR. */
 	read_sctlr r6
 	bic	r6, r6, #SCTLR_Z
@@ -273,16 +269,15 @@
 
 	/* Store the IRAM table in TTBR1 */
 	write_ttbr1 r6
-	write_ttbr0 r6
 
-	/* Read TTBCR and set PD0=1, N = 1 */
-	read_ttbcr r6
-#ifdef CFG_MX6SX
-	bic	r6, r6, #0x7
-	orr	r6, r6, #0x11
-#else
-	orr	r6, r6, #0x10
+	/* Read TTBCR and set PD0=1 and PD1=0 */
+	/* Warning: unknown behaviour if LPAE is enabled */
+#ifdef CFG_WITH_LPAE
+#error "Case not supported"
 #endif
+	read_ttbcr r6
+	bic	r6, r6, #0x30
+	orr	r6, r6, #0x10
 	write_ttbcr r6
 
 	dsb
@@ -335,14 +330,9 @@
 	isb
 
 	/* Restore TTBCR */
-	/* Read TTBCR and set PD0=0, N = 0 */
-	read_ttbcr r6
-#ifdef CFG_MX6SX
-	bic	r6, r6, #0x11
-	orr	r6, r6, #0x7
-#else
-	bic	r6, r6, #0x10
-#endif
+	/* Read TTBCR and set PD0=0 and PD1=0 */
+	read_ttbcr r6 
+	bic	r6, r6, #0x30
 	write_ttbcr r6
 	dsb
 	isb
@@ -361,8 +351,6 @@
 	/* Restore TTBR1, get the origin ttbr1 from pm info */
 	ldr	r6, [r0, #PM_INFO_TTBR1_OFF]
 	write_ttbr1 r6
-	ldr	r6, [r0, #PM_INFO_TTBR0_OFF]
-	write_ttbr0 r6
 	isb
 
 	.endm
