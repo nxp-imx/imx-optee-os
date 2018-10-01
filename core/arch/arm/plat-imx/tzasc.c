@@ -315,10 +315,12 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	 tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
-	/* The DDR mappng seems to start at 0 instead of 0x4000 0000
-		We map 4G disabling 2 subregion of 512 M to effectively map 3G at
-	    0x0000 0000
-	   */
+	/* The DDR mapping seems to start at 0 instead of 0x4000 0000.
+	 * Substract the offset from the CFG_TZDRAM_START and CFG_SHMEM_START
+	 * addresses.
+	 * In addition, to map the 3GBytes of DDR available on the board, 4Gbytes
+	 * are configured and the last 2 subregions (of 512MB each) are disabled.
+	 */
 	tzc_configure_region(1, 0x00000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW
@@ -326,10 +328,10 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 		| TZC_ATTR_SUBREGION_DIS(7)
 		);
 
-	tzc_configure_region(2, CFG_TZDRAM_START,
+	tzc_configure_region(2, (CFG_TZDRAM_START - DRAM0_BASE),
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, CFG_SHMEM_START,
+	tzc_configure_region(3, (CFG_SHMEM_START  - DRAM0_BASE),
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
@@ -346,14 +348,17 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
+	/* 
+	 * Like with i.MX 8MQ, The DDR mapping seems to start at 0.
+	 */
 	tzc_configure_region(1, 0x00000000,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_2G) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_NS_RW);
 
-	tzc_configure_region(2, CFG_TZDRAM_START,
+	tzc_configure_region(2, (CFG_TZDRAM_START - DRAM0_BASE),
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_S_RW);
-	tzc_configure_region(3, CFG_SHMEM_START,
+	tzc_configure_region(3, (CFG_SHMEM_START  - DRAM0_BASE),
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
