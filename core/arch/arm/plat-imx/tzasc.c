@@ -364,6 +364,17 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
+#ifdef CFG_SECURE_DATA_PATH
+	tzc_configure_region(4, CFG_TEE_SDP_MEM_BASE - DRAM0_BASE,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+#ifdef CFG_RDC_SECURE_DATA_PATH
+	tzc_configure_region(5, CFG_RDC_DECODED_BUFFER - DRAM0_BASE,
+		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_128M) |
+		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+#endif
+#endif
+
 	tzc_set_action(3);
 
 	tzc_dump_state();
