@@ -22,6 +22,7 @@
 #define SOC_MX6D	0x6A
 #define SOC_MX7D	0x72
 #define SOC_MX7ULP	0xE1 /* Temporally hard code */
+#define SOC_MX8M	0x82
 
 uint32_t imx_get_src_gpr(int cpu);
 void imx_set_src_gpr(int cpu, uint32_t val);
@@ -38,6 +39,9 @@ bool soc_is_imx6dq(void);
 bool soc_is_imx6dqp(void);
 bool soc_is_imx7ds(void);
 bool soc_is_imx7ulp(void);
+bool soc_is_imx8mm(void);
+bool soc_is_imx8mq(void);
+bool soc_is_imx8mq_b1_layer(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);
 void imx_gpcv2_set_core1_pup_by_software(void);
 

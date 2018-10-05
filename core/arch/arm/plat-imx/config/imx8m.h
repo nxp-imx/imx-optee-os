@@ -9,5 +9,6 @@
 
 #define DRAM0_BASE		0x40000000
 #define DRAM0_SIZE		CFG_DDR_SIZE
+#define IMX_OCOTP_BASE	0x30350000
 
 #endif

@@ -15,5 +15,9 @@
 #define UART4_BASE	0x30A60000
 #define TZASC_BASE	0x32F80000
 #define CAAM_BASE	0x30900000
+#define ANATOP_BASE 0x30360000
+
+#define SW_INFO_B1	0x40
+#define SW_B1_MAGIC	0xff0055aa
 
 #endif /* __IMX8_REGS_H__ */

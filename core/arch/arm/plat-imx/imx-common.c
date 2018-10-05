@@ -30,6 +30,19 @@ static void imx_digproc(void)
 	digprog = read32(anatop_addr + HW_ANADIG_DIGPROG_IMX7D);
 #elif defined(CFG_MX6SL)
 	digprog = read32(anatop_addr + HW_ANADIG_DIGPROG_IMX6SL);
+#elif defined(CFG_MX8M)
+	digprog = read32(anatop_addr + HW_ANADIG_DIGPROG_IMX8MQ);
+
+	vaddr_t base = core_mmu_get_va(IMX_OCOTP_BASE, MEM_AREA_IO_SEC);
+
+	if (base && (read32(base + SW_INFO_B1) == SW_B1_MAGIC))
+	{
+		// update soc revision for B1
+		digprog |= 0x1;
+	}
+
+#elif defined(CFG_MX8MM)
+	digprog = read32(anatop_addr + HW_ANADIG_DIGPROG_IMX8MM);
 #else
 	digprog = read32(anatop_addr + HW_ANADIG_DIGPROG);
 #endif
@@ -41,7 +54,6 @@ static void imx_digproc(void)
 	/* Set the SOC revision = (Major + 1).(Minor) */
 	imx_soc_revision = (((digprog & 0xFF00) >> 4) + 0x10) |
 				 (digprog & 0x0F);
-
 }
 
 static uint32_t imx_soc_rev_major(void)
@@ -125,3 +137,51 @@ bool soc_is_imx7ulp(void)
 	return imx_soc_type() == SOC_MX7ULP;
 }
 
+bool soc_is_imx8mm(void)
+{
+	if (imx_soc_type() == SOC_MX8M)
+	{
+		switch (imx_soc_revision)
+		{
+			case 0x420:
+				return true;
+			default:
+				break;
+		}
+	}
+	return false;
+}
+
+bool soc_is_imx8mq(void)
+{
+	if (imx_soc_type() == SOC_MX8M)
+	{
+		switch (imx_soc_revision)
+		{
+			// B0
+			case 0x410:
+			// B1
+			case 0x411:
+				return true;
+			default:
+				break;
+		}
+	}
+	return false;
+}
+
+bool soc_is_imx8mq_b1_layer(void)
+{
+	if (imx_soc_type() == SOC_MX8M)
+	{
+		switch (imx_soc_revision)
+		{
+			// B1
+			case 0x411:
+				return true;
+			default:
+				break;
+		}
+	}
+	return false;
+}

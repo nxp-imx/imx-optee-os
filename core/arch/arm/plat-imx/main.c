@@ -63,6 +63,9 @@ static struct imx_uart_data console_data;
 
 register_phys_mem(MEM_AREA_IO_NSEC, CONSOLE_UART_BASE, CORE_MMU_DEVICE_SIZE);
 #endif
+#ifdef IMX_OCOTP_BASE
+register_phys_mem(MEM_AREA_IO_SEC, IMX_OCOTP_BASE, CORE_MMU_DEVICE_SIZE);
+#endif
 #ifdef GIC_BASE
 register_phys_mem(MEM_AREA_IO_SEC, GIC_BASE, CORE_MMU_DEVICE_SIZE);
 #endif

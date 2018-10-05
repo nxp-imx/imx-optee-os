@@ -337,6 +337,25 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
+#ifdef CFG_DRM_SECURE_DATA_PATH
+	/* Use TZASC protection only for B1 revision */
+	if (soc_is_imx8mq_b1_layer())
+   	{
+		tzc_configure_region(4, CFG_TEE_SDP_MEM_BASE - DRAM0_BASE,
+			TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
+			TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+#ifdef CFG_RDC_SECURE_DATA_PATH
+		/* Decoded buffer size is 768MB */
+		tzc_configure_region(5, CFG_RDC_DECODED_BUFFER - DRAM0_BASE,
+			TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_512M) |
+			TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+		tzc_configure_region(6, CFG_RDC_DECODED_BUFFER - DRAM0_BASE + 0x20000000,
+			TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_256M) |
+			TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
+#endif
+#endif
+	}
+
 	tzc_set_action(3);
 
 	tzc_dump_state();
@@ -364,11 +383,12 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_4M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 
-#ifdef CFG_SECURE_DATA_PATH
+#ifdef CFG_DRM_SECURE_DATA_PATH
 	tzc_configure_region(4, CFG_TEE_SDP_MEM_BASE - DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_32M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 #ifdef CFG_RDC_SECURE_DATA_PATH
+	/* Decoded buffer size is 128MB */
 	tzc_configure_region(5, CFG_RDC_DECODED_BUFFER - DRAM0_BASE,
 		TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_128M) |
 		TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
