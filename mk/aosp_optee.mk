@@ -74,10 +74,19 @@ endif
 ifneq (false,$(INCLUDE_FOR_BUILD_TA))
 include $(CLEAR_VARS)
 
+MAJOR_VERSION := $(shell echo $(PLATFORM_VERSION) | cut -d "." -f1)
+ANDROID_VERSION_GE_O := $(shell if [ $(MAJOR_VERSION) -ge 8 ];then echo "true";fi)
+
 LOCAL_MODULE := $(local_module)
 LOCAL_PREBUILT_MODULE_FILE := $(OPTEE_TA_OUT_DIR)/$(LOCAL_MODULE)
-LOCAL_MODULE_PATH := $(TARGET_OUT)/lib/optee_armtz
 LOCAL_MODULE_CLASS := EXECUTABLES
+ifeq ($(ANDROID_VERSION_GE_O), true)
+LOCAL_VENDOR_MODULE := true
+LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/lib/optee_armtz
+else
+LOCAL_MODULE_PATH := $(TARGET_OUT)/lib/optee_armtz
+endif
+LOCAL_PROPRIETARY_MODULE := true
 LOCAL_MODULE_TAGS := optional
 
 TA_TMP_DIR := $(subst /,_,$(LOCAL_PATH))
@@ -88,7 +97,7 @@ $(LOCAL_PREBUILT_MODULE_FILE): $(TA_TMP_FILE)
 
 TA_TMP_FILE_DEPS :=
 ifneq ($(local_module_deps), )
-$(foreach dep,$(local_module_deps), $(eval TA_TMP_FILE_DEPS += $(TARGET_OUT)/lib/optee_armtz/$(dep)))
+$(foreach dep,$(local_module_deps), $(eval TA_TMP_FILE_DEPS += $(LOCAL_MODULE_PATH)/$(dep)))
 endif
 $(TA_TMP_FILE): $(TA_TMP_FILE_DEPS)
 $(TA_TMP_FILE): PRIVATE_TA_SRC_DIR := $(LOCAL_PATH)
