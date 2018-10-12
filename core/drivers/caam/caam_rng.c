@@ -13,7 +13,9 @@
 
 /* Global includes */
 #include <atomic.h>
+#include <crypto/crypto.h>
 #include <mm/core_memprot.h>
+#include <rng_support.h>
 #include <tee/cache.h>
 
 #ifdef CFG_CRYPTO_RNG_HW
@@ -425,7 +427,7 @@ static enum CAAM_Status caam_rng_init_data(void)
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 
 	struct rngdata *rng;
-	uint8_t   idx;
+	uint8_t        idx;
 
 	for (idx = 0; (idx < RNG_DATABUF_NB); idx++) {
 		rng = &rng_privdata->databuf[idx];
@@ -437,11 +439,6 @@ static enum CAAM_Status caam_rng_init_data(void)
 
 		if (retstatus != CAAM_NO_ERROR)
 			break;
-	}
-
-	if (retstatus == CAAM_NO_ERROR) {
-		if (imxcrypt_register(CRYPTO_RNG, &driver_rng))
-			retstatus = CAAM_FAILURE;
 	}
 
 	return retstatus;
@@ -672,3 +669,45 @@ enum CAAM_Status caam_rng_init(vaddr_t ctrl_addr)
 	return retstatus;
 }
 
+#ifdef CFG_CRYPTO_RNG_HW
+/**
+ * @brief   Crypto interface used in HW RNG supported
+ *          Fills input buffer \a buf with \a blen random bytes
+ *
+ * @param[in] blen  Number of random bytes to read
+ *
+ * @param[out] buf  Buffer to fill
+ *
+ * @retval TEE_SUCCESS               Success
+ * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
+ * @retval TEE_ERROR_BAD_STATE       RNG is not in correct state
+ * @retval TEE_ERROR_NOT_IMPLEMENTED RNG function is not implemented
+ */
+TEE_Result crypto_rng_read(void *buf, size_t blen)
+{
+	if (!buf)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	return do_rng_read(buf, blen);
+}
+
+/**
+ * @brief   This function is need by the core/crypto/rng_hw.c file
+ *          if CFG_WITH_SOFTWARE_PRNG not defined.
+ *          Function is not used if crypto_rng_read function is
+ *          re-implemented outside the core/crypto/rng_hw.c file.
+ *
+ *          Read only one Random byte.
+ *
+ * @retval random byte read if not error
+ */
+uint8_t hw_get_random_byte(void)
+{
+	uint8_t data;
+
+	if (do_rng_read(&data, 1))
+		return data;
+
+	return 0;
+}
+#endif

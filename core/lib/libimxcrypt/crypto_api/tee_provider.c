@@ -83,9 +83,7 @@ TEE_Result crypto_init(void)
 	ret = crypto_driver_init();
 
 	if (ret == TEE_SUCCESS) {
-		/* Check if the RNG is registered */
-		if (imxcrypt_algo[CRYPTO_RNG] != NULL)
-			ret = imxcrypt_libsoft_init();
+		ret = imxcrypt_libsoft_init();
 	}
 
 	return ret;

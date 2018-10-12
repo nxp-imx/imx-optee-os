@@ -25,7 +25,6 @@
 #define LIB_TRACE(...)
 #endif
 
-#ifdef CFG_CRYPTO_RNG_HW
 /*
  * Definition of a PRNG wrapper used into the LibTomCrypt
  * to access the HW RNG module.
@@ -147,7 +146,11 @@ static int do_test(void)
  * @brief   Registration of the PRNG Wrapper to use the HW RNG module
  */
 static const struct ltc_prng_descriptor prng_hw_wrapper_desc = {
+#ifdef CFG_CRYPTO_RNG_HW
 	.name        = "hw_rng",
+#else
+	.name        = "sw_rng",
+#endif
 	.export_size = 0,
 	.start       = &do_start,
 	.add_entropy = &do_add_entropy,
@@ -158,8 +161,6 @@ static const struct ltc_prng_descriptor prng_hw_wrapper_desc = {
 	.pimport     = &do_import,
 	.test        = &do_test,
 };
-
-#endif
 
 /**
  * @brief   Local PRNG driver variable
@@ -186,7 +187,6 @@ int libsoft_rng_init(void)
 {
 	int ret = (-1);
 
-#ifdef CFG_CRYPTO_RNG_HW
 	register_prng(&prng_hw_wrapper_desc);
 	/* Get the PRNG index */
 	prng.index = find_prng(prng_hw_wrapper_desc.name);
@@ -195,7 +195,6 @@ int libsoft_rng_init(void)
 
 	if (prng.index != (-1))
 		ret = 0;
-#endif
 
 	return ret;
 }

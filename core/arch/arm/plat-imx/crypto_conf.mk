@@ -20,6 +20,13 @@ endif
 # Definition of all HW accelerations for all i.MX
 #
 $(call force, CFG_CRYPTO_RNG_HW,y)
+ifeq ($(CFG_CRYPTO_RNG_HW), y)
+$(call force, CFG_WITH_SOFTWARE_PRNG,n)
+else
+$(call force, CFG_WITH_SOFTWARE_PRNG,y)
+endif
+
+
 $(call force, CFG_CRYPTO_HASH_HW,y)
 $(call force, CFG_CRYPTO_CIPHER_HW,y)
 

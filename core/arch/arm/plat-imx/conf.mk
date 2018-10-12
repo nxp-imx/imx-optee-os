@@ -93,7 +93,6 @@ endif
 $(call force,CFG_GENERIC_BOOT,y)
 $(call force,CFG_PM_STUBS,y)
 $(call force,CFG_GIC,y)
-$(call force,CFG_WITH_SOFTWARE_PRNG,y)
 CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 CFG_WITH_STACK_CANARIES ?= y
 CFG_MMAP_REGIONS ?= 24
@@ -419,5 +418,6 @@ CFG_IMXCRYPT ?= n
 include core/arch/arm/plat-imx/crypto_conf.mk
 else
 $(call force,CFG_IMXCRYPT,n)
+$(call force,CFG_WITH_SOFTWARE_PRNG,y)
 endif
 

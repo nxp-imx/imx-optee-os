@@ -17,8 +17,7 @@
  * @brief   i.MX Crypto Library Algorithm enumeration
  */
 enum imxcrypt_algo_id {
-	CRYPTO_RNG = 0,      ///< RNG driver
-	CRYPTO_HASH,         ///< HASH driver
+	CRYPTO_HASH = 0,      ///< HASH driver
 	CRYPTO_HASH_SW,      ///< HASH SW driver
 	CRYPTO_HMAC,         ///< HMAC driver
 	CRYPTO_HMAC_SW,      ///< HMAC SW driver
