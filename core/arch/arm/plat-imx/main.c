@@ -54,13 +54,13 @@ static const struct thread_handlers handlers = {
 #endif
 };
 
+#ifdef CONSOLE_UART_BASE
 #ifdef CFG_IMX_LPUART
 static struct imx_lpuart_data console_data;
 #else
 static struct imx_uart_data console_data;
 #endif
 
-#ifdef CONSOLE_UART_BASE
 register_phys_mem(MEM_AREA_IO_NSEC, CONSOLE_UART_BASE, CORE_MMU_DEVICE_SIZE);
 #endif
 #ifdef GIC_BASE
@@ -123,12 +123,17 @@ static void main_fiq(void)
 
 void console_init(void)
 {
+
+#if defined (CONSOLE_UART_BASE)
 #ifdef CFG_IMX_LPUART
 	imx_lpuart_init(&console_data, CONSOLE_UART_BASE);
 #else
 	imx_uart_init(&console_data, CONSOLE_UART_BASE);
 #endif
 	register_serial_console(&console_data.chip);
+#else
+	register_serial_console(NULL);
+#endif
 }
 
 void main_init_gic(void)

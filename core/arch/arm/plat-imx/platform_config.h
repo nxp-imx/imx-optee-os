@@ -71,9 +71,8 @@
 #error "Unknown platform flavor"
 #endif
 
-#ifndef CFG_UART_BASE
-/* Board specific console UART */
-#error "CFG_UART_BASE not defined!"
+#ifdef CFG_UART_BASE
+#define CONSOLE_UART_BASE	CFG_UART_BASE
 #endif
 
 #ifndef CFG_TEE_RESERVED_SIZE

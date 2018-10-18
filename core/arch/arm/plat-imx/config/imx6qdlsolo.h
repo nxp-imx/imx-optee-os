@@ -34,8 +34,6 @@
 #define DRAM0_BASE		0x10000000
 #define DRAM0_SIZE		CFG_DDR_SIZE
 
-#define CONSOLE_UART_BASE	CFG_UART_BASE
-
 /*
  * PL310 TAG RAM Control Register
  *
