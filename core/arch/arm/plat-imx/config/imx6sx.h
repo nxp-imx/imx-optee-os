@@ -8,10 +8,6 @@
 #ifndef __CONFIG_IMX6SX_H
 #define __CONFIG_IMX6SX_H
 
-#ifndef CFG_UART_BASE
-#define CFG_UART_BASE	(UART1_BASE)
-#endif
-
 #define DRAM0_BASE		0x80000000
 #define DRAM0_SIZE		CFG_DDR_SIZE
 
