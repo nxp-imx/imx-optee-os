@@ -9,6 +9,7 @@
 #include <io.h>
 #include <keep.h>
 #include <util.h>
+#include <kernel/dt.h>
 
 #define STAT		0x14
 #define DATA		0x1C
@@ -64,6 +65,7 @@ KEEP_PAGER(imx_lpuart_ops);
 void imx_lpuart_init(struct imx_lpuart_data *pd, paddr_t base)
 {
 	pd->base.pa = base;
+	pd->base.va = 0;
 	pd->chip.ops = &imx_lpuart_ops;
 
 	/*
@@ -71,3 +73,65 @@ void imx_lpuart_init(struct imx_lpuart_data *pd, paddr_t base)
 	 * everything for uart0 intialization is done in scfw.
 	 */
 }
+
+#ifdef CFG_DT
+
+static struct serial_chip *imx_lpuart_dev_alloc(void)
+{
+	struct imx_lpuart_data *pd = malloc(sizeof(*pd));
+
+	if (!pd)
+		return NULL;
+	return &pd->chip;
+}
+
+static int imx_lpuart_dev_init(struct serial_chip *chip,
+			       const void *fdt,
+			       int offs,
+			       const char *parms)
+{
+	struct imx_lpuart_data *pd =
+		container_of(chip, struct imx_lpuart_data, chip);
+	vaddr_t vbase;
+	paddr_t pbase;
+	size_t size;
+
+	if (parms && parms[0])
+		IMSG("imx_lpuart: device parameters ignored (%s)", parms);
+
+	if (dt_map_dev(fdt, offs, &vbase, &size) < 0)
+		return -1;
+
+	pbase = virt_to_phys((void *)vbase);
+	imx_lpuart_init(pd, pbase);
+
+	return 0;
+}
+
+static void imx_lpuart_dev_free(struct serial_chip *chip)
+{
+	struct imx_lpuart_data *pd =
+	  container_of(chip,  struct imx_lpuart_data, chip);
+
+	free(pd);
+}
+
+static const struct serial_driver imx_lpuart_driver = {
+	.dev_alloc = imx_lpuart_dev_alloc,
+	.dev_init = imx_lpuart_dev_init,
+	.dev_free = imx_lpuart_dev_free,
+};
+
+static const struct dt_device_match imx_match_table[] = {
+	{ .compatible = "fsl,imx7ulp-lpuart" },
+	{ .compatible = "fsl,imx8qm-lpuart" },
+	{ 0 }
+};
+
+const struct dt_driver imx_dt_driver __dt_driver = {
+	.name = "imx_lpuart",
+	.match_table = imx_match_table,
+	.driver = &imx_lpuart_driver,
+};
+
+#endif /* CFG_DT */

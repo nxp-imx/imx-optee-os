@@ -2,28 +2,8 @@
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * All rights reserved.
+ * Copyright 2018 NXP.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <assert.h>
@@ -31,6 +11,7 @@
 #include <io.h>
 #include <keep.h>
 #include <util.h>
+#include <kernel/dt.h>
 
 /* Register definitions */
 #define URXD  0x0  /* Receiver Register */
@@ -48,6 +29,7 @@
 #define UBMR  0xa8 /* BRM Modulator Register */
 #define UBRC  0xac /* Baud Rate Count Register */
 #define UTS   0xb4 /* UART Test Register (mx31) */
+
 
 /* UART Control Register Bit Fields.*/
 #define  URXD_CHARRDY    (1<<15)
@@ -124,9 +106,10 @@ static const struct serial_ops imx_uart_ops = {
 };
 KEEP_PAGER(imx_uart_ops);
 
-void imx_uart_init(struct imx_uart_data *pd, paddr_t base)
+void imx_uart_init(struct imx_uart_data *pd, paddr_t pbase)
 {
-	pd->base.pa = base;
+	pd->base.pa = pbase;
+	pd->base.va = 0;
 	pd->chip.ops = &imx_uart_ops;
 
 	/*
@@ -134,3 +117,63 @@ void imx_uart_init(struct imx_uart_data *pd, paddr_t base)
 	 * everything for uart0 initialization is done in bootloader.
 	 */
 }
+
+#ifdef CFG_DT
+
+static struct serial_chip *imx_uart_dev_alloc(void)
+{
+	struct imx_uart_data *pd = malloc(sizeof(*pd));
+
+	if (!pd)
+		return NULL;
+	return &pd->chip;
+}
+
+static int imx_uart_dev_init(struct serial_chip *chip,
+			       const void *fdt,
+			       int offs,
+			       const char *parms)
+{
+	struct imx_uart_data *pd =
+		container_of(chip, struct imx_uart_data, chip);
+	vaddr_t vbase;
+	paddr_t pbase;
+	size_t size;
+
+	if (parms && parms[0])
+		IMSG("imx_uart: device parameters ignored (%s)", parms);
+
+	if (dt_map_dev(fdt, offs, &vbase, &size) < 0)
+		return -1;
+	pbase = virt_to_phys((void *)vbase);
+	imx_uart_init(pd, pbase);
+
+	return 0;
+}
+
+static void imx_uart_dev_free(struct serial_chip *chip)
+{
+	struct imx_uart_data *pd =
+	  container_of(chip,  struct imx_uart_data, chip);
+
+	free(pd);
+}
+
+static const struct serial_driver imx_uart_driver = {
+	.dev_alloc = imx_uart_dev_alloc,
+	.dev_init = imx_uart_dev_init,
+	.dev_free = imx_uart_dev_free,
+};
+
+static const struct dt_device_match imx_match_table[] = {
+	{ .compatible = "fsl,imx6q-uart" },
+	{ 0 }
+};
+
+const struct dt_driver imx_dt_driver __dt_driver = {
+	.name = "imx_uart",
+	.match_table = imx_match_table,
+	.driver = &imx_uart_driver,
+};
+
+#endif /* CFG_DT */
