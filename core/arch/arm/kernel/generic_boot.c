@@ -469,6 +469,17 @@ void *get_dt_blob(void)
 
 static void reset_dt_references(void)
 {
+	void *fdt = get_dt_blob();
+	int ret;
+
+	/* Close DT after all drivers load */
+	ret = fdt_pack(fdt);
+	if (ret < 0) {
+		EMSG("Failed to pack Device Tree at 0x%" PRIxPA ": error %d",
+		     virt_to_phys(fdt), ret);
+		panic();
+	}
+
 	/* dt no more reached, reset pointer to invalid */
 	dt_blob_addr = NULL;
 }
@@ -811,7 +822,6 @@ static void init_fdt(unsigned long phys_fdt)
 static void update_fdt(void)
 {
 	void *fdt = get_dt_blob();
-	int ret;
 
 	if (!fdt)
 		return;
@@ -827,13 +837,6 @@ static void update_fdt(void)
 
 	if (mark_optee_core_as_reserved(fdt))
 		panic("Failed to config secure memory");
-
-	ret = fdt_pack(fdt);
-	if (ret < 0) {
-		EMSG("Failed to pack Device Tree at 0x%" PRIxPA ": error %d",
-		     virt_to_phys(fdt), ret);
-		panic();
-	}
 }
 
 #else
