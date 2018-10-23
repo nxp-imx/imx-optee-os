@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (c) Microsoft Corporation. All rights reserved.
+ * @copyright 2018 NXP
  */
 
 #include <kernel/thread.h>
 #include <sm/optee_smc.h>
 #include <sm/sm.h>
 #include <trace.h>
+
+#include "imx_busfreq.h"
 #include "imx_sip.h"
 #include "imx_pl310.h"
 
@@ -32,6 +35,12 @@ static enum sm_handler_ret imx_sip_handler(struct thread_smc_args *smc_args)
 		smc_args->a0 = pl310_enable_wflz();
 		break;
 #endif
+#ifdef CFG_BUSFREQ
+	case IMX_SIP_BUSFREQ_CHANGE:
+		smc_args->a0 = busfreq_change(smc_args->a1, smc_args->a2);
+		break;
+#endif
+
 	default:
 		EMSG("Invalid SIP function code: 0x%x", sip_func);
 		smc_args->a0 = OPTEE_SMC_RETURN_EBADCMD;

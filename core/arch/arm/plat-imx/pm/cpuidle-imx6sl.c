@@ -34,7 +34,7 @@
 int imx6sl_cpuidle_init(void)
 {
 	uint32_t i;
-	uint32_t *mmdc_io_offset_array;
+	const uint32_t *mmdc_io_offset_array;
 	uint32_t lowpower_idle_ocram_base = (uint32_t)phys_to_virt(
 			imx_get_ocram_tz_start_addr() +
 			LOWPOWER_IDLE_OCRAM_OFFSET, MEM_AREA_TEE_COHERENT,
