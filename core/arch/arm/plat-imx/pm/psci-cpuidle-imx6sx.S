@@ -468,7 +468,6 @@
 	.endm
 
 	.macro	resume_mmdc
-
 	/* restore MMDC IO */
 	cmp	r5, #0x0
 	ldreq	r10, [r0, #PM_INFO_IOMUXC_V_OFF]
@@ -479,7 +478,7 @@
 	add	r7, r7, r0
 6:
 	ldr	r8, [r7], #0x4
-	ldr	r9, [r7], #0x4
+	ldr	r9, [r7], #0x8
 	str	r9, [r10, r8]
 	subs	r6, r6, #0x1
 	bne	6b
@@ -647,26 +646,37 @@
 
 .extern iram_tlb_phys_addr
 
-/* imx6sx_low_power_idle */
-
 	.align 3
+/**
+ * @brief   Prepare and switch the device to enter in low power mode.
+ *          Function is executed in OCRAM.
+ *          If success, the device is reset.
+ *          Operation can be cancel and in this case the device is
+ *          not reset, and returns to the caller.
+ *
+ *          Input parameter is a reference to a imx_pm_asm_arg structure
+ *          containing the function argument (refer to the imx_pm.h)
+ *
+ * @param[in] r0  reference to the structure imx_pm_asm_arg in normal
+ *                memory.
+ */
 FUNC imx6sx_low_power_idle, :
-mx6sx_lpm_wfi_start:
 	push	{r4 - r10}
 
-	/* get necessary info from pm_info */
-	ldr	r1, [r0, #PM_INFO_PBASE_OFF]
-	ldr	r2, [r0, #PM_INFO_INFO_SIZE_OFF]
+	/* Get the function arguments data */
+	ldr	r1, [r0, #PM_ASM_ARG_PA_ADDR_OFF]
+	ldr	r0, [r0, #PM_ASM_ARG_PM_INFO_OFF]
 
 	/*
-	 * counting the resume address in iram
-	 * to set it in SRC register.
+	 * Calculate the Physical address of the wakeup function
+	 * to initialize the SRC register
 	 */
-	ldr	r5, =imx6sx_low_power_idle
-	ldr     r6, =wakeup
-	sub	r6, r6, r5
-	add     r8, r1, r2
-	add	r3, r8, r6
+	ldr		r4, =imx6sx_low_power_idle
+	ldr		r3, =wakeup
+	sub		r3, r4
+	add		r3, r1
+
+	ldr	r1, [r0, #PM_INFO_PBASE_OFF]
 
 	/* store physical resume addr and pm_info address. */
 	ldr	r10, [r0, #PM_INFO_SRC_V_OFF]
@@ -719,7 +729,7 @@ save_and_set_mmdc_io_lpm:
 	ldr	r9, [r8], #0x4
 	ldr	r5, [r10, r9]
 	str	r6, [r10, r9]
-	str	r5, [r8], #0x4
+	str	r5, [r8], #0x8
 	subs	r7, r7, #0x1
 	bne	save_and_set_mmdc_io_lpm
 
@@ -899,5 +909,16 @@ wakeup:
 	/* Restore registers */
 	bx	lr
 	.ltorg
-mx6sx_lpm_wfi_end:
 END_FUNC imx6sx_low_power_idle
+
+/**
+ * @brief   Calculates and returns the low power idle function size
+ *
+ * @retval  function size in bytes
+ */
+FUNC get_imx6sx_low_power_idle_size, :
+	subs	r0, pc, #8
+	ldr		r1, =imx6sx_low_power_idle
+	sub		r0, r0, r1
+	bx		lr
+END_FUNC get_imx6sx_low_power_idle_size

@@ -9,6 +9,13 @@
 
 DEFINES
 {
+	/* Definition of the Assembly function arguments */
+	DEFINE(PM_ASM_ARG_PA_ADDR_OFF,
+	       offsetof(struct imx_pm_asm_arg, pa_addr));
+	DEFINE(PM_ASM_ARG_PM_INFO_OFF,
+	       offsetof(struct imx_pm_asm_arg, pm_info));
+
+	/* Definition of the MX7 PM info structure offset */
 	DEFINE(PM_INFO_MX7_M4_RESERVE0_OFF,
 	       offsetof(struct imx7_pm_info, m4_reserve0));
 	DEFINE(PM_INFO_MX7_M4_RESERVE1_OFF,
@@ -84,8 +91,6 @@ DEFINES
 
 	DEFINE(PM_INFO_PBASE_OFF,
 	       offsetof(struct imx6_pm_info, pa_base));
-	DEFINE(PM_INFO_ENTRY_OFF,
-	       offsetof(struct imx6_pm_info, entry));
 	DEFINE(PM_INFO_TEE_RESUME_OFF,
 	       offsetof(struct imx6_pm_info, tee_resume));
 	DEFINE(PM_INFO_DDR_TYPE_OFF,
@@ -116,8 +121,6 @@ DEFINES
 	       offsetof(struct imx6_pm_info, gpc_pa_base));
 	DEFINE(PM_INFO_GPC_V_OFF,
 	       offsetof(struct imx6_pm_info, gpc_va_base));
-	DEFINE(PM_INFO_PL310_P_OFF,
-	       offsetof(struct imx6_pm_info, pl310_pa_base));
 	DEFINE(PM_INFO_PL310_V_OFF,
 	       offsetof(struct imx6_pm_info, pl310_va_base));
 	DEFINE(PM_INFO_ANATOP_P_OFF,

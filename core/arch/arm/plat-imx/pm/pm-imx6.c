@@ -15,7 +15,7 @@
 #include <mmdc.h>
 #include <string.h>
 
-static uint32_t imx6q_mmdc_io_offset[] = {
+const uint32_t imx6q_mmdc_io_offset[] = {
 	0x5ac, 0x5b4, 0x528, 0x520, /* DQM0 ~ DQM3 */
 	0x514, 0x510, 0x5bc, 0x5c4, /* DQM4 ~ DQM7 */
 	0x56c, 0x578, 0x588, 0x594, /* CAS, RAS, SDCLK_0, SDCLK_1 */
@@ -27,7 +27,7 @@ static uint32_t imx6q_mmdc_io_offset[] = {
 	0x74c,                      /* GPR_ADDS */
 };
 
-static uint32_t imx6dl_mmdc_io_offset[] = {
+const uint32_t imx6dl_mmdc_io_offset[] = {
 	0x470, 0x474, 0x478, 0x47c, /* DQM0 ~ DQM3 */
 	0x480, 0x484, 0x488, 0x48c, /* DQM4 ~ DQM7 */
 	0x464, 0x490, 0x4ac, 0x4b0, /* CAS, RAS, SDCLK_0, SDCLK_1 */
@@ -39,14 +39,14 @@ static uint32_t imx6dl_mmdc_io_offset[] = {
 	0x74c,                      /* GPR_ADDS */
 };
 
-uint32_t imx6ul_mmdc_io_offset[] = {
+const uint32_t imx6ul_mmdc_io_offset[] = {
 	0x244, 0x248, 0x24c, 0x250, /* DQM0, DQM1, RAS, CAS */
 	0x27c, 0x498, 0x4a4, 0x490, /* SDCLK0, GPR_B0DS-B1DS, GPR_ADDS */
 	0x280, 0x284, 0x260, 0x264, /* SDQS0~1, SODT0, SODT1 */
 	0x494, 0x4b0,               /* MODE_CTL, MODE, */
 };
 
-static uint32_t imx6ul_mmdc_offset[] = {
+const uint32_t imx6ul_mmdc_offset[] = {
 	0x01c, 0x800, 0x80c, 0x83c,
 	0x848, 0x850, 0x81c, 0x820,
 	0x82c, 0x830, 0x8c0, 0x8b8,
@@ -56,7 +56,7 @@ static uint32_t imx6ul_mmdc_offset[] = {
 	0x020, 0x818, 0x01c,
 };
 
-static uint32_t imx6ul_mmdc_io_lpddr2_offset[] = {
+const uint32_t imx6ul_mmdc_io_lpddr2_offset[] = {
 	0x244, 0x248, 0x24c, 0x250,	/* DQM0, DQM1, RAS, CAS */
 	0x27c, 0x498, 0x4a4, 0x490,	/* SDCLK0, GPR_B0DS-B1DS, GPR_ADDS */
 	0x280, 0x284, 0x260, 0x264,	/* SDQS0~1, SODT0, SODT1 */
@@ -64,7 +64,7 @@ static uint32_t imx6ul_mmdc_io_lpddr2_offset[] = {
 	0x288,				/* DRAM_RESET */
 };
 
-static uint32_t imx6ul_mmdc_lpddr2_offset[] = {
+const uint32_t imx6ul_mmdc_lpddr2_offset[] = {
 	0x01c, 0x85c, 0x800, 0x890,
 	0x8b8, 0x81c, 0x820, 0x82c,
 	0x830, 0x83c, 0x848, 0x850,
@@ -75,7 +75,7 @@ static uint32_t imx6ul_mmdc_lpddr2_offset[] = {
 	0x800, 0x004, 0x01c,
 };
 
-static uint32_t imx6sx_mmdc_io_offset[] = {
+const uint32_t imx6sx_mmdc_io_offset[] = {
 	0x2ec, 0x2f0, 0x2f4, 0x2f8,
 	0x60c, 0x610, 0x61c, 0x620,
 	0x300, 0x2fc, 0x32c, 0x5f4,
@@ -83,7 +83,7 @@ static uint32_t imx6sx_mmdc_io_offset[] = {
 	0x330, 0x334, 0x338, 0x33c,
 };
 
-static uint32_t imx6sx_mmdc_offset[] = {
+const uint32_t imx6sx_mmdc_offset[] = {
 	0x800, 0x80c, 0x810, 0x83c,
 	0x840, 0x848, 0x850, 0x81c,
 	0x820, 0x824, 0x828, 0x8b8,
@@ -93,7 +93,7 @@ static uint32_t imx6sx_mmdc_offset[] = {
 	0x020, 0x818, 0x01c,
 };
 
-static uint32_t imx6sx_mmdc_io_lpddr2_offset[] = {
+const uint32_t imx6sx_mmdc_io_lpddr2_offset[] = {
 	0x2ec, 0x2f0, 0x2f4, 0x2f8,
 	0x300, 0x2fc, 0x32c, 0x5f4,
 	0x60c, 0x610, 0x61c, 0x620,
@@ -102,7 +102,7 @@ static uint32_t imx6sx_mmdc_io_lpddr2_offset[] = {
 	0x324, 0x328, 0x340,
 };
 
-static uint32_t imx6sx_mmdc_lpddr2_offset[] = {
+const uint32_t imx6sx_mmdc_lpddr2_offset[] = {
 	0x01c, 0x85c, 0x800, 0x890,
 	0x8b8, 0x81c, 0x820, 0x824,
 	0x828, 0x82c, 0x830, 0x834,
@@ -114,7 +114,7 @@ static uint32_t imx6sx_mmdc_lpddr2_offset[] = {
 	0x800, 0x004, 0x01c,
 };
 
-uint32_t imx6sl_mmdc_io_offset[] = {
+const uint32_t imx6sl_mmdc_io_offset[] = {
 	0x30c, 0x310, 0x314, 0x318, /* DQM0 ~ DQM3 */
 	0x5c4, 0x5cc, 0x5d4, 0x5d8, /* GPR_B0DS ~ GPR_B3DS */
 	0x300, 0x31c, 0x338, 0x5ac, /* CAS, RAS, SDCLK_0, GPR_ADDS */
@@ -122,14 +122,14 @@ uint32_t imx6sl_mmdc_io_offset[] = {
 	0x330, 0x334, 0x320,        /* SDCKE0, SDCKE1, RESET */
 };
 
-uint32_t imx6sll_mmdc_io_offset[] = {
+const uint32_t imx6sll_mmdc_io_offset[] = {
 	0x294, 0x298, 0x29c, 0x2a0, /* DQM0 ~ DQM3 */
 	0x544, 0x54c, 0x554, 0x558, /* GPR_B0DS ~ GPR_B3DS */
 	0x530, 0x540, 0x2ac, 0x52c, /* MODE_CTL, MODE, SDCLK_0, GPR_ADDDS */
 	0x2a4, 0x2a8,               /* SDCKE0, SDCKE1*/
 };
 
-static uint32_t imx6sll_mmdc_lpddr3_offset[] = {
+const uint32_t imx6sll_mmdc_lpddr3_offset[] = {
 	0x01c, 0x85c, 0x800, 0x890,
 	0x8b8, 0x81c, 0x820, 0x82c,
 	0x830, 0x83c, 0x848, 0x850,
@@ -168,7 +168,7 @@ static struct imx6_pm_data imx6ul_lpddr2_pm_data = {
 	.mmdc_offset = imx6ul_mmdc_lpddr2_offset,
 };
 
-static struct imx6_pm_data imx6sx_pm_data = {
+struct imx6_pm_data imx6sx_pm_data = {
 	.mmdc_io_num = ARRAY_SIZE(imx6sx_mmdc_io_offset),
 	.mmdc_io_offset = imx6sx_mmdc_io_offset,
 	.mmdc_num = ARRAY_SIZE(imx6sx_mmdc_offset),
@@ -196,13 +196,16 @@ struct imx6_pm_data imx6sll_pm_data = {
 	.mmdc_offset = imx6sll_mmdc_lpddr3_offset,
 };
 
-struct imx6_pm_info *pm_info;
+/**
+ * @brief   PM OCRAM free area start address
+ */
+vaddr_t pm_ocram_free_area;
 
 int imx6_suspend_init(void)
 {
 	uint32_t i;
-	uint32_t *mmdc_offset_array;
-	uint32_t *mmdc_io_offset_array;
+	const uint32_t *mmdc_offset_array;
+	const uint32_t *mmdc_io_offset_array;
 	struct imx6_pm_data *pm_data;
 
 	uint32_t suspend_ocram_base = core_mmu_get_va(
@@ -211,11 +214,15 @@ int imx6_suspend_init(void)
 						MEM_AREA_TEE_COHERENT,
 						SUSPEND_OCRAM_SIZE);
 	struct imx6_pm_info *p = (struct imx6_pm_info *)suspend_ocram_base;
-	pm_info = p;
 
-	dcache_op_level1(DCACHE_OP_CLEAN_INV);
+	uint32_t func_size = get_imx6_suspend_size();
 
-	p->pa_base = imx_get_ocram_tz_start_addr() + SUSPEND_OCRAM_OFFSET;
+	suspend_func = (int (*)(uint32_t))(suspend_ocram_base + sizeof(*p));
+
+	suspend_arg.pa_addr = virt_to_phys((void *)(vaddr_t)suspend_func);
+	suspend_arg.pm_info = p;
+
+	p->pa_base =  imx_get_ocram_tz_start_addr() + SUSPEND_OCRAM_OFFSET;
 	p->tee_resume = (paddr_t)virt_to_phys((void *)(vaddr_t)v7_cpu_resume);
 	p->ccm_va_base = core_mmu_get_va(CCM_BASE, MEM_AREA_IO_SEC, CCM_SIZE);
 	p->ccm_pa_base = CCM_BASE;
@@ -358,11 +365,13 @@ int imx6_suspend_init(void)
 		p->mmdc_val[28][1] = 0xa1310003;
 	}
 
-	memcpy((void *)(suspend_ocram_base + sizeof(*p)),
-			(void *)(vaddr_t)imx6_suspend,
-			SUSPEND_OCRAM_SIZE - sizeof(*p));
+	memcpy((void *)(vaddr_t)suspend_func,
+			(void *)(vaddr_t)imx6_suspend, func_size);
 
-	dcache_clean_range((void *)suspend_ocram_base, SUSPEND_OCRAM_SIZE);
+	pm_ocram_free_area = (vaddr_t)suspend_func + func_size;
+
+	dcache_clean_range((void *)suspend_ocram_base,
+			(pm_ocram_free_area - suspend_ocram_base + 4));
 	/* Note that IRAM IOSEC map, if changed to MEM map,
 	 * need to flush cache
 	 */

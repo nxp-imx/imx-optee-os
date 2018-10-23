@@ -33,6 +33,7 @@
 #include <registers/imx6-crm.h>
 #include <registers/imx6-dcp.h>
 #include <registers/imx6-iomux.h>
+#include <registers/imx6-mmdc.h>
 
 #define UART1_BASE			0x2020000
 #define IOMUXC_BASE			0x020E0000
