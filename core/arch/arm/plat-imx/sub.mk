@@ -26,6 +26,7 @@ srcs-$(CFG_DT) += imx_dt.c
 srcs-$(CFG_CSU) += imx_csu.c
 srcs-$(CFG_SCU) += imx_scu.c
 srcs-$(CFG_IMX_OCRAM) += imx_ocram.c
+srcs-$(CFG_MANUFACT_PROTEC_PTA) += pta/pta_manufact_protec_mx.c
 
 subdirs-$(CFG_PSCI_ARM32) += pm
 
