@@ -31,11 +31,13 @@ $(call force, CFG_CRYPTO_PK_HW,n)
 $(call force, CFG_CRYPTO_CMAC_HW,y)
 
 #
-# Enable Manufacturing Protection if the platfprm is the i.MX7
+# Enable Manufacturing Protection if the platform is the i.MX7
 # CFG_CRYPTO_MP_HW enables the manufacturing protection functionnalities
+# _CFG_CRYPTO_WITH_MP enables the generic crypto api
 #
 ifeq ($(filter y, $(CFG_MX7)), y)
 $(call force, CFG_CRYPTO_MP_HW,y)
+$(call force, _CFG_CRYPTO_WITH_MP,y)
 endif
 
 # Definition of the HASH Algorithm supported by all i.MX

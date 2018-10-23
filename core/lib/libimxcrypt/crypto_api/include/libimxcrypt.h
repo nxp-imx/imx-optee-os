@@ -29,6 +29,7 @@ enum imxcrypt_algo_id {
 	CRYPTO_DH,           ///< Assymetric DH driver
 	CRYPTO_AUTHENC,      ///< Cipher Authentication driver
 	CRYPTO_AUTHENC_SW,   ///< Cipher Authentication SW driver
+	CRYPTO_MP,           ///< Manufacturing Protection driver
 	CRYPTO_MAX_ALGO      ///< Maximum numer of algo supported
 };
 

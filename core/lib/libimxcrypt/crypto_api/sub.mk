@@ -9,3 +9,4 @@ subdirs-$(_CFG_CRYPTO_WITH_MAC)     += mac
 subdirs-$(_CFG_CRYPTO_WITH_ACIPHER) += bignum
 subdirs-$(_CFG_CRYPTO_WITH_ACIPHER) += acipher
 subdirs-$(_CFG_CRYPTO_WITH_AUTHENC) += authenc
+subdirs-$(_CFG_CRYPTO_WITH_MP)      += mp
