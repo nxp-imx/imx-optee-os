@@ -292,12 +292,7 @@
 
 	/* Disable L1 data cache. */
 	read_sctlr r6
-	bic	r6, r6, #0x4
-	write_sctlr r6
-
-	/* Disable Cache */
-	read_sctlr r6
-	orr	r6, r6, #SCTLR_C
+	bic	r6, r6, #SCTLR_C
 	write_sctlr r6
 
 #ifdef CFG_PL310
