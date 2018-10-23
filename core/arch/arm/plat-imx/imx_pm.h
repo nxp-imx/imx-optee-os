@@ -20,6 +20,10 @@
 #define SUSPEND_OCRAM_OFFSET		0x0
 #define LOWPOWER_IDLE_OCRAM_OFFSET	0x1000
 
+#define BUSFREQ_OCRAM_OFFSET		(LOWPOWER_IDLE_OCRAM_OFFSET + \
+					LOWPOWER_IDLE_OCRAM_SIZE)
+#define BUSFREQ_MAX_SIZE		(IRAM_TBL_OFFSET - BUSFREQ_OCRAM_OFFSET)
+
 /*
  * Except i.MX6SX only 16KB ocram_s available, others use 16KB offset.
  */
@@ -28,10 +32,23 @@
 #ifndef __ASSEMBLER__
 #include <sm/sm.h>
 
+/**
+ * @brief   Definition of the struture given as first parameter to the
+ *          sm_pm_cpu_suspend assembly function. This parameter is the
+ *          argument of the device's power assembly function
+ */
+struct imx_pm_asm_arg {
+	paddr_t pa_addr;  /// Physical address of the pm block
+	void    *pm_info; /// Reference to the pm_info structure
+};
+
+extern int (*suspend_func)(uint32_t);
+extern struct imx_pm_asm_arg suspend_arg;
+extern vaddr_t pm_ocram_free_area;
+
 /* This structure will be used for suspend/resume and low power idle */
 struct imx6_pm_info {
 	paddr_t		pa_base;	/* pa of pm_info */
-	uintptr_t	entry;
 	paddr_t		tee_resume;
 	uint32_t	ddr_type;
 	uint32_t	pm_info_size;
@@ -47,7 +64,6 @@ struct imx6_pm_info {
 	vaddr_t		ccm_va_base;
 	paddr_t		gpc_pa_base;
 	vaddr_t		gpc_va_base;
-	paddr_t		pl310_pa_base;
 	vaddr_t		pl310_va_base;
 	paddr_t		anatop_pa_base;
 	vaddr_t		anatop_va_base;
@@ -65,11 +81,11 @@ struct imx6_pm_info {
 } __aligned(8);
 
 struct imx6_pm_data {
-	uint32_t ddr_type;
-	uint32_t mmdc_io_num;
-	void	*mmdc_io_offset;
-	uint32_t mmdc_num;
-	void	*mmdc_offset;
+	uint32_t   ddr_type;
+	uint32_t   mmdc_io_num;
+	const void *mmdc_io_offset;
+	uint32_t   mmdc_num;
+	const void *mmdc_offset;
 };
 
 /* The structure is used for suspend and low power idle */
@@ -164,11 +180,9 @@ struct imx7_pm_data {
 };
 
 extern struct imx6_pm_data imx6ul_pm_data;
-extern uint32_t imx6ul_mmdc_io_offset[];
 extern struct imx6_pm_data imx6sl_pm_data;
-extern uint32_t imx6sl_mmdc_io_offset[];
 extern struct imx6_pm_data imx6sll_pm_data;
-extern uint32_t imx6sll_mmdc_io_offset[];
+extern struct imx6_pm_data imx6sx_pm_data;
 
 /* IMX6 Power initialization functions */
 int imx6_suspend_init(void);
@@ -177,6 +191,7 @@ int imx6ul_cpuidle_init(void);
 int imx6sl_cpuidle_init(void);
 int imx6sll_cpuidle_init(void);
 
+/* Low Power assembly functions */
 void imx6_suspend(struct imx6_pm_info *info);
 void imx6ul_low_power_idle(struct imx6_pm_info *info);
 void imx6ull_low_power_idle(struct imx6_pm_info *info);
@@ -185,6 +200,10 @@ void imx6sl_low_power_idle(struct imx6_pm_info *info);
 void imx6sll_low_power_idle(struct imx6_pm_info *info);
 void imx6_resume(void);
 void v7_cpu_resume(void);
+
+uint32_t get_imx6sx_low_power_idle_size(void);
+uint32_t get_imx6_suspend_size(void);
+
 
 int imx6ul_lowpower_idle(uint32_t power_state, uintptr_t entry,
 			 uint32_t context_id, struct sm_nsec_ctx *nsec);
