@@ -18,22 +18,21 @@
 #include <sm/sm.h>
 #include <sm/pm.h>
 
+int (*suspend_func)(uint32_t);
+struct imx_pm_asm_arg suspend_arg;
+
 int imx6_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		     uint32_t context_id __unused, struct sm_nsec_ctx *nsec)
 {
 	int ret;
 
-	uint32_t suspend_ocram_base = core_mmu_get_va(
-					imx_get_ocram_tz_start_addr() +
-					SUSPEND_OCRAM_OFFSET,
-						MEM_AREA_TEE_COHERENT);
-	struct imx6_pm_info *p = (struct imx6_pm_info *)suspend_ocram_base;
+	DMSG("=== Entering Suspend ===\n");
 
 	/* Store non-sec ctx regs */
 	sm_save_unbanked_regs(&nsec->ub_regs);
 
-	ret = sm_pm_cpu_suspend((uint32_t)p, (int (*)(uint32_t))
-				(suspend_ocram_base + sizeof(*p)));
+	ret = sm_pm_cpu_suspend((uint32_t)&suspend_arg, suspend_func);
+
 	/*
 	 * Sometimes sm_pm_cpu_suspend may not really suspended,
 	 * we need to check it's return value to restore reg or not

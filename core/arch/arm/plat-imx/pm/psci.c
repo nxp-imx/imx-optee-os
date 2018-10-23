@@ -362,33 +362,27 @@ static TEE_Result init_psci(void)
 	 * Initialize the power management data.
 	 * It must be done after the OCRAM initialization.
 	 */
-
-	/* Initialize cpu idle */
-	switch (imx_soc_type()) {
-	case SOC_MX6UL:
-	case SOC_MX6ULL:
-		err |= imx6ul_cpuidle_init();
-		break;
-	case SOC_MX6SX:
-		err |= imx6sx_cpuidle_init();
-		break;
-	case SOC_MX6SLL:
-		err |= imx6sll_cpuidle_init();
-		break;
-	case SOC_MX7D:
-		err |= imx7d_cpuidle_init();
-		break;
-	default:
-		err = 0;
+#ifdef CFG_MX7ULP
+	err = imx7ulp_suspend_init();
+#else
+	if (!err) {
+		if (soc_is_imx6())
+			err = imx6_suspend_init();
+		else if (soc_is_imx7ds())
+			err = imx7_suspend_init();
 	}
 
-	/* Initialize suspend */
-	if (soc_is_imx6())
-		err |= imx6_suspend_init();
-	else if (soc_is_imx7ds())
-		err |= imx7_suspend_init();
-	else
-		err = 0;
+	if (soc_is_imx6ul() || soc_is_imx6ull()) {
+		err = imx6ul_cpuidle_init();
+	} else if (soc_is_imx6sx()) {
+		err = imx6sx_cpuidle_init();
+	} else if (soc_is_imx6sll()) {
+		err = imx6sll_cpuidle_init();
+	} else if (soc_is_imx7ds()) {
+		err = imx7d_cpuidle_init();
+	}
+
+#endif
 
 	return (!err) ? TEE_SUCCESS : TEE_ERROR_GENERIC;
 }

@@ -25,73 +25,39 @@
 #include <sm/pm.h>
 #include <util.h>
 
-/*
- * cpuidle and suspend use the same one,
- * because lowpower idle and suspend can not reach at the same time
- */
-
-static uint32_t imx6sx_mmdc_io_offset[] = {
-	0x2ec, 0x2f0, 0x2f4, 0x2f8,
-	0x330, 0x334, 0x338, 0x33c,
-	0x60c, 0x610, 0x61c, 0x620,
-	0x5f8, 0x608, 0x310, 0x314,
-	0x300, 0x2fc, 0x32c,
-};
+static int (*lowpower_idle_func)(uint32_t);
+static struct imx_pm_asm_arg idle_arg;
+static int lowpoweridle_init;
 
 int imx6sx_cpuidle_init(void)
 {
-	uint32_t i;
-	uint32_t *mmdc_io_offset_array;
-	uint32_t lowpower_idle_ocram_base = (uint32_t)phys_to_virt(
-			imx_get_ocram_tz_start_addr() +
-			LOWPOWER_IDLE_OCRAM_OFFSET, MEM_AREA_TEE_COHERENT);
-	struct imx6_pm_info *p =
-		(struct imx6_pm_info *)lowpower_idle_ocram_base;
+	uint32_t func_size;
 
-	dcache_op_level1(DCACHE_OP_CLEAN_INV);
+	lowpower_idle_func = (int (*)(uint32_t))(pm_ocram_free_area);
 
-	p->pa_base = imx_get_ocram_tz_start_addr() + LOWPOWER_IDLE_OCRAM_OFFSET;
-	p->tee_resume = (paddr_t)virt_to_phys((void *)(vaddr_t)v7_cpu_resume);
-	p->pm_info_size = sizeof(*p);
-	p->mmdc0_pa_base = MMDC_P0_BASE;
-	p->mmdc0_va_base = core_mmu_get_va(MMDC_P0_BASE, MEM_AREA_IO_SEC);
-	p->iomuxc_pa_base = IOMUXC_BASE;
-	p->iomuxc_va_base = core_mmu_get_va(IOMUXC_BASE, MEM_AREA_IO_SEC);
-	p->ccm_pa_base = CCM_BASE;
-	p->ccm_va_base = core_mmu_get_va(CCM_BASE, MEM_AREA_IO_SEC);
-	p->gpc_pa_base = GPC_BASE;
-	p->gpc_va_base = core_mmu_get_va(GPC_BASE, MEM_AREA_IO_SEC);
-	p->pl310_pa_base = PL310_BASE;
-	p->pl310_va_base = core_mmu_get_va(PL310_BASE, MEM_AREA_IO_SEC);
-	p->anatop_pa_base = ANATOP_BASE;
-	p->anatop_va_base = core_mmu_get_va(ANATOP_BASE, MEM_AREA_IO_SEC);
-	p->src_pa_base = SRC_BASE;
-	p->src_va_base = core_mmu_get_va(SRC_BASE, MEM_AREA_IO_SEC);
-	p->sema4_pa_base = SEMA4_BASE;
-	p->sema4_va_base = core_mmu_get_va(SEMA4_BASE, MEM_AREA_IO_SEC);
+	func_size = get_imx6sx_low_power_idle_size();
 
-	p->mmdc_io_num = ARRAY_SIZE(imx6sx_mmdc_io_offset);
-	mmdc_io_offset_array = imx6sx_mmdc_io_offset;
+	idle_arg.pa_addr = virt_to_phys((void *)(vaddr_t)lowpower_idle_func);
+	idle_arg.pm_info = suspend_arg.pm_info;
 
-	for (i = 0; i < p->mmdc_io_num; i++)
-		p->mmdc_io_val[i][0] = mmdc_io_offset_array[i];
+	memcpy((void *)(vaddr_t)lowpower_idle_func,
+	       (void *)(vaddr_t)imx6sx_low_power_idle, func_size);
 
-	memcpy((void *)(lowpower_idle_ocram_base + sizeof(*p)),
-	       (void *)(vaddr_t)imx6sx_low_power_idle,
-	       LOWPOWER_IDLE_OCRAM_SIZE - sizeof(*p));
-
-	dcache_clean_range((void *)lowpower_idle_ocram_base,
-			   LOWPOWER_IDLE_OCRAM_SIZE);
+	pm_ocram_free_area += func_size;
+	dcache_clean_range((void *)(vaddr_t)lowpower_idle_func,
+			   (pm_ocram_free_area -
+				(vaddr_t)lowpower_idle_func + 4));
 	/*
 	 * Note that IRAM IOSEC map, if changed to MEM map,
 	 * need to flush cache
 	 */
 	icache_inv_all();
 
+	lowpoweridle_init = 1;
+
 	return 0;
 }
 
-static int lowpoweridle_init;
 
 int imx6sx_lowpower_idle(uint32_t power_state __unused,
 			 uintptr_t entry,
@@ -101,6 +67,7 @@ int imx6sx_lowpower_idle(uint32_t power_state __unused,
 	int ret;
 	vaddr_t scu_base = core_mmu_get_va(SCU_BASE, MEM_AREA_IO_SEC, SCU_SIZE);
 
+	DMSG("=== Enter Low Power Idle ===\n");
 	if (!lowpoweridle_init) {
 		imx6sx_cpuidle_init();
 		lowpoweridle_init = 1;
@@ -109,8 +76,7 @@ int imx6sx_lowpower_idle(uint32_t power_state __unused,
 	/* Store non-sec ctx regs */
 	sm_save_unbanked_regs(&nsec->ub_regs);
 
-	ret = sm_pm_cpu_suspend((uint32_t)p, (int (*)(uint32_t))
-				(cpuidle_ocram_base + sizeof(*p)));
+	ret = sm_pm_cpu_suspend((uint32_t)&idle_arg, lowpower_idle_func);
 
 
 	/*
@@ -154,7 +120,7 @@ int imx6sx_lowpower_idle(uint32_t power_state __unused,
 	arm_cl2_invbyway(pl310_base());
 #endif
 
-	DMSG("=== Back from Suspended ===\n");
+	DMSG("=== Back from Low Power Idle ===\n");
 
 	return 0;
 }

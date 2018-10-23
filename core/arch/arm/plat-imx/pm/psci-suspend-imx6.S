@@ -331,7 +331,7 @@
 
 	/* Restore TTBCR */
 	/* Read TTBCR and set PD0=0 and PD1=0 */
-	read_ttbcr r6 
+	read_ttbcr r6
 	bic	r6, r6, #0x30
 	write_ttbcr r6
 	dsb
@@ -356,16 +356,34 @@
 	.endm
 
 	.align 3
+/**
+ * @brief   Prepare and switch the device to enter in suspend mode.
+ *          Function is executed in OCRAM.
+ *          If success, the device is reset.
+ *          Operation can be cancel and in this case the device is
+ *          not reset, and returns to the caller.
+ *
+ *          Input parameter is a reference to a imx_pm_asm_arg structure
+ *          containing the function argument (refer to the imx_pm.h)
+ *
+ * @param[in] r0  reference to the structure imx_pm_asm_arg in normal
+ *                memory.
+ */
 FUNC imx6_suspend, :
-	ldr	r1, [r0, #PM_INFO_PBASE_OFF]
-	ldr	r4, [r0, #PM_INFO_INFO_SIZE_OFF]
+	/* Get the function arguments data */
+	ldr	r1, [r0, #PM_ASM_ARG_PA_ADDR_OFF]
+	ldr	r0, [r0, #PM_ASM_ARG_PM_INFO_OFF]
 
-	/* r9 points to resume addr in IRAM */
-	ldr	r6, =imx6_suspend
-	ldr	r7, =resume
-	sub	r7, r7, r6
-	add	r8, r1, r4
-	add	r9, r8, r7
+	/*
+	 * Calculate the Physical address of the resume function
+	 * to initialize the SRC register
+	 */
+	ldr		r6, =imx6_suspend
+	ldr		r9, =resume
+	sub		r9, r6
+	add		r9, r1
+
+	ldr	r1, [r0, #PM_INFO_PBASE_OFF]
 
 	/*
 	 * make sure TLB contain the addr we want,
@@ -687,6 +705,18 @@ dsm_only_resume_io:
 dsm_resume_mmdc_done:
 	bx	lr
 END_FUNC imx6_suspend
+
+/**
+ * @brief   Calculates and returns the suspend function size
+ *
+ * @retval  function size in bytes
+ */
+FUNC get_imx6_suspend_size, :
+	subs	r0, pc, #8
+	ldr		r1, =imx6_suspend
+	sub		r0, r0, r1
+	bx		lr
+END_FUNC get_imx6_suspend_size
 
 /*
  * Note: VA = PA, for TEE_RAM.
