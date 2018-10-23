@@ -34,7 +34,7 @@
 int imx6sl_cpuidle_init(void)
 {
 	uint32_t i;
-	uint32_t *mmdc_io_offset_array;
+	const uint32_t *mmdc_io_offset_array;
 	uint32_t lowpower_idle_ocram_base = (uint32_t)phys_to_virt(
 			imx_get_ocram_tz_start_addr() +
 			LOWPOWER_IDLE_OCRAM_OFFSET, MEM_AREA_TEE_COHERENT);
@@ -62,7 +62,6 @@ int imx6sl_cpuidle_init(void)
 	p->anatop_va_base = core_mmu_get_va(ANATOP_BASE, MEM_AREA_IO_SEC);
 	p->anatop_pa_base = ANATOP_BASE;
 	p->pl310_va_base = core_mmu_get_va(PL310_BASE, MEM_AREA_IO_SEC);
-	p->pl310_pa_base = PL310_BASE;
 
 	pm_data = &imx6sl_pm_data;
 

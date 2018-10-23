@@ -80,6 +80,7 @@ $(call force,CFG_MX6UL,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
 $(call force,CFG_TZC380,y)
 include core/arch/arm/cpu/cortex-a7.mk
+CFG_BUSFREQ ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ull-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6ULL,y)
@@ -93,10 +94,12 @@ $(call force,CFG_MX6,y)
 $(call force,CFG_MX6Q,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
 $(call force,CFG_TZC380,y)
+CFG_BUSFREQ ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6qp-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6QP,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
+CFG_BUSFREQ ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6d-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6D,y)
@@ -107,6 +110,7 @@ $(call force,CFG_MX6,y)
 $(call force,CFG_MX6DL,y)
 $(call force,CFG_TEE_CORE_NB_CORE,2)
 $(call force,CFG_TZC380,y)
+CFG_BUSFREQ ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6s-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6S,y)
@@ -130,13 +134,16 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6sx-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6SX,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
+CFG_BUSFREQ ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7s-flavorlist)))
 $(call force,CFG_MX7,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
+CFG_BUSFREQ ?= y
 include core/arch/arm/cpu/cortex-a7.mk
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7d-flavorlist)))
 $(call force,CFG_MX7,y)
 $(call force,CFG_TEE_CORE_NB_CORE,2)
+CFG_BUSFREQ ?= y
 include core/arch/arm/cpu/cortex-a7.mk
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7ulp-flavorlist)))
 $(call force,CFG_MX7ULP,y)
