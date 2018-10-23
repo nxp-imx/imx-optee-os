@@ -64,6 +64,12 @@ static inline void dump_desc(void *desc)
 			(DESC_HDR(0) | HDR_JD_DESCLEN(len))
 
 /**
+ * @brief  Descriptor Header starting at index \a idx
+ *         with descriptor length \a len
+ */
+#define DESC_HEADER_IDX(len, idx) \
+			(DESC_HDR(idx) | HDR_JD_DESCLEN(len))
+/**
  * @brief  Jump Local of class \a cla to descriptor offset \a offset
  *          if test \a test meet the condition \a cond
  */
@@ -311,6 +317,24 @@ static inline void dump_desc(void *desc)
 			(CMD_KEY_TYPE | CMD_CLASS(CLASS_2) | \
 			KEY_DEST(MDHA_SPLIT) | \
 			KEY_LENGTH(len))
+
+/**
+ * @brief  MPPRIVK generation function.
+ */
+#define MPPRIVK \
+			(CMD_OP_TYPE | OP_TYPE(ENCAPS) | PROTID(MPKEY))
+
+/**
+ * @brief  MPPUBK generation function.
+ */
+#define MPPUBK \
+			(CMD_OP_TYPE | OP_TYPE(DECAPS) | PROTID(MPKEY))
+
+/**
+ * @brief  MPSIGN function.
+ */
+#define MPSIGN_OP \
+			(CMD_OP_TYPE | OP_TYPE(DECAPS) | PROTID(MPSIGN))
 
 #endif /* __DESC_HELPER_H__ */
 

@@ -9,12 +9,54 @@
 #ifndef __HAL_CTRL_H__
 #define __HAL_CTRL_H__
 
+#ifdef CFG_IMXCRYPT
+/* Library i.MX includes */
+#include <libimxcrypt.h>
+#endif
+
 /**
  * @brief   Initializes the CAAM HW Controller
  *
  * @param[in] baseaddr  Controller base address
  */
 void hal_ctrl_init(vaddr_t baseaddr);
+
+#ifdef CFG_CRYPTO_MP_HW
+/**
+ * @brief   Get the size in bytes of the MPMR\n
+ *          knowing that MPMR reigster is 8 bits.
+ *
+ * @retval MPMR_NB_REG   Size in bytes of the MPMR
+ */
+size_t hal_ctrl_get_mpmr_size(void);
+
+/**
+ * @brief   Get the SCFGR content and check the MPCURVE fields
+ *
+ * @param[in] ctrl_addr  Controller base address
+ *
+ * @retval true       Success
+ * @retval false      Failure
+ */
+bool hal_ctrl_is_mpcurve(vaddr_t ctrl_addr __maybe_unused);
+
+/**
+ * @brief   Get the MPMR content
+ *
+ * @param[in] ctrl_addr  Controller base address
+ * @param[out] val_scfgr Value of the MPMR
+ */
+void hal_ctrl_get_mpmr(vaddr_t ctrl_addr, uint8_t *val_scfgr);
+
+/**
+ * @brief   Fill the MPMR content then lock the register
+ *
+ * @param[in] ctrl_addr  Controller base address
+ * @param[in] msg_mpmr   Buffer with the message and length
+ *                       to fill the MPMR content
+ */
+void hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct imxcrypt_buf *msg_mpmr);
+#endif
 
 /**
  * @brief   Returns the number of Job Ring supported

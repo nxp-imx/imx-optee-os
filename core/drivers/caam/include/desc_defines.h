@@ -242,6 +242,11 @@
 #define OP_TYPE_DECAPS			0x6
 #define OP_TYPE_ENCAPS			0x7
 
+/* Protocol Identifier */
+#define PROTID(id)			SHIFT_U32((PROTID_##id & 0xFF), 16)
+#define PROTID_MPKEY			0x14
+#define PROTID_MPSIGN			0x15
+
 /*
  * Algorithm Identifier
  */
@@ -348,6 +353,13 @@
 
 /* Local Offset */
 #define JMP_LOCAL_OFFSET(off)	SHIFT_U32((off & 0xFF), 0)
+
+/*
+ * Protocol Data Block
+ */
+#define PDB_MP_CSEL_P256		0x03
+#define PDB_MP_CSEL_P384		0x04
+#define PDB_MP_CSEL_P521		0x05
 
 #endif /* __DESC_DEFINES_H__ */
 

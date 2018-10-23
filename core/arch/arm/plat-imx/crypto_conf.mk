@@ -30,6 +30,14 @@ $(call force, CFG_CRYPTO_PKCS_HW,n)
 $(call force, CFG_CRYPTO_PK_HW,n)
 $(call force, CFG_CRYPTO_CMAC_HW,y)
 
+#
+# Enable Manufacturing Protection if the platfprm is the i.MX7
+# CFG_CRYPTO_MP_HW enables the manufacturing protection functionnalities
+#
+ifeq ($(filter y, $(CFG_MX7)), y)
+$(call force, CFG_CRYPTO_MP_HW,y)
+endif
+
 # Definition of the HASH Algorithm supported by all i.MX
 ifeq ($(CFG_CRYPTO_HASH_HW), y)
 CFG_CRYPTO_HASH_HW_MD5    ?= y
