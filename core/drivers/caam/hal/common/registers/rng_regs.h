@@ -29,7 +29,16 @@
 #define BM_TRNG_SDCTL_ENT_DLY		SHIFT_U32(0xFFFF, 16)
 #define GET_TRNG_SDCTL_ENT_DLY(val)	((val & BM_TRNG_SDCTL_ENT_DLY) >> 16)
 #define TRNG_SDCTL_ENT_DLY(val)		SHIFT_U32((val & 0xFFFF), 16)
+
+#ifdef CFG_MX6SX
+/*
+ * After experimentation on i.MX6SX, the minimal Delay value
+ * allowing the RNG instantiation is 4800
+ */
+#define TRNG_SDCTL_ENT_DLY_MIN		(3200 + 1600)
+#else
 #define TRNG_SDCTL_ENT_DLY_MIN		3200
+#endif
 #define TRNG_SDCTL_ENT_DLY_MAX		12800
 
 /* Frequency Count Minimum Limit */

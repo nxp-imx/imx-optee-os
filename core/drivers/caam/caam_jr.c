@@ -589,7 +589,7 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 		caam_jr_cancel(jobctx->jobId);
 		retstatus = CAAM_TIMEOUT;
 	} else {
-		if (JRSTA_SRC_GET(jobctx->status) != JRSTA_SRC_NONE)
+		if (JRSTA_SRC_GET(jobctx->status) != JRSTA_SRC(NONE))
 			retstatus = CAAM_JOB_STATUS;
 		else
 			retstatus = CAAM_NO_ERROR;
@@ -603,10 +603,13 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 	while (jobctx->completion == false)
 		retstatus = caam_jr_dequeue(jobctx->jobId, 100);
 
-	if (JRSTA_SRC_GET(jobctx->status) != JRSTA_SRC_NONE)
+	if (JRSTA_SRC_GET(jobctx->status) != JRSTA_SRC(NONE))
 		retstatus = CAAM_JOB_STATUS;
 	else
 		retstatus = CAAM_NO_ERROR;
+
+	/* Erase local callback function */
+	jobctx->callbk = NULL;
 #endif
 
 	return retstatus;

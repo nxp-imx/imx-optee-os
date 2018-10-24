@@ -178,7 +178,7 @@ static void rng_data_done(struct jr_jobctx *jobctx)
 	RNG_TRACE("RNG Data id 0x%08"PRIx32" done with status 0x%"PRIx32"",
 				rng->jobId, jobctx->status);
 
-	if (JRSTA_SRC_GET(jobctx->status) == JRSTA_SRC_NONE) {
+	if (JRSTA_SRC_GET(jobctx->status) == JRSTA_SRC(NONE)) {
 		atomic_store_u32(&rng->status, DATA_OK);
 
 		/* Invalidate the data buffer to ensure software got it */
@@ -615,11 +615,19 @@ static enum CAAM_Status do_instantiation(void)
 		retstatus = caam_jr_enqueue(&jobctx, NULL);
 		RNG_TRACE("RNG Job returned 0x%08"PRIx32"", retstatus);
 
-		if (retstatus == CAAM_NO_ERROR) {
+		if ((retstatus != CAAM_NO_ERROR) &&
+				(retstatus != CAAM_JOB_STATUS))
+			goto end_inst;
+
+		if (retstatus == CAAM_JOB_STATUS) {
 			RNG_TRACE("RNG Job status 0x%08"PRIx32"",
 				jobctx.status);
-		} else {
-			goto end_inst;
+			if ((JRSTA_SRC_GET(jobctx.status) != JRSTA_SRC(CCB)) ||
+		   		(JRSTA_CCB_GET_ERR(jobctx.status) !=
+				 (JRSTA_CCB_CHAID_RNG | JRSTA_CCB_ERRID_HW)))
+				goto end_inst;
+			else
+				retstatus = CAAM_NO_ERROR;
 		}
 	} while (retstatus == CAAM_NO_ERROR);
 
