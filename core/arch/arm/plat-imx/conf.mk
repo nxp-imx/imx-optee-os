@@ -5,7 +5,7 @@ mx6d-flavorlist =
 mx6dl-flavorlist = mx6dlsabresd mx6dlsabreauto
 mx6q-flavorlist = mx6qsabrelite mx6qsabresd mx6qsabreauto
 mx6qp-flavorlist = mx6qpsabresd mx6qpsabreauto
-mx6s-flavorlist =
+mx6s-flavorlist = mx6solosabresd mx6solosabreauto
 mx6sl-flavorlist = mx6slevk
 mx6sll-flavorlist = mx6sllevk
 mx6sx-flavorlist = mx6sxsabresd mx6sxsabreauto
@@ -260,6 +260,28 @@ CFG_DDR_SIZE ?= 0x80000000
 CFG_PSCI_ARM32 ?= y
 CFG_BOOT_SYNC_CPU = n
 CFG_BOOT_SECONDARY_REQUEST = y
+CFG_UART_BASE ?= UART4_BASE
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx6solosabresd))
+CFG_DT ?= y
+CFG_NS_ENTRY_ADDR ?= 0x12000000
+CFG_DT_ADDR ?= 0x18000000
+CFG_DDR_SIZE ?= 0x40000000
+CFG_PSCI_ARM32 ?= y
+CFG_BOOT_SYNC_CPU = n
+CFG_BOOT_SECONDARY_REQUEST = n
+CFG_UART_BASE ?= UART1_BASE
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx6solosabreauto))
+CFG_DT ?= y
+CFG_NS_ENTRY_ADDR ?= 0x12000000
+CFG_DT_ADDR ?= 0x18000000
+CFG_DDR_SIZE ?= 0x80000000
+CFG_PSCI_ARM32 ?= y
+CFG_BOOT_SYNC_CPU = n
+CFG_BOOT_SECONDARY_REQUEST = n
 CFG_UART_BASE ?= UART4_BASE
 endif
 

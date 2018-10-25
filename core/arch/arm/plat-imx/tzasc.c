@@ -81,7 +81,8 @@
 #if (defined(PLATFORM_FLAVOR_mx6qpsabresd) \
 	|| defined(PLATFORM_FLAVOR_mx6qsabresd) \
 	|| defined(PLATFORM_FLAVOR_mx6qsabrelite) \
-	|| defined(PLATFORM_FLAVOR_mx6dlsabresd))
+	|| defined(PLATFORM_FLAVOR_mx6dlsabresd) \
+	|| defined(PLATFORM_FLAVOR_mx6solosabresd))
 static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
@@ -111,7 +112,8 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 }
 #elif (defined(PLATFORM_FLAVOR_mx6qpsabreauto) \
 	|| defined(PLATFORM_FLAVOR_mx6qsabreauto) \
-	|| defined(PLATFORM_FLAVOR_mx6dlsabreauto))
+	|| defined(PLATFORM_FLAVOR_mx6dlsabreauto) \
+	|| defined(PLATFORM_FLAVOR_mx6solosabreauto))
 static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);

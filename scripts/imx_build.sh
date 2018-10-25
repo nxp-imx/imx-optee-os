@@ -2,7 +2,7 @@
 
 boards_list=(mx6ulevk mx6ul9x9evk mx6ullevk mx6slevk mx6sllevk mx6sxsabreauto \
 	mx6sxsabresd mx6qsabrelite mx6qsabresd mx6qsabreauto mx6qpsabresd mx6qpsabreauto \
-	mx6dlsabresd mx6dlsabreauto mx7dsabresd mx7ulpevk mx8mqevk mx8mmevk)
+	mx6dlsabresd mx6dlsabreauto mx6solosabresd mx6solosabreauto mx7dsabresd mx7ulpevk mx8mqevk mx8mmevk)
 
 CROSS_COMPILE="${CROSS_COMPILE:-arm-linux-gnueabihf-}"
 CROSS_COMPILE64="${CROSS_COMPILE64:-aarch64-linux-gnu-}"
