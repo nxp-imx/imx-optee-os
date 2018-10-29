@@ -47,6 +47,8 @@ void plat_cpu_wakeup_late(void);
 void dt_debug(const char *node_str, const char *prop);
 void dt_overwrite(const char *node_str, const char *prop_str,
 				const char *overw_str, uint32_t size_prop);
+int dt_set_secure_status(void *fdt, int node);
+int dt_disable_status(void *fdt, int node);
 #endif
 
 #ifdef CFG_TZC380

@@ -133,7 +133,8 @@ exit_init:
 	 * If the Crypto IMX Library is not used (CFG_IMXCRYPT = n)
 	 * JR0 is freed to be Non-Secure
 	 */
-	hal_cfg_setup_nsjobring(jr_cfg.base);
+	if (jr_cfg.base)
+		hal_cfg_setup_nsjobring(jr_cfg.base);
 
 	CTRL_TRACE("CAAM Driver initialization (0x%x)\n", retresult);
 	return retresult;

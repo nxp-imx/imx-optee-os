@@ -144,3 +144,69 @@ void dt_debug(const char *node_str, const char *prop)
 			fdt32_to_cpu(fdt_prop[2])
 		);
 }
+
+/**
+ * @brief   Disable "status" field of prop
+ *
+ * @param[in] fdt   Reference to the Device Tree
+ * @param[in] node  Node offset to start in DTB, current node found
+ *
+ * @retval  0 if success, -1 if failure
+ */
+int dt_disable_status(void *fdt, int node)
+{
+	const char *prop;
+	int len;
+
+	prop = fdt_getprop(fdt, node, "status", &len);
+	if (!prop) {
+		/* status is not available, just add it */
+		if (fdt_setprop_string(fdt, node, "status", "disabled"))
+			return -1;
+	} else {
+		/* status is there, modify it */
+		/* Actually we do not have to put disabled, anything that is
+		 * not "ok" or "okay" will work
+		 */
+		if (fdt_setprop_inplace(fdt, node, "status",
+				"disa", len))
+			return -1;
+	}
+
+	return 0;
+}
+
+/**
+ * @brief   Set "secure-status" field of prop to okay and
+ *          disable the "status" field
+ *
+ * @param[in] fdt   Reference to the Device Tree
+ * @param[in] node  Node offset to start in DTB, current node found
+ *
+ * @retval  0 if success, -1 if failure
+ */
+int dt_set_secure_status(void *fdt, int node)
+{
+	const char *prop;
+	int len;
+
+	if (dt_disable_status(fdt, node)) {
+		EMSG("Unable to disable Normal Status");
+		return (-1);
+	}
+
+	prop = fdt_getprop(fdt, node, "secure-status", &len);
+	if (!prop) {
+		/* status is not available, just add it */
+		if (fdt_setprop_string(fdt, node, "secure-status", "okay"))
+			return -1;
+	} else {
+		/* status is there, modify it to okay */
+		if (fdt_setprop_inplace(fdt, node, "secure-status",
+				"okay", len))
+			return -1;
+	}
+
+	return 0;
+}
+

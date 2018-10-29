@@ -14,6 +14,8 @@
 #include <kernel/generic_boot.h>
 #include <libfdt.h>
 
+/* Platform includes */
+#include <imx.h>
 #else
 
 /* Global includes */
@@ -167,6 +169,12 @@ enum CAAM_Status hal_cfg_get_conf(struct jr_cfg *jr_cfg)
 		goto exit_get_conf;
 	}
 
+	/* Ensure that CAAM Control is secure-status enabled */
+	if (dt_set_secure_status(fdt, node)) {
+		EMSG("Not able to set CAAM Control DTB entry secure\n");
+		goto exit_get_conf;
+	}
+
 	/* Map the device in the system if not already present */
 	if (dt_map_dev(fdt, node, &ctrl_base, &size) < 0) {
 		HAL_TRACE("CAAM device not defined or not enabled\n");
@@ -178,6 +186,14 @@ enum CAAM_Status hal_cfg_get_conf(struct jr_cfg *jr_cfg)
 		EMSG("No Job Ring defined in DTB\n");
 		goto exit_get_conf;
 	}
+
+#ifdef CFG_IMXCRYPT
+	/* We took one job ring, make it unavailable for Normal World */
+	if (dt_disable_status(fdt, node)) {
+		EMSG("Not able to disable JR DTB entry\n");
+		goto exit_get_conf;
+	}
+#endif
 
 	jr_cfg->base    = ctrl_base;
 	jr_cfg->offset  = jr_offset;
