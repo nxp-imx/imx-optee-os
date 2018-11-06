@@ -287,7 +287,7 @@ int psci_cpu_suspend(uint32_t power_state,
 		if (soc_is_imx7ds())
 			return imx7_cpu_suspend(power_state, entry,
 						context_id, nsec);
-		else if (soc_is_imx6()) 
+		else if (soc_is_imx6())
 			return imx6_cpu_suspend(power_state, entry,
 						context_id, nsec);
 		else if (soc_is_imx7ulp())
@@ -352,6 +352,13 @@ static TEE_Result init_psci(void)
 #ifdef CFG_MX7ULP
 	err = imx7ulp_suspend_init();
 #else
+	if (!err) {
+		if (soc_is_imx6())
+			err = imx6_suspend_init();
+		else if (soc_is_imx7ds())
+			err = imx7_suspend_init();
+	}
+
 	if (soc_is_imx6ul() || soc_is_imx6ull()) {
 		err = imx6ul_cpuidle_init();
 	} else if (soc_is_imx6sx()) {
@@ -362,15 +369,6 @@ static TEE_Result init_psci(void)
 		err = imx7d_cpuidle_init();
 	}
 
-	if (!err) {
-		if (soc_is_imx6()) {
-			err = imx6_suspend_init();
-		} else {
-			if (soc_is_imx7ds()) {
-				err = imx7_suspend_init();
-			}
-		}
-	}
 #endif
 
 	if (err) {

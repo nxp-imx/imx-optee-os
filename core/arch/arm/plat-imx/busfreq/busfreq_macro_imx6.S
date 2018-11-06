@@ -29,8 +29,100 @@ wait_dis_sync:
 	/* disable PL310 ctrl -> only set lsb bit */
 	mov	r1, #0x0
 	str	r1, [r0, #PL310_CTRL]
+
+	dsb
+	isb
 	.endm
 #endif
+
+.extern iram_tlb_phys_addr
+
+	.macro tlb_set_to_ocram base
+	/* save ttbr */
+	read_ttbr1 r7
+	str	r7, [\base, #BUSFREQ_INFO_TTBR1_OFF]
+
+	/*
+	 * To ensure no page table walks occur in DDR, we
+	 * have a another page table stored in IRAM that only
+	 * contains entries pointing to IRAM, AIPS1 and AIPS2.
+	 * We need to set the TTBR1 to the new IRAM TLB.
+	 * Do the following steps:
+	 * 1. Flush the Branch Target Address Cache (BTAC)
+	 * 2. Set TTBR1 to point to IRAM page table.
+	 * 3. Disable page table walks in TTBR0 (PD0 = 1)
+	 * 4. Set TTBR0.N=1, implying 0-2G is translated by TTBR0
+	 *     and 2-4G is translated by TTBR1.
+	 */
+
+	ldr	r6, =iram_tlb_phys_addr
+	ldr	r7, [r6]
+
+	/* Flush the BTAC. */
+	write_bpiallis
+
+	/* Disable Branch Prediction, Z bit in SCTLR. */
+	read_sctlr r6
+	bic	r6, r6, #SCTLR_Z
+	write_sctlr r6
+
+	dsb
+	isb
+
+	/* Store the IRAM table in TTBR1/TTBR0 */
+	write_ttbr1 r7
+
+	/* Read TTBCR and set PD0=1 and PD1=0 */
+	/* Warning: unknown behaviour if LPAE is enabled */
+	read_ttbcr r6
+	bic	r6, r6, #(TTBCR_PD1 | TTBCR_PD0)
+	orr	r6, r6, #TTBCR_PD0
+	write_ttbcr r6
+
+	dsb
+	isb
+
+	/* flush the TLB */
+	write_tlbiallis
+	isb
+	write_tlbiall
+	isb
+	.endm
+
+	.macro tlb_back_to_ddr base
+	/* Restore the TTBCR */
+	dsb
+	isb
+
+	/* Read TTBCR and set PD0=0 and PD1=0 */
+	read_ttbcr r6
+	bic	r6, r6, #(TTBCR_PD1 | TTBCR_PD0)
+	write_ttbcr r6
+
+	dsb
+	isb
+
+	/* flush the TLB */
+	write_tlbiallis
+
+	dsb
+	isb
+
+	/* Enable Branch Prediction, Z bit in SCTLR. */
+	read_sctlr r6
+	orr	r6, r6, #SCTLR_Z
+	write_sctlr r6
+
+	/* Flush the Branch Target Address Cache (BTAC) */
+	write_bpiallis
+
+	/* restore ttbr */
+	ldr	r6, [\base, #BUSFREQ_INFO_TTBR1_OFF]
+	write_ttbr1 r6
+
+	isb
+	.endm
+
 
 	.macro is_mx6qp
 	ldr	r0, [r12, #BUSFREQ_INFO_CPU_TYPE]

@@ -48,5 +48,7 @@ DEFINES
 			offsetof(struct busfreq_info, mmdc_base));
 	DEFINE(BUSFREQ_INFO_PL310_V_BASE,
 			offsetof(struct busfreq_info, pl310_v_base));
+	DEFINE(BUSFREQ_INFO_TTBR1_OFF,
+			offsetof(struct busfreq_info, ttbr1));
 }
 

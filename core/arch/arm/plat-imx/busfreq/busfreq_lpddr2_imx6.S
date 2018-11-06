@@ -272,21 +272,13 @@ UNWIND( .fnstart)
 	pop		{r12}
 
 #ifdef CFG_PL310
-	beq		bypass_l2_disable
-
 	/* Disable the L2$ */
 	ldr		r0, [r12, #BUSFREQ_INFO_PL310_V_BASE]
 	arm_cl2_disable
 #endif
 
 bypass_l2_disable:
-
-    /* Disable Prediction */
-    read_sctlr  r2
-    bic     r2, r2, #SCTLR_Z
-    write_sctlr r2
-    dsb
-    isb
+	tlb_set_to_ocram r12
 
 	/* Keep r8, r9, r10, and r12 as is */
 	mov r12, r0
@@ -481,9 +473,9 @@ skip_disable_sbs_ch1:
 	nop
 	nop
 
-#ifdef CFG_PL310
-	beq		bypass_l2_enable
+	tlb_back_to_ddr r12
 
+#ifdef CFG_PL310
 	/* Enable the L2$ */
 	ldr		r0, [r12, #BUSFREQ_INFO_PL310_V_BASE]
 	ldr		r11, =arm_cl2_enable
@@ -492,11 +484,9 @@ skip_disable_sbs_ch1:
 #endif
 
 bypass_l2_enable:
-    /* Enable D$ and Prediction */
+    /* Enable D$ */
     read_sctlr  r2
-    mov     r3, #SCTLR_C
-    add     r3, r3, #SCTLR_Z
-    orr     r2, r2, r3
+    orr     r2, r2, #SCTLR_C
     write_sctlr r2
 	isb
 

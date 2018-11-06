@@ -144,7 +144,7 @@ static void imx6_ddr3_info_setup(void)
 #endif
 	if (soc_is_imx6dq() || soc_is_imx6dqp()) {
 		/* Initialize the ddr_settings pointer and table */
-		ddr_info->ddr_settings = (void *)((uint32_t *)ddr_info +
+		ddr_info->ddr_settings = (void *)((uint8_t *)ddr_info +
 						 sizeof(struct busfreq_info));
 		ddr_info->ddr_settings_size = ARRAY_SIZE(ddr3_dll_mx6q);
 		memcpy(ddr_info->ddr_settings, ddr3_dll_mx6q,
@@ -152,7 +152,7 @@ static void imx6_ddr3_info_setup(void)
 
 		/* Initialize the calibration pointer and table */
 		ddr_info->ddr_calibration = (void *)(
-					(uint32_t *)ddr_info->ddr_settings +
+					(uint8_t *)ddr_info->ddr_settings +
 					sizeof(ddr3_dll_mx6q));
 		ddr_info->ddr_calibration_size = ARRAY_SIZE(ddr3_calibration);
 		memcpy(ddr_info->ddr_calibration, ddr3_calibration,
@@ -160,14 +160,14 @@ static void imx6_ddr3_info_setup(void)
 
 		/* Initialize the iomux pointer and table */
 		ddr_info->iomux_offsets = (void *)(
-					(uint32_t *)ddr_info->ddr_calibration +
+					(uint8_t *)ddr_info->ddr_calibration +
 					sizeof(ddr3_calibration));
 		ddr_info->iomux_offsets_size = ARRAY_SIZE(iomux_offsets_mx6q);
 		memcpy(ddr_info->iomux_offsets, iomux_offsets_mx6q,
 				sizeof(iomux_offsets_mx6q));
 	} else if (soc_is_imx6sdl()) {
 		/* Initialize the ddr_settings pointer and table */
-		ddr_info->ddr_settings = (void *)((uint32_t *)ddr_info +
+		ddr_info->ddr_settings = (void *)((uint8_t *)ddr_info +
 						 sizeof(struct busfreq_info));
 		ddr_info->ddr_settings_size = ARRAY_SIZE(ddr3_dll_mx6dl);
 		memcpy(ddr_info->ddr_settings, ddr3_dll_mx6dl,
@@ -175,7 +175,7 @@ static void imx6_ddr3_info_setup(void)
 
 		/* Initialize the calibration pointer and table */
 		ddr_info->ddr_calibration = (void *)(
-					(uint32_t *)ddr_info->ddr_settings +
+					(uint8_t *)ddr_info->ddr_settings +
 					sizeof(ddr3_dll_mx6dl));
 		ddr_info->ddr_calibration_size = ARRAY_SIZE(ddr3_calibration);
 		memcpy(ddr_info->ddr_calibration, ddr3_calibration,
@@ -183,14 +183,14 @@ static void imx6_ddr3_info_setup(void)
 
 		/* Initialize the iomux pointer and table */
 		ddr_info->iomux_offsets = (void *)(
-					(uint32_t *)ddr_info->ddr_calibration +
+					(uint8_t *)ddr_info->ddr_calibration +
 					sizeof(ddr3_calibration));
 		ddr_info->iomux_offsets_size = ARRAY_SIZE(iomux_offsets_mx6dl);
 		memcpy(ddr_info->iomux_offsets, iomux_offsets_mx6dl,
 				sizeof(iomux_offsets_mx6dl));
 	} else if (soc_is_imx6sx()) {
 		/* Initialize the ddr_settings pointer and table */
-		ddr_info->ddr_settings = (void *)((uint32_t *)ddr_info +
+		ddr_info->ddr_settings = (void *)((uint8_t *)ddr_info +
 						 sizeof(struct busfreq_info));
 		ddr_info->ddr_settings_size = ARRAY_SIZE(ddr3_dll_mx6sx_ul);
 		memcpy(ddr_info->ddr_settings, ddr3_dll_mx6sx_ul,
@@ -198,7 +198,7 @@ static void imx6_ddr3_info_setup(void)
 
 		/* Initialize the calibration pointer and table */
 		ddr_info->ddr_calibration = (void *)(
-					(uint32_t *)ddr_info->ddr_settings +
+					(uint8_t *)ddr_info->ddr_settings +
 					sizeof(ddr3_dll_mx6sx_ul));
 		ddr_info->ddr_calibration_size =
 					ARRAY_SIZE(ddr3_calibration_mx6sx_ul);
@@ -207,14 +207,14 @@ static void imx6_ddr3_info_setup(void)
 
 		/* Initialize the iomux pointer and table */
 		ddr_info->iomux_offsets = (void *)(
-					(uint32_t *)ddr_info->ddr_calibration +
+					(uint8_t *)ddr_info->ddr_calibration +
 					sizeof(ddr3_calibration_mx6sx_ul));
 		ddr_info->iomux_offsets_size = ARRAY_SIZE(iomux_offsets_mx6sx);
 		memcpy(ddr_info->iomux_offsets, iomux_offsets_mx6sx,
 				sizeof(iomux_offsets_mx6sx));
 	} else if (soc_is_imx6ul() || soc_is_imx6ull()) {
 		/* Initialize the ddr_settings pointer and table */
-		ddr_info->ddr_settings = (void *)((uint32_t *)ddr_info +
+		ddr_info->ddr_settings = (void *)((uint8_t *)ddr_info +
 					sizeof(struct busfreq_info));
 		ddr_info->ddr_settings_size = ARRAY_SIZE(ddr3_dll_mx6sx_ul);
 		memcpy(ddr_info->ddr_settings, ddr3_dll_mx6sx_ul,
@@ -222,7 +222,7 @@ static void imx6_ddr3_info_setup(void)
 
 		/* Initialize the calibration pointer and table */
 		ddr_info->ddr_calibration = (void *)(
-					(uint32_t *)ddr_info->ddr_settings +
+					(uint8_t *)ddr_info->ddr_settings +
 					sizeof(ddr3_dll_mx6sx_ul));
 		ddr_info->ddr_calibration_size =
 					ARRAY_SIZE(ddr3_calibration_mx6sx_ul);
@@ -231,7 +231,7 @@ static void imx6_ddr3_info_setup(void)
 
 		/* Initialize the iomux pointer and table */
 		ddr_info->iomux_offsets = (void *)(
-					(uint32_t *)ddr_info->ddr_calibration +
+					(uint8_t *)ddr_info->ddr_calibration +
 					sizeof(ddr3_calibration_mx6sx_ul));
 		ddr_info->iomux_offsets_size = ARRAY_SIZE(iomux_offsets_mx6ul);
 		memcpy(ddr_info->iomux_offsets, iomux_offsets_mx6ul,
@@ -271,9 +271,26 @@ TEE_Result imx6_busfreq_init(void)
 	size_t	data_size = 0;
 	size_t	page_size;
 
-	uint32_t ocram_start = core_mmu_get_va(
-				imx_get_ocram_tz_start_addr() +
-				BUSFREQ_OCRAM_OFFSET, MEM_AREA_TEE_COHERENT);
+	uint32_t ocram_start;
+	vaddr_t  tlb_ocram = core_mmu_get_va(
+			imx_get_ocram_tz_start_addr() + IRAM_TBL_OFFSET,
+			MEM_AREA_TEE_COHERENT);
+
+	/*
+	 * If the device is not 6SX using the OCRAM_S
+	 * continue to copy data/function after the suspend
+	 * and idle.
+	 * Else, because the TTB1 used to execute the assembly functions
+	 * idle/suspend/busfreq is 16 KBytes in OCRAM_S (16 KBytes max)
+	 * the code/data and TTB are mixed and must care of TTB entries used.
+	 * The Busfreq is installed at the end of the OCRAM_S
+	 */
+	if (!soc_is_imx6sx())
+		ocram_start = pm_ocram_free_area;
+	else
+		ocram_start = core_mmu_get_va(
+				imx_get_ocram_tz_start_addr(),
+				MEM_AREA_TEE_COHERENT);
 
 	/* Get the type of memory used */
 	ddr_type = imx_get_ddr_type();
@@ -294,27 +311,23 @@ TEE_Result imx6_busfreq_init(void)
 	case IMX_DDR_TYPE_DDR3:
 		change_ddr_freq = &imx6_ddr3_freq_change;
 		function_size   = get_imx6_ddr3_freq_change_size();
-
+		data_size       = sizeof(struct busfreq_info);
 		if (soc_is_imx6dq() || soc_is_imx6dqp()) {
-			data_size = ARRAY_SIZE(ddr3_dll_mx6q) +
-					ARRAY_SIZE(ddr3_calibration) +
-					ARRAY_SIZE(iomux_offsets_mx6q) +
-					sizeof(struct busfreq_info);
+			data_size += sizeof(ddr3_dll_mx6q) +
+					sizeof(ddr3_calibration) +
+					sizeof(iomux_offsets_mx6q);
 		} else if (soc_is_imx6sdl()) {
-			data_size = ARRAY_SIZE(ddr3_dll_mx6dl) +
-					ARRAY_SIZE(ddr3_calibration) +
-					ARRAY_SIZE(iomux_offsets_mx6dl) +
-					sizeof(struct busfreq_info);
+			data_size += sizeof(ddr3_dll_mx6dl) +
+					sizeof(ddr3_calibration) +
+					sizeof(iomux_offsets_mx6dl);
 		} else if (soc_is_imx6sx()) {
-			data_size = ARRAY_SIZE(ddr3_dll_mx6sx_ul) +
-					ARRAY_SIZE(ddr3_calibration_mx6sx_ul) +
-					ARRAY_SIZE(iomux_offsets_mx6sx) +
-					sizeof(struct busfreq_info);
+			data_size += sizeof(ddr3_dll_mx6sx_ul) +
+					sizeof(ddr3_calibration_mx6sx_ul) +
+					sizeof(iomux_offsets_mx6sx);
 		} else if (soc_is_imx6ul() || soc_is_imx6ull()) {
-			data_size = ARRAY_SIZE(ddr3_dll_mx6sx_ul) +
-					ARRAY_SIZE(ddr3_calibration_mx6sx_ul) +
-					ARRAY_SIZE(iomux_offsets_mx6ul) +
-					sizeof(struct busfreq_info);
+			data_size += sizeof(ddr3_dll_mx6sx_ul) +
+					sizeof(ddr3_calibration_mx6sx_ul) +
+					sizeof(iomux_offsets_mx6ul);
 		} else {
 			DMSG("No DDR3 configuration for this device");
 			return TEE_ERROR_GENERIC;
@@ -332,15 +345,16 @@ TEE_Result imx6_busfreq_init(void)
 	/* Determine the size to be allocated aligned on a 4K page */
 	page_size = function_size + data_size;
 
-	/*
-	 * Check if there is enough place to install
-	 * the busfreq data and function
-	 */
-	if (page_size > BUSFREQ_MAX_SIZE) {
-		DMSG("Busfreq required %d bytes, available %d bytes",
-			 page_size, BUSFREQ_MAX_SIZE);
+	if (soc_is_imx6sx())
+		ocram_start += IRAM_6SX_S_SIZE - page_size;
+	else if ((ocram_start + page_size) > tlb_ocram) {
+		DMSG("Busfreq required %d bytes, available %ld bytes",
+			 page_size, (tlb_ocram - ocram_start));
 		return TEE_ERROR_GENERIC;
 	}
+
+	if (!soc_is_imx6sx())
+		pm_ocram_free_area += page_size;
 
 	/* Initialize the reserved page(s) with 0 */
 	memset((void *)ocram_start, 0, page_size);

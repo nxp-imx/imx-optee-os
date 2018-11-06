@@ -30,6 +30,7 @@ struct busfreq_info {
 	uint32_t iomux_base;
 	uint32_t mmdc_base;
 	uint32_t pl310_v_base;
+	uint32_t ttbr1;
 } __aligned(8);
 
 TEE_Result imx6_busfreq_init(void);

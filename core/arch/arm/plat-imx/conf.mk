@@ -56,6 +56,7 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6sx-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6SX,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
+CFG_BUSFREQ ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6sl-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6SL,y)

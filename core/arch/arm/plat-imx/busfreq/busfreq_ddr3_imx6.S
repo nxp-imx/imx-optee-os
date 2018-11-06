@@ -24,6 +24,7 @@
 
 #include "busfreq_macro_imx6.S"
 
+	.align	3
 /**
  * @brief   Switch the i.MX6 DDR3 in self-refresh to
  *          change its clock and exit self-refresh
@@ -31,8 +32,6 @@
  *
  * @param[in/out] busfreq_info  busfreq data
  */
-	.align	3
-
 FUNC imx6_ddr3_freq_change , :
 UNWIND( .fnstart)
 	push	{r1-r12, lr}
@@ -53,12 +52,7 @@ UNWIND( .fnstart)
 #endif
 
 bypass_l2_disable:
-    /* Disable Prediction */
-    read_sctlr  r2
-    bic     r2, r2, #SCTLR_Z
-    write_sctlr r2
-    dsb
-    isb
+	tlb_set_to_ocram r12
 
 	/* Keep r9, r10, r11 and r12 as is */
 	ldr	r9,  [r12, #BUSFREQ_INFO_MMDC_BASE]
@@ -235,9 +229,7 @@ continue_dll_off_2:
 update_iomux:
 	ldr	r0, [r1], #8
 	ldr	r3, [r11, r0]
-	bic	r3, r3, r2
-	orr	r3, r3, #(0x3 << 12)
-	orr	r3, r3, #0x28
+	orr r3, r3, r2
 	str	r3, [r11, r0]
 	sub	r4, r4, #1
 	cmp	r4, #0
@@ -539,6 +531,8 @@ done:
 	bic	r0, r0, #0x1
 	str	r0, [r9, #MX6_MMDC_MAPSR]
 
+	tlb_back_to_ddr r12
+
 #ifdef CFG_PL310
 	/* Enable the L2$ */
 	ldr		r0, [r12, #BUSFREQ_INFO_PL310_V_BASE]
@@ -548,11 +542,9 @@ done:
 #endif
 
 bypass_l2_enable:
-    /* Enable D$ and Prediction */
+    /* Enable D$ */
     read_sctlr  r2
-    mov     r3, #SCTLR_C
-    add     r3, r3, #SCTLR_Z
-    orr     r2, r2, r3
+    orr     r2, r2, #SCTLR_C
     write_sctlr r2
 	isb
 
