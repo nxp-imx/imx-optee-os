@@ -72,6 +72,7 @@ struct caambuf {
 	uint8_t *data;    ///< Data buffer
 	paddr_t paddr;    ///< Physical address of the buffer
 	size_t  length;   ///< Number of bytes in the data buffer
+	uint8_t nocache;  ///< =1 if buffer is not cacheable
 };
 
 /**

@@ -190,7 +190,8 @@ enum CAAM_Status caam_alloc_buf(struct caambuf *buf, size_t size)
 		return CAAM_OUT_MEMORY;
 	}
 
-	buf->length = size;
+	buf->length  = size;
+	buf->nocache = 0;
 	return CAAM_NO_ERROR;
 }
 
@@ -217,7 +218,8 @@ enum CAAM_Status caam_alloc_align_buf(struct caambuf *buf, size_t size)
 		return CAAM_OUT_MEMORY;
 	}
 
-	buf->length = size;
+	buf->length  = size;
+	buf->nocache = 0;
 	return CAAM_NO_ERROR;
 }
 
@@ -236,8 +238,9 @@ void caam_free_buf(struct caambuf *buf)
 			buf->data = NULL;
 		}
 
-		buf->length = 0;
-		buf->paddr  = 0;
+		buf->length  = 0;
+		buf->paddr   = 0;
+		buf->nocache = 0;
 	}
 }
 
@@ -287,33 +290,52 @@ enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data)
 }
 
 /**
- * @brief   Re-Allocate a buffer if it's not align on a cache line
+ * @brief   Re-Allocate a buffer if it's not align on a cache line and
+ *          if it's cacheable
  *
  * @param[in]  orig  Buffer origin
- * @param[out] dst   Buffer address reallocated or same as origin
+ * @param[out] dst   CAAM Buffer object with origin or reallocated buffer
  * @param[in]  size  Size in bytes of the buffer
  *
  * @retval  0    if destination is the same as origin
  * @retval  1    if reallocation of the buffer
  * @retval  (-1) if allocation error
  */
-int caam_realloc_align(void *orig, void **dst, size_t size)
+int caam_realloc_align(void *orig, struct caambuf *dst, size_t size)
 {
 	/*
-	 * Check if either orig pointer or size are aligned on the
-	 * cache line size.
-	 * If no, reallocate a buffer aligned on cache line
+	 * Check if the buffer origin point to cached memory.
+	 * If the buffer is non-cacheble no need to reallocate
 	 */
-	if (!IS_PTR_ALIGN(orig, cacheline_size) ||
-		!IS_SIZE_ALIGN(size, cacheline_size)) {
-		*dst = caam_alloc_align(size);
-		if (!*dst)
-			return (-1);
+	if (core_vbuf_is(CORE_MEM_CACHED, orig, size)) {
+		/*
+		 * Check if either orig pointer or size are aligned on the
+		 * cache line size.
+		 * If no, reallocate a buffer aligned on cache line
+		 */
+		if (!IS_PTR_ALIGN(orig, cacheline_size) ||
+			!IS_SIZE_ALIGN(size, cacheline_size)) {
+			if (caam_alloc_align_buf(dst, size) != CAAM_NO_ERROR)
+				return (-1);
 
-		return 1;
+			return 1;
+		}
+		dst->nocache = 0;
+	} else {
+		dst->nocache = 1;
 	}
 
-	*dst = orig;
+	/*
+	 * Build the destination caambuf object indicating that
+	 * buffer if not cacheable
+	 */
+	dst->data  = orig;
+	dst->paddr = virt_to_phys(dst->data);
+	if (!dst->paddr)
+		return (-1);
+
+	dst->length  = size;
+
 	return 0;
 }
 

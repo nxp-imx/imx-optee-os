@@ -317,8 +317,10 @@ enum CAAM_Status do_block(struct cipherdata *ctx,
 				desc[desclen++] = FIFO_ST(MSG_DATA, dst->buf->length);
 				desc[desclen++] = dst->buf->paddr;
 			}
-			cache_operation(TEE_CACHEFLUSH, dst->buf->data,
-				dst->buf->length);
+
+			if (dst->buf->nocache == 0)
+				cache_operation(TEE_CACHEFLUSH, dst->buf->data,
+					dst->buf->length);
 		}
 	}
 
@@ -747,15 +749,14 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 	struct sgtbuf dst = {0};
 
 	paddr_t psrc;
-	paddr_t pdst;
 
 	size_t fullSize;
 	size_t size_topost;
 	size_t size_todo;
 	size_t size_indone = 0;
 
-	int    realloc    = 0;
-	void   *dst_align = NULL;
+	int realloc = 0;
+	struct caambuf dst_align = {0};
 
 
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
@@ -771,12 +772,10 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 	}
 
 	psrc = virt_to_phys(dupdate->src.data);
-	pdst = virt_to_phys(dst_align);
 
 	/* Check the payload/cipher physical addresses */
-	if ((!psrc) || (!pdst)) {
-		CIPHER_TRACE("Bad Addr (src 0x%"PRIxPA") (dst 0x%"PRIxPA")",
-				psrc, pdst);
+	if (!psrc) {
+		CIPHER_TRACE("Bad Addr (src 0x%"PRIxPA")", psrc);
 		ret = TEE_ERROR_GENERIC;
 		goto end_streaming;
 	}
@@ -827,9 +826,10 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 
 			dst.buf[0].data   = ctx->blockbuf.buf.data;
 			dst.buf[0].length = ctx->blockbuf.filled;
-			dst.buf[1].data   = dst_align;
+			dst.buf[1].data   = dst_align.data;
 			dst.buf[1].length = (dupdate->dst.length -
 				size_topost);
+			dst.buf[1].nocache = dst_align.nocache;
 
 #ifndef ARM64
 			src.sgt[0].ptr_ls = ctx->blockbuf.buf.paddr;
@@ -841,7 +841,7 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 
 			dst.sgt[0].ptr_ls = ctx->blockbuf.buf.paddr;
 			dst.sgt[0].length = ctx->blockbuf.filled;
-			dst.sgt[1].ptr_ls = pdst;
+			dst.sgt[1].ptr_ls = dst_align.paddr;
 			dst.sgt[1].length = (dupdate->dst.length -
 				size_topost);
 			dst.sgt[1].final  = 1;
@@ -862,8 +862,8 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 			dst.sgt[0].ptr_ms =
 			    (uint32_t)(ctx->blockbuf.buf.paddr >> 32);
 			dst.sgt[0].length = ctx->blockbuf.filled;
-			dst.sgt[1].ptr_ls = (uint32_t)(pdst);
-			dst.sgt[1].ptr_ms = (uint32_t)(pdst >> 32);
+			dst.sgt[1].ptr_ls = (uint32_t)(dst_align.paddr);
+			dst.sgt[1].ptr_ms = (uint32_t)(dst_align.paddr >> 32);
 			dst.sgt[1].length = (dupdate->dst.length -
 				size_topost);
 			dst.sgt[1].final  = 1;
@@ -885,9 +885,10 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 			srcbuf.length = size_todo;
 			srcbuf.paddr  = psrc;
 
-			dstbuf.data   = dst_align;
-			dstbuf.length = size_todo;
-			dstbuf.paddr  = pdst;
+			dstbuf.data    = dst_align.data;
+			dstbuf.length  = size_todo;
+			dstbuf.paddr   = dst_align.paddr;
+			dstbuf.nocache = dst_align.nocache;
 		}
 
 		retstatus = do_block(ctx, true, NEED_KEY1, dupdate->encrypt,
@@ -906,7 +907,7 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 
 		CIPHER_DUMPBUF("Source", dupdate->src.data,
 				(dupdate->src.length - size_topost));
-		CIPHER_DUMPBUF("Result", dst_align,
+		CIPHER_DUMPBUF("Result", dst_align.data,
 				(dupdate->dst.length - size_topost));
 	}
 
@@ -936,9 +937,10 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 		srcbuf.length = ctx->blockbuf.filled;
 		srcbuf.paddr  = ctx->blockbuf.buf.paddr;
 
-		dstbuf.data   = (uint8_t *)dst_align + size_indone;
-		dstbuf.length = ctx->blockbuf.filled;
-		dstbuf.paddr  = pdst + size_indone;
+		dstbuf.data    = dst_align.data + size_indone;
+		dstbuf.length  = ctx->blockbuf.filled;
+		dstbuf.paddr   = dst_align.paddr + size_indone;
+		dstbuf.nocache = dst_align.nocache;
 
 		retstatus = do_block(ctx, false, NEED_KEY1, dupdate->encrypt,
 			&src, &dst);
@@ -954,15 +956,18 @@ static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
 					ctx->blockbuf.filled);
 	}
 
-	cache_operation(TEE_CACHEINVALIDATE, dst_align, dupdate->dst.length);
+	if (dst_align.nocache == 0)
+		cache_operation(TEE_CACHEINVALIDATE, dst_align.data,
+				dupdate->dst.length);
+
 	if (realloc)
-		memcpy(dupdate->dst.data, dst_align, dupdate->dst.length);
+		memcpy(dupdate->dst.data, dst_align.data, dupdate->dst.length);
 
 	ret = TEE_SUCCESS;
 
 end_streaming:
 	if (realloc == 1)
-		caam_free(dst_align);
+		caam_free_buf(&dst_align);
 
 	return ret;
 }
@@ -999,10 +1004,9 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 		.sgt_type = false};
 
 	paddr_t psrc;
-	paddr_t pdst;
 
-	int  realloc    = 0;
-	void *dst_align = NULL;
+	int realloc = 0;
+	struct caambuf dst_align = {0};
 
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
 				dupdate->src.length,
@@ -1025,12 +1029,10 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 	}
 
 	psrc = virt_to_phys(dupdate->src.data);
-	pdst = virt_to_phys(dst_align);
 
 	/* Check the payload/cipher physical addresses */
-	if ((!psrc) || (!pdst)) {
-		CIPHER_TRACE("Bad Addr (src 0x%"PRIxPA") (dst 0x%"PRIxPA")",
-				psrc, pdst);
+	if (!psrc) {
+		CIPHER_TRACE("Bad Addr (src 0x%"PRIxPA")", psrc);
 		ret = TEE_ERROR_GENERIC;
 		goto end_cipher;
 	}
@@ -1039,18 +1041,21 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 	srcbuf.length = dupdate->src.length;
 	srcbuf.paddr  = psrc;
 
-	dstbuf.data   = dst_align;
-	dstbuf.length = dupdate->dst.length;
-	dstbuf.paddr  = pdst;
+	dstbuf.data    = dst_align.data;
+	dstbuf.length  = dupdate->dst.length;
+	dstbuf.paddr   = dst_align.paddr;
+	dstbuf.nocache = dst_align.nocache;
 
 	retstatus = do_block(ctx, true, NEED_KEY1, dupdate->encrypt,
 		&src, &dst);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		cache_operation(TEE_CACHEINVALIDATE, dst_align,
-				dupdate->dst.length);
+		if (dst_align.nocache == 0)
+			cache_operation(TEE_CACHEINVALIDATE, dst_align.data,
+					dupdate->dst.length);
+
 		if (realloc)
-			memcpy(dupdate->dst.data, dst_align,
+			memcpy(dupdate->dst.data, dst_align.data,
 				dupdate->dst.length);
 
 		ret = TEE_SUCCESS;
@@ -1060,7 +1065,7 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 
 end_cipher:
 	if (realloc == 1)
-		caam_free(dst_align);
+		caam_free_buf(&dst_align);
 
 	return ret;
 }
@@ -1104,8 +1109,8 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 	size_t size_topost;
 	size_t size_todo;
 
-	int  realloc    = 0;
-	void *dst_align = NULL;
+	int realloc = 0;
+	struct caambuf dst_align = {0};
 
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
 				dupdate->src.length,
@@ -1153,15 +1158,10 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 				goto end_mac;
 			}
 
-			dstbuf.data   = dst_align;
-			dstbuf.length = dupdate->dst.length;
-			dstbuf.paddr  = virt_to_phys(dst_align);
-
-			if (!dstbuf.paddr) {
-				CIPHER_TRACE("Bad dst address");
-				ret = TEE_ERROR_GENERIC;
-				goto end_mac;
-			}
+			dstbuf.data    = dst_align.data;
+			dstbuf.length  = dupdate->dst.length;
+			dstbuf.paddr   = dst_align.paddr;
+			dstbuf.nocache = dst_align.nocache;
 
 			dst_cipher = &dst;
 		}
@@ -1216,7 +1216,7 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 				goto end_mac;
 			}
 
-#ifdef CIPHER_DEBUG
+#ifdef DUMP_BUF
 			CIPHER_DUMPBUF("Source", tmpbuf.data, tmpbuf.length);
 			if (dst_cipher)
 				CIPHER_DUMPBUF("Cipher", dstbuf.data,
@@ -1270,18 +1270,19 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 			ret = TEE_ERROR_GENERIC;
 	}
 
-	if (dst_align) {
-		cache_operation(TEE_CACHEINVALIDATE, dst_align,
-			dupdate->dst.length);
+	if (dst_align.data) {
+		if (dst_align.nocache == 0)
+			cache_operation(TEE_CACHEINVALIDATE, dst_align.data,
+				dupdate->dst.length);
 
 		if (realloc)
-			memcpy(dupdate->dst.data, dst_align,
+			memcpy(dupdate->dst.data, dst_align.data,
 				dupdate->dst.length);
 	}
 
 end_mac:
 	if (realloc == 1)
-		caam_free(dst_align);
+		caam_free_buf(&dst_align);
 
 	return ret;
 }

@@ -31,8 +31,10 @@ void caam_cache_op_sgt(enum utee_cache_operation op, struct sgtbuf *insgt)
 	cache_operation(TEE_CACHECLEAN, (void *)insgt->sgt,
 			(insgt->number * sizeof(struct sgt)));
 	for (idx = 0; idx < insgt->number; idx++) {
-		cache_operation(op, (void *)(insgt->buf[idx].data),
-				insgt->buf[idx].length);
+		/* If buffer is not cacheable, do nothing */
+		if (insgt->buf[idx].nocache == 0)
+			cache_operation(op, (void *)(insgt->buf[idx].data),
+					insgt->buf[idx].length);
 	}
 }
 

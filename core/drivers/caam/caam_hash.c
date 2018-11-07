@@ -699,9 +699,8 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	descPointer_t    desc;
 	uint8_t          desclen = 1;
 
-	paddr_t paddr_digest;
-	int     realloc       = 0;
-	void    *digest_align = NULL;
+	int realloc = 0;
+	struct caambuf digest_align = {0};
 
 	if (hashdata->algo_id != algo) {
 		HASH_TRACE("Context algo is %d and asked for %d",
@@ -722,8 +721,9 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 		HASH_TRACE("Digest buffer size %d too short (%d)",
 					alg->size_digest, len);
 
-		digest_align = caam_alloc_align(alg->size_digest);
-		if (!digest_align) {
+		retstatus = caam_alloc_align_buf(&digest_align,
+				alg->size_digest);
+		if (retstatus != CAAM_NO_ERROR) {
 			HASH_TRACE("Hash digest reallocation error");
 			ret = TEE_ERROR_OUT_OF_MEMORY;
 			goto exit_final;
@@ -739,15 +739,8 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 		}
 	}
 
-	paddr_digest = virt_to_phys(digest_align);
-	if (!paddr_digest) {
-		HASH_TRACE("Bad digest physical address");
-		ret = TEE_ERROR_BAD_PARAMETERS;
-		goto exit_final;
-	}
-
 	HASH_TRACE("Final Algo %d - Digest @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)digest_align, len);
+				algo, (uintptr_t)digest_align.data, len);
 
 	desc = hashdata->descriptor;
 
@@ -798,7 +791,7 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 
 	/* Save the final digest */
 	desc[desclen++] = ST_NOIMM(CLASS_2, REG_CTX, alg->size_digest);
-	desc[desclen++] = paddr_digest;
+	desc[desclen++] = digest_align.paddr;
 
 	/* Set the descriptor Header with length */
 	desc[0] = DESC_HEADER(desclen);
@@ -806,19 +799,24 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	HASH_DUMPDESC(desc);
 
 	jobctx.desc = desc;
-	cache_operation(TEE_CACHEFLUSH, digest_align, alg->size_digest);
+
+	if (digest_align.nocache == 0)
+		cache_operation(TEE_CACHEFLUSH, digest_align.data,
+				alg->size_digest);
 
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
 		/* Ensure that hash data are correct in cache */
-		cache_operation(TEE_CACHEINVALIDATE, digest_align, alg->size_digest);
+		if (digest_align.nocache == 0)
+			cache_operation(TEE_CACHEINVALIDATE, digest_align.data,
+					alg->size_digest);
 
 		ret = TEE_SUCCESS;
 		if (realloc)
-			memcpy(digest, digest_align, len);
+			memcpy(digest, digest_align.data, len);
 
-		HASH_DUMPBUF("Digest", digest, alg->size_digest);
+		HASH_DUMPBUF("Digest", digest.data, alg->size_digest);
 	} else {
 		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
 		ret = TEE_ERROR_GENERIC;
@@ -826,7 +824,7 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 
 exit_final:
 	if (realloc == 1)
-		caam_free(digest_align);
+		caam_free_buf(&digest_align);
 
 	return ret;
 }

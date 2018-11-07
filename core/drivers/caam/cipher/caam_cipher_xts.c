@@ -102,7 +102,7 @@ TEE_Result do_update_xts(struct imxcrypt_cipher_update *dupdate)
 
 	struct cipherdata *ctx = dupdate->ctx;
 
-	struct caambuf enc_tweak;
+	struct caambuf enc_tweak = {0};
 
 	struct caambuf tmpsrc = {0};
 	struct caambuf tmpdst = {0};

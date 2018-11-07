@@ -53,10 +53,9 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 	size_t size_inmade;
 
 	paddr_t psrc = 0;
-	paddr_t pdst = 0;
 
-	int  realloc    = 0;
-	void *dst_align = NULL;
+	int realloc = 0;
+	struct caambuf dst_align = {0};
 
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
 				dupdate->src.length,
@@ -86,13 +85,6 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 		if (realloc == (-1)) {
 			CIPHER_TRACE("Destination buffer reallocation error");
 			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto end_cmac;
-		}
-
-		pdst  = virt_to_phys(dst_align);
-		if (!pdst) {
-			CIPHER_TRACE("Bad Dst address");
-			ret = TEE_ERROR_GENERIC;
 			goto end_cmac;
 		}
 	}
@@ -209,7 +201,7 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 		if (dupdate->last) {
 			desc[desclen++] = ST_NOIMM_OFF(CLASS_1, REG_CTX,
 						dupdate->dst.length, 0);
-			desc[desclen++] = pdst;
+			desc[desclen++] = dst_align.paddr;
 		} else {
 			/* Store the context */
 			desc[desclen++] = ST_NOIMM_OFF(CLASS_1, REG_CTX,
@@ -230,9 +222,11 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 
 		if (dupdate->last) {
 			/* Flush the destination register */
-			cache_operation(TEE_CACHEFLUSH, dst_align,
+			if (dst_align.nocache == 0)
+				cache_operation(TEE_CACHEFLUSH, dst_align.data,
 							dupdate->dst.length);
 		}
+
 		if (ctx->ctx.length) {
 			/* Invalidate Context register */
 			cache_operation(TEE_CACHEINVALIDATE, ctx->ctx.data,
@@ -246,12 +240,15 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 			ret = TEE_SUCCESS;
 
 			if (dupdate->last) {
-				cache_operation(TEE_CACHEINVALIDATE, dst_align,
-						dupdate->dst.length);
+				if (dst_align.nocache == 0)
+					cache_operation(TEE_CACHEINVALIDATE,
+							dst_align.data,
+							dupdate->dst.length);
 
 				if (realloc)
-					memcpy(dupdate->dst.data, dst_align,
-							dupdate->dst.length);
+					memcpy(dupdate->dst.data,
+						dst_align.data,
+						dupdate->dst.length);
 
 				CIPHER_DUMPBUF("DST", dupdate->dst.data,
 					dupdate->dst.length);
@@ -290,7 +287,7 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 
 end_cmac:
 	if (realloc == 1)
-		caam_free(dst_align);
+		caam_free_buf(&dst_align);
 
 	return ret;
 }
