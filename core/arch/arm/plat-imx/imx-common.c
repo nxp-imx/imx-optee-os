@@ -125,3 +125,11 @@ bool soc_is_imx7ulp(void)
 {
 	return imx_soc_type() == SOC_MX7ULP;
 }
+
+uint16_t soc_revision(void)
+{
+	if (imx_soc_revision < 0)
+		imx_digproc();
+
+	return imx_soc_revision;
+}
