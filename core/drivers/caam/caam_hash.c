@@ -703,16 +703,19 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 	int     realloc       = 0;
 	void    *digest_align = NULL;
 
-	if (!hashdata->ctx.data) {
-		HASH_TRACE("Bad context");
-		return TEE_ERROR_BAD_PARAMETERS;
-	}
-
 	if (hashdata->algo_id != algo) {
 		HASH_TRACE("Context algo is %d and asked for %d",
 					hashdata->algo_id, algo);
 		ret = TEE_ERROR_BAD_PARAMETERS;
 		goto exit_final;
+	}
+
+	if (!hashdata->ctx.data) {
+		retstatus = do_allocate_intern(hashdata);
+		if (retstatus != CAAM_NO_ERROR) {
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto exit_final;
+		}
 	}
 
 	if (alg->size_digest > len) {
