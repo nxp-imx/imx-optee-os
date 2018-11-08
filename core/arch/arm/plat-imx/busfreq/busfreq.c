@@ -21,6 +21,7 @@
 
 /* Local include */
 #include "busfreq_imx6.h"
+#include "busfreq_imx7.h"
 
 #ifndef CFG_IMX6
 __weak TEE_Result imx6_busfreq_change(uint32_t freq __unused,
@@ -30,6 +31,18 @@ __weak TEE_Result imx6_busfreq_change(uint32_t freq __unused,
 }
 
 __weak TEE_Result imx6_busfreq_init(void)
+{
+	return TEE_ERROR_GENERIC;
+}
+#endif
+#ifndef CFG_IMX7
+__weak TEE_Result imx7_busfreq_change(uint32_t freq __unused,
+		uint32_t dll_off __unused)
+{
+	return TEE_ERROR_NOT_SUPPORTED;
+}
+
+__weak TEE_Result imx7_busfreq_init(void)
 {
 	return TEE_ERROR_GENERIC;
 }
@@ -52,6 +65,8 @@ TEE_Result busfreq_change(uint32_t freq, uint32_t dll_off)
 
 	if (soc_is_imx6())
 		ret = imx6_busfreq_change(freq, dll_off);
+	else if (soc_is_imx7ds())
+		ret = imx7_busfreq_change(freq, dll_off);
 
 	return ret;
 }
@@ -103,6 +118,8 @@ static TEE_Result busfreq_init(void)
 
 	if (soc_is_imx6())
 		ret = imx6_busfreq_init();
+	else if (soc_is_imx7ds())
+		ret = imx7_busfreq_init();
 
 	if (ret == TEE_SUCCESS) {
 		if (dt_busfreq()) {
