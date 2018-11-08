@@ -52,9 +52,13 @@ static void imx_digproc(void)
 	/* Set the CPU type */
 	imx_cpu_type = ((digprog >> 16) & 0xFF);
 
+#ifndef CFG_MX7
 	/* Set the SOC revision = (Major + 1).(Minor) */
 	imx_soc_revision = (((digprog & 0xFF00) >> 4) + 0x10) |
 				 (digprog & 0x0F);
+#else
+	imx_soc_revision = digprog & 0xFF;
+#endif
 }
 
 static uint32_t imx_soc_rev_major(void)
@@ -185,4 +189,12 @@ bool soc_is_imx8mq_b1_layer(void)
 		}
 	}
 	return false;
+}
+
+uint16_t soc_revision(void)
+{
+	if (imx_soc_revision < 0)
+		imx_digproc();
+
+	return imx_soc_revision;
 }

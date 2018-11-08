@@ -16,7 +16,7 @@
  *          This structure must be inline with the assembly code offset
  *          definition.
  */
-struct busfreq_info {
+struct busfreq_info_mx6 {
 	uint32_t cpu_type;
 	uint32_t freq;
 	uint32_t dll_off;
@@ -36,9 +36,9 @@ struct busfreq_info {
 TEE_Result imx6_busfreq_init(void);
 TEE_Result imx6_busfreq_change(uint32_t freq, uint32_t dll_off);
 
-void imx6_ddr3_freq_change(struct busfreq_info *info);
+void imx6_ddr3_freq_change(struct busfreq_info_mx6 *info);
 size_t get_imx6_ddr3_freq_change_size(void);
-void imx6_lpddr2_freq_change(struct busfreq_info *info);
+void imx6_lpddr2_freq_change(struct busfreq_info_mx6 *info);
 size_t get_imx6_lpddr2_freq_change_size(void);
 #endif
 /*

@@ -72,6 +72,7 @@ $(call force,CFG_IMX_CAAM,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7d-flavorlist)))
 $(call force,CFG_MX7,y)
 $(call force,CFG_TEE_CORE_NB_CORE,2)
+CFG_BUSFREQ ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx7s-flavorlist)))
 $(call force,CFG_MX7,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
