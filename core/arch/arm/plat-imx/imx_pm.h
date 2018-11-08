@@ -224,6 +224,7 @@ int imx7d_cpuidle_init(void);
 void imx7_suspend(struct imx7_pm_info *info);
 void imx7_resume(void);
 void ca7_cpu_resume(void);
+void imx7ulp_cpu_resume(void);
 
 int imx7_cpu_suspend(uint32_t power_state, uintptr_t entry, uint32_t context_id,
 		     struct sm_nsec_ctx *nsec);
