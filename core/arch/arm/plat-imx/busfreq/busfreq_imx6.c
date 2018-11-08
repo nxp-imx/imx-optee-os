@@ -111,9 +111,9 @@ static uint32_t iomux_offsets_mx6q[][2] = {
 };
 
 /* Local data */
-typedef void (*change_ddr_freq_func)(struct busfreq_info *);
+typedef void (*change_ddr_freq_func)(struct busfreq_info_mx6 *);
 static change_ddr_freq_func change_ddr_freq;
-static struct busfreq_info *ddr_info;
+static struct busfreq_info_mx6 *ddr_info;
 
 /**
  * @brief   Setup the DDR3 info struct used in the busfreq assembly
@@ -148,7 +148,7 @@ static void imx6_ddr3_info_setup(void)
 	if (soc_is_imx6dq() || soc_is_imx6dqp()) {
 		/* Initialize the ddr_settings pointer and table */
 		ddr_info->ddr_settings = (void *)((uint8_t *)ddr_info +
-						 sizeof(struct busfreq_info));
+					sizeof(struct busfreq_info_mx6));
 		ddr_info->ddr_settings_size = ARRAY_SIZE(ddr3_dll_mx6q);
 		memcpy(ddr_info->ddr_settings, ddr3_dll_mx6q,
 				sizeof(ddr3_dll_mx6q));
@@ -171,7 +171,7 @@ static void imx6_ddr3_info_setup(void)
 	} else if (soc_is_imx6sdl()) {
 		/* Initialize the ddr_settings pointer and table */
 		ddr_info->ddr_settings = (void *)((uint8_t *)ddr_info +
-						 sizeof(struct busfreq_info));
+					sizeof(struct busfreq_info_mx6));
 		ddr_info->ddr_settings_size = ARRAY_SIZE(ddr3_dll_mx6dl);
 		memcpy(ddr_info->ddr_settings, ddr3_dll_mx6dl,
 				sizeof(ddr3_dll_mx6dl));
@@ -194,7 +194,7 @@ static void imx6_ddr3_info_setup(void)
 	} else if (soc_is_imx6sx()) {
 		/* Initialize the ddr_settings pointer and table */
 		ddr_info->ddr_settings = (void *)((uint8_t *)ddr_info +
-						 sizeof(struct busfreq_info));
+					sizeof(struct busfreq_info_mx6));
 		ddr_info->ddr_settings_size = ARRAY_SIZE(ddr3_dll_mx6sx_ul);
 		memcpy(ddr_info->ddr_settings, ddr3_dll_mx6sx_ul,
 				sizeof(ddr3_dll_mx6sx_ul));
@@ -218,7 +218,7 @@ static void imx6_ddr3_info_setup(void)
 	} else if (soc_is_imx6ul() || soc_is_imx6ull()) {
 		/* Initialize the ddr_settings pointer and table */
 		ddr_info->ddr_settings = (void *)((uint8_t *)ddr_info +
-					sizeof(struct busfreq_info));
+					sizeof(struct busfreq_info_mx6));
 		ddr_info->ddr_settings_size = ARRAY_SIZE(ddr3_dll_mx6sx_ul);
 		memcpy(ddr_info->ddr_settings, ddr3_dll_mx6sx_ul,
 				sizeof(ddr3_dll_mx6sx_ul));
@@ -309,7 +309,7 @@ TEE_Result imx6_busfreq_init(void)
 	case IMX_DDR_TYPE_LPDDR2:
 		change_ddr_freq = &imx6_lpddr2_freq_change;
 		function_size   = get_imx6_lpddr2_freq_change_size();
-		data_size       = sizeof(struct busfreq_info);
+		data_size       = sizeof(struct busfreq_info_mx6);
 		DMSG("DDR2 mem function size=%d, data size=%d",
 			  function_size, data_size);
 		break;
@@ -317,7 +317,7 @@ TEE_Result imx6_busfreq_init(void)
 	case IMX_DDR_TYPE_DDR3:
 		change_ddr_freq = &imx6_ddr3_freq_change;
 		function_size   = get_imx6_ddr3_freq_change_size();
-		data_size       = sizeof(struct busfreq_info);
+		data_size       = sizeof(struct busfreq_info_mx6);
 		if (soc_is_imx6dq() || soc_is_imx6dqp()) {
 			data_size += sizeof(ddr3_dll_mx6q) +
 					sizeof(ddr3_calibration) +
@@ -372,7 +372,7 @@ TEE_Result imx6_busfreq_init(void)
 	 * Initialize address of ddr_info and change_ddr_freq function
 	 * to be in OCRAM
 	 */
-	ddr_info = (struct busfreq_info *)(ocram_start + function_size);
+	ddr_info = (struct busfreq_info_mx6 *)(ocram_start + function_size);
 	change_ddr_freq = (change_ddr_freq_func)(ocram_start);
 
 	if (ddr_type == IMX_DDR_TYPE_DDR3)
