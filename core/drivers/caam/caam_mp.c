@@ -173,6 +173,7 @@ static TEE_Result do_mpmr(struct imxcrypt_buf *mpmr_reg)
  * @retval  TEE_SUCCESS                Success
  * @retval  TEE_ERROR_GENERIC          General error
  * @retval  TEE_ERROR_BAD_PARAMETERS   Bad parameters
+ * @retval  TEE_ERROR_OUT_OF_MEMORY    Out of memory
  */
 static TEE_Result do_mppub(struct imxcrypt_buf *pubkey)
 {
@@ -181,26 +182,20 @@ static TEE_Result do_mppub(struct imxcrypt_buf *pubkey)
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 	struct jr_jobctx jobctx = {0};
 	descPointer_t desc = NULL;
-	paddr_t paddr = 0;
 	uint8_t desclen = 1;
 	int retP = 0;
-	uint8_t *key = NULL;
-
-	/* verifiy the result of the allocation function */
-	if (retP == -1)
-		goto exit_mppub;
+	struct caambuf key = {0};
 
 	/* check the public key size in function of the curve */
-	if (pubkey->length < 2*mp_privdata.sec_key_size)
+	if (pubkey->length < (2 * mp_privdata.sec_key_size))
 		goto exit_mppub;
 
-	retP = caam_realloc_align(pubkey->data, (void *)&key, pubkey->length);
+	retP = caam_realloc_align(pubkey->data, &key, pubkey->length);
 
-	/* convert address virt to phys for public key */
-	if (key) {
-		paddr = virt_to_phys(key);
-		if (!paddr)
-			goto exit_mppub;
+	if (retP == (-1)) {
+		MP_TRACE("Key reallocation error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto exit_mppub;
 	}
 
 	/* Allocate the job descriptor */
@@ -214,7 +209,7 @@ static TEE_Result do_mppub(struct imxcrypt_buf *pubkey)
 	desc[desclen++] = SHIFT_U32((mp_privdata.curve_sel & 0xFF), 17);
 
 	/* Output message */
-	desc[desclen++] = paddr;
+	desc[desclen++] = key.paddr;
 	desc[desclen++] = pubkey->length;
 
 	/* MPPrivK Operation */
@@ -225,18 +220,20 @@ static TEE_Result do_mppub(struct imxcrypt_buf *pubkey)
 
 	MP_DUMPDESC(desc);
 
-	cache_operation(TEE_CACHEFLUSH, key, pubkey->length);
+	if (key.nocache == 0)
+		cache_operation(TEE_CACHEFLUSH, key.data, pubkey->length);
 
 	jobctx.desc = desc;
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
 		MP_TRACE("Do Mppub gen CAAM");
-		cache_operation(TEE_CACHEINVALIDATE, key,
-			pubkey->length);
+		if (key.nocache == 0)
+			cache_operation(TEE_CACHEINVALIDATE, key.data,
+				pubkey->length);
 
 		if (retP == 1)
-			memcpy(pubkey->data, key, pubkey->length);
+			memcpy(pubkey->data, key.data, pubkey->length);
 
 		ret = TEE_SUCCESS;
 	} else {
@@ -245,7 +242,8 @@ static TEE_Result do_mppub(struct imxcrypt_buf *pubkey)
 
 exit_mppub:
 	if (retP == 1)
-		caam_free(key);
+		caam_free_buf(&key);
+
 	caam_free_desc(&desc);
 	return ret;
 }
@@ -270,12 +268,9 @@ static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
 	struct jr_jobctx jobctx = {0};
 	descPointer_t desc = NULL;
 	paddr_t paddr_m = 0;
-	paddr_t paddr_mes_rep = 0;
-	paddr_t paddr_C = 0;
-	paddr_t paddr_D = 0;
 
-	uint8_t *sig = NULL;
-	uint8_t *h = NULL;
+	struct caambuf sig = {0};
+	struct caambuf h   = {0};
 	size_t len_hash = TEE_MAX_HASH_SIZE;
 	int retS = 0;
 	uint8_t desclen = 1;
@@ -284,31 +279,30 @@ static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
 	if (sdata->signature.length < 2*mp_privdata.sec_key_size)
 		goto exit_mpsign;
 
-	retS = caam_realloc_align(sdata->signature.data, (void *)&sig,
+	/* Reallocate the signature to be cache alogned */
+	retS = caam_realloc_align(sdata->signature.data, &sig,
 		sdata->signature.length);
-	h = caam_alloc_align(len_hash);
-
-	/* verifiy the result of the allocation function */
-	if ((retS == -1) || !h)
+	if (retS == (-1)) {
+		MP_TRACE("Signature reallocation error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto exit_mpsign;
+	}
+
+	/*
+	 * Allocate the hash buffer of the Message + MPMR payload
+	 * Note: Hash is not retrieve, hence no need to do cache
+	 * maintenance
+	 */
+	retstatus = caam_alloc_align_buf(&h, len_hash);
+	if (retstatus != CAAM_NO_ERROR) {
+		MP_TRACE("Hash allocation error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto exit_mpsign;
+	}
 
 	/* convert address virt to phys for message */
 	paddr_m = virt_to_phys(sdata->message.data);
 	if (!paddr_m)
-		goto exit_mpsign;
-
-	/* convert address virt to phys for signature C and D */
-	if (sig) {
-		paddr_C  = virt_to_phys(sig);
-		paddr_D  = paddr_C +
-				(mp_privdata.sec_key_size * sizeof(uint8_t));
-		if (!paddr_C || !paddr_D)
-			goto exit_mpsign;
-	}
-
-	/* convert address virt to phys for hash */
-	paddr_mes_rep  = virt_to_phys(h);
-	if (!paddr_mes_rep)
 		goto exit_mpsign;
 
 	/* Allocate the job descriptor */
@@ -322,10 +316,13 @@ static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
 	desc[desclen++] = SHIFT_U32((mp_privdata.curve_sel & 0xFF), 17);
 	desc[desclen++] = paddr_m;
 
-	/* Output message */
-	desc[desclen++] = paddr_mes_rep;
-	desc[desclen++] = paddr_C;
-	desc[desclen++] = paddr_D;
+	/* Hash of message + MPMR result - Not used */
+	desc[desclen++] = h.paddr;
+	/* Signature in the format (c, d) */
+	desc[desclen++] = sig.paddr;
+	desc[desclen++] = sig.paddr +
+		(mp_privdata.sec_key_size * sizeof(uint8_t));
+	/* Message Length */
 	desc[desclen++] = sdata->message.length;
 
 	/* MPPrivK Operation */
@@ -338,18 +335,22 @@ static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
 
 	cache_operation(TEE_CACHECLEAN, sdata->message.data,
 		sdata->message.length);
-	cache_operation(TEE_CACHEFLUSH, sig, sdata->signature.length);
+
+	if (sig.nocache == 0)
+		cache_operation(TEE_CACHEFLUSH, sig.data,
+			sdata->signature.length);
 
 	jobctx.desc = desc;
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
 		MP_TRACE("Do Mpsign gen CAAM");
-		cache_operation(TEE_CACHEINVALIDATE, sig,
-			sdata->signature.length);
+		if (sig.nocache == 0)
+			cache_operation(TEE_CACHEINVALIDATE, sig.data,
+				sdata->signature.length);
 
 		if (retS == 1)
-			memcpy(sdata->signature.data, sig,
+			memcpy(sdata->signature.data, sig.data,
 				sdata->signature.length);
 
 		ret = TEE_SUCCESS;
@@ -359,8 +360,9 @@ static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
 
 exit_mpsign:
 	if (retS == 1)
-		caam_free(sig);
-	caam_free(h);
+		caam_free_buf(&sig);
+
+	caam_free_buf(&h);
 	caam_free_desc(&desc);
 	return ret;
 }
