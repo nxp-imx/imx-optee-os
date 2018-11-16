@@ -353,8 +353,8 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 			TZC_ATTR_REGION_SIZE(TZC_REGION_SIZE_256M) |
 			TZC_ATTR_REGION_EN_MASK | TZC_ATTR_SP_ALL);
 #endif
-#endif
 	}
+#endif
 
 	tzc_set_action(3);
 
