@@ -241,7 +241,7 @@ wait_dis_sync:
 	/* now switch periph_clk to pll3_main_clk. */
 	ldr	r0, [r10, #CCM_CBCDR]
 	orr	r0, r0, #(1 << 25)
-	str	r0, [r6, #CCM_CBCDR]
+	str	r0, [r10, #CCM_CBCDR]
 
 	wait_ccm_handshake
 
