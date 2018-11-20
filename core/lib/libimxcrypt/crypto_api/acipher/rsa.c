@@ -607,7 +607,7 @@ TEE_Result crypto_acipher_rsassa_verify(uint32_t algo,
 	rsa_ssa.key.n_size    = crypto_bignum_num_bytes(key->n);
 
 	if (rsa_ssa.key.n_size > sig_len) {
-		LIB_TRACE("Signature is invalid");
+		LIB_TRACE("Signature length expected %d", rsa_ssa.key.n_size);
 		return TEE_ERROR_SIGNATURE_INVALID;
 	}
 

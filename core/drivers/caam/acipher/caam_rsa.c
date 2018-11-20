@@ -263,36 +263,64 @@ static enum CAAM_Status do_keypair_conv(struct caam_rsa_keypair *outkey,
 		size_dq = crypto_bignum_num_bytes(inkey->dq);
 		size_qp = crypto_bignum_num_bytes(inkey->qp);
 
+		/* Check that dp, dq and qp size not exceed p and q size */
+		if ((size_dp > size_p) || (size_dq > size_q) ||
+				(size_qp > size_p))
+			goto exit_conv;
+
 		if ((size_dp != 0) && (size_dq != 0) && (size_qp != 0)) {
+			/*
+			 * CAAM is assuming that:
+			 *    - dp and dq are same size as p
+			 *    - dq same size as q
+			 *
+			 * Because calculation of dp, dq and qp can be less
+			 * than above assumption, force the dp, dq and qp
+			 * buffer size.
+			 */
 			/* Allocate one buffer for the 3 fields */
 			retstatus = caam_alloc_align_buf(&outkey->dp,
-						(size_dp + size_dq + size_qp));
+						(size_p + size_q + size_p));
 			if (retstatus != CAAM_NO_ERROR)
 				goto exit_conv;
 
 			/* Field dp */
-			outkey->dp.length = size_dp;
-			crypto_bignum_bn2bin(inkey->dp, outkey->dp.data);
+			outkey->dp.length = size_p;
+
+			/*
+			 * Ensure buffer is copied starting with 0's
+			 * if size_dp != size_p
+			 */
+			crypto_bignum_bn2bin(inkey->dp,
+					(outkey->dp.data + size_p) - size_dp);
 
 			/* Field dq */
-			outkey->dq.data   = outkey->dp.data + size_dp;
-			outkey->dq.length = size_dq;
-			outkey->dq.paddr  = outkey->dp.paddr +
-						(size_dp * sizeof(uint8_t));
+			outkey->dq.data   = outkey->dp.data + size_p;
+			outkey->dq.length = size_q;
+			outkey->dq.paddr  = outkey->dp.paddr + size_p;
 
-			crypto_bignum_bn2bin(inkey->dq, outkey->dq.data);
+			/*
+			 * Ensure buffer is copied starting with 0's
+			 * if size_dq != size_q
+			 */
+			crypto_bignum_bn2bin(inkey->dq,
+					(outkey->dq.data + size_q) - size_dq);
 
 			/* Field qp */
-			outkey->qp.data   = outkey->dq.data + size_dq;
-			outkey->qp.length = size_qp;
-			outkey->qp.paddr  = outkey->dq.paddr +
-						(size_dq * sizeof(uint8_t));
+			outkey->qp.data   = outkey->dq.data + size_q;
+			outkey->qp.length = size_p;
+			outkey->qp.paddr  = outkey->dq.paddr + size_q;
 
-			crypto_bignum_bn2bin(inkey->qp, outkey->qp.data);
+			/*
+			 * Ensure buffer is copied starting with 0's
+			 * if size_qp != size_p
+			 */
+			crypto_bignum_bn2bin(inkey->qp,
+					(outkey->qp.data + size_p) - size_qp);
 
 			/* Push fields value to the physical memory */
 			cache_operation(TEE_CACHECLEAN, outkey->dp.data,
-						(size_dp + size_dq + size_qp));
+				(size_dp + size_dq + size_qp));
 
 			outkey->format = 3;
 		}
@@ -1232,7 +1260,7 @@ static TEE_Result do_caam_encrypt(struct imxcrypt_rsa_ed *rsa_data,
 			cache_operation(TEE_CACHEINVALIDATE, cipher_align.data,
 				cipher_align.length);
 
-		if (realloc)
+		if (realloc == 1)
 			memcpy(rsa_data->cipher.data, cipher_align.data,
 					cipher_align.length);
 
@@ -1552,6 +1580,7 @@ static TEE_Result do_decrypt(struct imxcrypt_rsa_ed *rsa_data)
 
 	switch (rsa_data->rsa_id) {
 	case RSA_NOPAD:
+	case RSA_SIGN:
 		ret = do_caam_decrypt(rsa_data, RSA_DECRYPT(NO));
 		break;
 

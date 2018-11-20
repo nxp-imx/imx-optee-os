@@ -100,7 +100,7 @@ static const char sqrt_value[] =
  * stats for percentage of candidates that might be weeded out?  If not many,
  * then there is an extra computation.
  */
-static const char *smallprimes[] = {
+static const char * const smallprimes[] = {
 	/*     sizes     | #primes | highest prime | %weeded */
 	/*  bits / bytes |         |                         */
 	/*    64 / 8     |   15    |          53   |    72   */

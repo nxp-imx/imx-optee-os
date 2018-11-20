@@ -195,6 +195,48 @@ static void emsa_pkcs1_v1_5_encode(struct imxcrypt_rsa_ssa *ssa_data,
 }
 
 /**
+ * @brief   Encrypts the RSA message built. This function calls
+ *          the RSA decrypt operation (NOPAD without removing the
+ *          left 0s).
+ *          RSA encrypt/decrypt are doing the same operation except
+ *          that decrypt is using the RSA Private key
+ *
+ * @param[in/out]  ssa_data   RSA data signature
+ * @param[in]      msg        RSA Message to encrypt
+ *
+ * @retval TEE_SUCCESS                 Success
+ * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
+ * @retval TEE_ERROR_GENERIC           Generic error
+ */
+static TEE_Result rsa_encrypt(struct imxcrypt_rsa_ssa *ssa_data,
+		struct imxcrypt_buf *msg)
+{
+	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
+
+	struct imxcrypt_rsa    *rsa = NULL;
+	struct imxcrypt_rsa_ed rsa_data;
+
+	rsa_data.key.key       = ssa_data->key.key;
+	rsa_data.key.isprivate = true;
+	rsa_data.key.n_size    = ssa_data->key.n_size;
+
+	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	if (rsa) {
+		/* Prepare the decryption data parameters */
+		rsa_data.rsa_id         = RSA_SIGN;
+		rsa_data.message.data   = ssa_data->signature.data;
+		rsa_data.message.length = ssa_data->signature.length;
+		rsa_data.cipher.data    = msg->data;
+		rsa_data.cipher.length  = msg->length;
+
+		ret = rsa->decrypt(&rsa_data);
+	}
+
+	return ret;
+}
+
+/**
  * @brief   PKCS#1 V1.5 - Signature of RSA message and encodes the signature.
  *          Refer to RSASSA-PKCS1-v1_5 chapter of the PKCS#1 v2.1
  *
@@ -221,14 +263,7 @@ static TEE_Result rsassa_pkcs1_v1_5_sign(struct imxcrypt_rsa_ssa *ssa_data)
 	/* Encode the Message */
 	emsa_pkcs1_v1_5_encode(ssa_data, &EM);
 
-	/*
-	 * RSA NO PAD  Encrypt/Decrypt are doing the same operation
-	 * expect that the decrypt takes a RSA Private key in parameter
-	 */
-	ret = crypto_acipher_rsanopad_decrypt(ssa_data->key.key,
-						EM.data, EM.length,
-						ssa_data->signature.data,
-						&ssa_data->signature.length);
+	ret = rsa_encrypt(ssa_data, &EM);
 
 	free(EM.data);
 
@@ -771,10 +806,7 @@ static TEE_Result rsassa_pss_sign(struct imxcrypt_rsa_ssa *ssa_data)
 	 * expect that the decrypt takes a RSA Private key in parameter
 	 */
 	if (ret == TEE_SUCCESS)
-		ret = crypto_acipher_rsanopad_decrypt(key,
-						EM.data, EM.length,
-						ssa_data->signature.data,
-						&ssa_data->signature.length);
+		ret = rsa_encrypt(ssa_data, &EM);
 
 	free(EM.data);
 

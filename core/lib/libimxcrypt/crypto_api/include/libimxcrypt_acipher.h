@@ -24,6 +24,7 @@ enum imxcrypt_rsa_id {
 	RSA_NOPAD = 0,   ///< RSA Algo mode NO PAD
 	RSA_OAEP,        ///< RSA Algo mode OAEP
 	RSA_PKCS_V1_5,   ///< RSA Algo mode PKCSv1.5
+	RSA_SIGN,
 };
 
 /**
