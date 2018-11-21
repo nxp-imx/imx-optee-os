@@ -305,7 +305,7 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx, unsigned char *buf, 
     unsigned char *c, *c2;
 	unsigned char *hash = malloc(64);
 	unsigned char *sig = malloc(MBEDTLS_MPI_MAX_SIZE);
-	unsigned char *tmp_buf = buf; /* intermediate buffer */
+	unsigned char *tmp_buf = NULL;
     size_t sub_len = 0, pub_len = 0, sig_and_oid_len = 0, sig_len;
     size_t len = 0;
     mbedtls_pk_type_t pk_alg;
@@ -318,8 +318,16 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx, unsigned char *buf, 
 
     /*
      * Prepare data to be signed in tmp_buf
+	 * Allocate the buffer and assign c to point at the end
+	 * of the buffer
      */
-	c = tmp_buf + size;
+	tmp_buf = malloc(2048);
+	if (!tmp_buf) {
+		EMSG("temporary buffer allocation failed\n");
+		ret = -1;
+		goto out;
+	}
+	c = tmp_buf + 2048;
 
     /*
      * Signature algorithm needed in TBS, and later for actual signature
@@ -537,6 +545,7 @@ out_mpsign:
 out:
 	free(hash);
 	free(sig);
+	free(tmp_buf);
 
 	return ret;
 }
