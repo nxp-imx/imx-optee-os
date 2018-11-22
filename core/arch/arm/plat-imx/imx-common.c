@@ -20,6 +20,7 @@ static void imx_digproc(void)
 {
 	uint32_t digprog;
 	vaddr_t anatop_addr __maybe_unused;
+	vaddr_t base __maybe_unused;
 #ifdef CFG_MX7ULP
 /* Temporary Hack to unify detection of SoC*/
 	digprog = SOC_MX7ULP << 16;
@@ -33,7 +34,7 @@ static void imx_digproc(void)
 #elif defined(CFG_MX8M)
 	digprog = read32(anatop_addr + HW_ANADIG_DIGPROG_IMX8MQ);
 
-	vaddr_t base = core_mmu_get_va(IMX_OCOTP_BASE, MEM_AREA_IO_SEC);
+	base = core_mmu_get_va(IMX_OCOTP_BASE, MEM_AREA_IO_SEC);
 
 	if (base && (read32(base + SW_INFO_B1) == SW_B1_MAGIC))
 	{
