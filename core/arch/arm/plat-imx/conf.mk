@@ -16,6 +16,7 @@ mx7s-flavorlist = mx7swarp7
 mx7ulp-flavorlist = mx7ulpevk
 mx8m-flavorlist = mx8mqevk
 mx8mm-flavorlist = mx8mmevk
+mx8qx-flavorlist = mx8qxpmek mx8qxplpddr4arm2
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
@@ -82,10 +83,20 @@ else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8m-flavorlist)))
 $(call force,CFG_MX8M,y)
 $(call force,CFG_ARM64_core,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
+$(call force,CFG_IMX_LPUART,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8mm-flavorlist)))
 $(call force,CFG_MX8MM,y)
 $(call force,CFG_ARM64_core,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
+$(call force,CFG_IMX_LPUART,n)
+else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qx-flavorlist)))
+$(call force,CFG_MX8QX,y)
+$(call force,CFG_ARM64_core,y)
+$(call force,CFG_TEE_CORE_NB_CORE,4)
+$(call force,CFG_IMX_CAAM,n)
+$(call force,CFG_TZC380,n)
+$(call force,CFG_CSU,n)
+$(call force,CFG_IMX_UART,n)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -112,6 +123,7 @@ CFG_IMX_OCRAM = n
 CFG_IMX_WDOG = n
 CFG_TZC380 ?= y
 CFG_IMX_UART ?= y
+CFG_IMX_LPUART ?= y
 CFG_IMX_CAAM ?= y
 else
 # arm-v7 platforms Common definition
@@ -403,6 +415,16 @@ endif
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mmevk))
 CFG_DDR_SIZE ?= 0x80000000
 CFG_UART_BASE ?= UART2_BASE
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx8qxpmek))
+CFG_DDR_SIZE ?= 0x80000000
+CFG_UART_BASE ?= UART0_BASE
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx8qxplpddr4arm2))
+CFG_DDR_SIZE ?= 0x80000000
+CFG_UART_BASE ?= UART0_BASE
 endif
 
 ifeq ($(filter y, $(CFG_PSCI_ARM32)), y)
