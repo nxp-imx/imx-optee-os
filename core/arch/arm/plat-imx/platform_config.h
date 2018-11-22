@@ -46,6 +46,8 @@
 /* For i.MX8MM platforms */
 #elif defined(CFG_MX8MM)
 #include <config/imx8mm.h>
+#elif defined(CFG_MX8QM)
+#include <config/imx8qm.h>
 #elif defined(CFG_MX8QX)
 #include <config/imx8qx.h>
 /* For i.MX7D/S platforms */

@@ -43,6 +43,8 @@
 #include <registers/imx8mm-regs.h>
 #elif defined(CFG_MX8QX)
 #include <registers/imx8qx-regs.h>
+#elif defined(CFG_MX8QM)
+#include <registers/imx8qm-regs.h>
 #else
 #error "PLATFORM not defined"
 #endif
