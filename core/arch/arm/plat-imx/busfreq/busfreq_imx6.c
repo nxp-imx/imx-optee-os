@@ -286,7 +286,9 @@ TEE_Result imx6_busfreq_init(void)
 	 * The Busfreq is installed at the end of the OCRAM_S
 	 */
 	if (!soc_is_imx6sx())
-		ocram_start = pm_ocram_free_area;
+		ocram_start = core_mmu_get_va(
+				imx_get_ocram_tz_start_addr() + BUSFREQ_OCRAM_OFFSET,
+				MEM_AREA_TEE_COHERENT);
 	else
 		ocram_start = core_mmu_get_va(
 				imx_get_ocram_tz_start_addr(),
