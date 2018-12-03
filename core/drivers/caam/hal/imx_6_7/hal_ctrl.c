@@ -101,13 +101,16 @@ void hal_ctrl_get_mpmr(vaddr_t ctrl_addr, uint8_t *val_scfgr)
 {
 	int i;
 	uint32_t val;
-	/* get the SCFGR content */
+	/*
+     * get the SCFGR content
+     * Note that the MPMR endianess is reverted between write and read
+     */
 	for (i = 0; i < MPMR_NB_REG; i += 4) {
 		val = read32(ctrl_addr + MPMR + i);
-		val_scfgr[i]     = (uint8_t)(val & 0xFF);
-		val_scfgr[i + 1] = (uint8_t)((val >> 8) & 0xFF);
-		val_scfgr[i + 2] = (uint8_t)((val >> 16) & 0xFF);
-		val_scfgr[i + 3] = (uint8_t)((val >> 24) & 0xFF);
+		val_scfgr[i]     = (uint8_t)((val >> 24) & 0xFF);
+		val_scfgr[i + 1] = (uint8_t)((val >> 16) & 0xFF);
+		val_scfgr[i + 2] = (uint8_t)((val >> 8) & 0xFF);
+		val_scfgr[i + 3] = (uint8_t)(val & 0xFF);
 	}
 
 }

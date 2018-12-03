@@ -419,7 +419,7 @@ enum CAAM_Status caam_mp_init(vaddr_t ctrl_addr)
 		MP_TRACE("MP Private key has not been generated .\n");
 		retstatus = do_mppriv_gen((const uint8_t *)passphrase,
                             strlen(passphrase),
-                			SHIFT_U32((PDB_MP_CSEL_P256 & 0xFF), 17));
+			SHIFT_U32((PDB_MP_CSEL_P256 & 0xFF), 17));
 		if (retstatus != CAAM_NO_ERROR) {
 			MP_TRACE("do_mppriv_gen failed!");
 			return retstatus;
