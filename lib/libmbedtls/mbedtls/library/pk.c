@@ -3,7 +3,6 @@
  *  Public Key abstraction layer
  *
  *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *  Copyright 2018 NXP
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
  *  not use this file except in compliance with the License.
@@ -93,14 +92,6 @@ const mbedtls_pk_info_t * mbedtls_pk_info_from_type( mbedtls_pk_type_t pk_type )
 #if defined(MBEDTLS_ECDSA_C)
         case MBEDTLS_PK_ECDSA:
             return( &mbedtls_ecdsa_info );
-#endif
-#if defined(CFG_MBEDTLS_MP)
-    /*
-     * case for i.MX proprietary Manufacturing Protection (MP)
-     *  MP Public key is an ECDSA key format
-     */
-    case MBEDTLS_PK_IMX_MP:
-        return( &mbedtls_ecdsa_info );
 #endif
         /* MBEDTLS_PK_RSA_ALT omitted on purpose */
         default:

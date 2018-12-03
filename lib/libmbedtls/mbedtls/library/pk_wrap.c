@@ -3,7 +3,6 @@
  *  Public Key abstraction layer: wrapper functions
  *
  *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *  Copyright 2018 NXP
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
  *  not use this file except in compliance with the License.
@@ -329,17 +328,10 @@ const mbedtls_pk_info_t mbedtls_eckeydh_info = {
 };
 #endif /* MBEDTLS_ECP_C */
 
-#if defined(MBEDTLS_ECDSA_C) || defined(CFG_MBEDTLS_MP)
+#if defined(MBEDTLS_ECDSA_C)
 static int ecdsa_can_do( mbedtls_pk_type_t type )
 {
-    if (type == MBEDTLS_PK_ECDSA)
-        return 1;
-#ifdef CFG_MBEDTLS_MP
-    else if (type == MBEDTLS_PK_IMX_MP)
-        return 2;
-#endif
-
-    return 0;
+    return( type == MBEDTLS_PK_ECDSA );
 }
 
 static int ecdsa_verify_wrap( void *ctx, mbedtls_md_type_t md_alg,

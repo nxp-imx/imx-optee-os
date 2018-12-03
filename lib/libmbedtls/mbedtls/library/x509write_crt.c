@@ -3,7 +3,6 @@
  *  X.509 certificate writing
  *
  *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *  Copyright 2018 NXP
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
  *  not use this file except in compliance with the License.
@@ -40,8 +39,6 @@
 #include "mbedtls/sha1.h"
 
 #include <string.h>
-#include <stdlib.h>
-#include <trace.h>
 
 #if defined(MBEDTLS_PEM_WRITE_C)
 #include "mbedtls/pem.h"
@@ -303,93 +300,52 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx, unsigned char *buf, 
     const char *sig_oid;
     size_t sig_oid_len = 0;
     unsigned char *c, *c2;
-	unsigned char *hash = malloc(64);
-	unsigned char *sig = malloc(MBEDTLS_MPI_MAX_SIZE);
-	unsigned char *tmp_buf = buf; /* intermediate buffer */
+    unsigned char hash[64];
+    unsigned char sig[MBEDTLS_MPI_MAX_SIZE];
+    unsigned char tmp_buf[2048];
     size_t sub_len = 0, pub_len = 0, sig_and_oid_len = 0, sig_len;
     size_t len = 0;
     mbedtls_pk_type_t pk_alg;
 
-	if ((!hash) || (!sig)) {
-		EMSG("malloc failed\n");
-		ret = -1;
-		goto out;
-	}
-
     /*
      * Prepare data to be signed in tmp_buf
      */
-	c = tmp_buf + size;
+    c = tmp_buf + sizeof( tmp_buf );
 
-    /*
-     * Signature algorithm needed in TBS, and later for actual signature
-     * There's no direct way of extracting a signature algorithm
-     * (represented as an element of mbedtls_pk_type_t) from a PK instance.
-     */
-	if (mbedtls_pk_can_do(ctx->issuer_key, MBEDTLS_PK_RSA))
-		pk_alg = MBEDTLS_PK_RSA;
-	else if (mbedtls_pk_can_do(ctx->issuer_key, MBEDTLS_PK_ECDSA))
-		pk_alg = MBEDTLS_PK_ECDSA;
-#ifdef CFG_MBEDTLS_MP
-  else if (mbedtls_pk_can_do(ctx->issuer_key, MBEDTLS_PK_IMX_MP))
-		pk_alg = MBEDTLS_PK_ECDSA;
-#endif
-	else {
-		ret = MBEDTLS_ERR_X509_INVALID_ALG;
-		goto out;
-  }
+    /* Signature algorithm needed in TBS, and later for actual signature */
+    pk_alg = mbedtls_pk_get_type( ctx->issuer_key );
+    if( pk_alg == MBEDTLS_PK_ECKEY )
+        pk_alg = MBEDTLS_PK_ECDSA;
 
-	ret = mbedtls_oid_get_oid_by_sig_alg(pk_alg, ctx->md_alg,
-					&sig_oid, &sig_oid_len);
-	if (ret != 0)
-		goto out;
+    if( ( ret = mbedtls_oid_get_oid_by_sig_alg( pk_alg, ctx->md_alg,
+                                        &sig_oid, &sig_oid_len ) ) != 0 )
+    {
+        return( ret );
+    }
 
     /*
      *  Extensions  ::=  SEQUENCE SIZE (1..MAX) OF Extension
      */
-	ret = mbedtls_x509_write_extensions(&c, tmp_buf, ctx->extensions);
-	if (ret < 0)
-		goto out;
-	len += ret;
-	ret = mbedtls_asn1_write_len(&c, tmp_buf, len);
-	if (ret < 0)
-		goto out;
-	len += ret;
-	ret = mbedtls_asn1_write_tag(&c, tmp_buf, MBEDTLS_ASN1_CONSTRUCTED |
-							MBEDTLS_ASN1_SEQUENCE);
-	if (ret < 0)
-		goto out;
-	len += ret;
-	ret = mbedtls_asn1_write_len(&c, tmp_buf, len);
-	if (ret < 0)
-		goto out;
-	len += ret;
-	ret = mbedtls_asn1_write_tag(&c, tmp_buf,
-						MBEDTLS_ASN1_CONTEXT_SPECIFIC |
-						MBEDTLS_ASN1_CONSTRUCTED | 3);
-	if (ret < 0)
-		goto out;
-	len += ret;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_x509_write_extensions( &c, tmp_buf, ctx->extensions ) );
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &c, tmp_buf, len ) );
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &c, tmp_buf, MBEDTLS_ASN1_CONSTRUCTED |
+                                                    MBEDTLS_ASN1_SEQUENCE ) );
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &c, tmp_buf, len ) );
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &c, tmp_buf, MBEDTLS_ASN1_CONTEXT_SPECIFIC |
+                                                    MBEDTLS_ASN1_CONSTRUCTED | 3 ) );
 
     /*
      *  SubjectPublicKeyInfo
      */
-	ret = mbedtls_pk_write_pubkey_der(ctx->subject_key,
-			tmp_buf, c - tmp_buf);
-	if (ret < 0)
-		goto out;
-	pub_len += ret;
-
-	c -= pub_len;
-	len += pub_len;
+    MBEDTLS_ASN1_CHK_ADD( pub_len, mbedtls_pk_write_pubkey_der( ctx->subject_key,
+                                                tmp_buf, c - tmp_buf ) );
+    c -= pub_len;
+    len += pub_len;
 
     /*
      *  Subject  ::=  Name
      */
-	ret = mbedtls_x509_write_names(&c, tmp_buf, ctx->subject);
-	if (ret < 0)
-		goto out;
-	len += ret;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_x509_write_names( &c, tmp_buf, ctx->subject ) );
 
     /*
      *  Validity ::= SEQUENCE {
@@ -398,182 +354,106 @@ int mbedtls_x509write_crt_der( mbedtls_x509write_cert *ctx, unsigned char *buf, 
      */
     sub_len = 0;
 
-	ret = x509_write_time(&c, tmp_buf,
-				ctx->not_after,
-				MBEDTLS_X509_RFC5280_UTC_TIME_LEN);
-	if (ret < 0)
-		goto out;
-	sub_len += ret;
+    MBEDTLS_ASN1_CHK_ADD( sub_len, x509_write_time( &c, tmp_buf, ctx->not_after,
+                                            MBEDTLS_X509_RFC5280_UTC_TIME_LEN ) );
 
-	ret = x509_write_time(&c, tmp_buf,
-				ctx->not_before,
-				MBEDTLS_X509_RFC5280_UTC_TIME_LEN);
-	if (ret < 0)
-		goto out;
-	sub_len += ret;
+    MBEDTLS_ASN1_CHK_ADD( sub_len, x509_write_time( &c, tmp_buf, ctx->not_before,
+                                            MBEDTLS_X509_RFC5280_UTC_TIME_LEN ) );
 
     len += sub_len;
-	ret = mbedtls_asn1_write_len(&c, tmp_buf, sub_len);
-	if (ret < 0)
-		goto out;
-	len += ret;
-	ret = mbedtls_asn1_write_tag(&c, tmp_buf, MBEDTLS_ASN1_CONSTRUCTED |
-						MBEDTLS_ASN1_SEQUENCE);
-	if (ret < 0)
-		goto out;
-	len += ret;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &c, tmp_buf, sub_len ) );
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &c, tmp_buf, MBEDTLS_ASN1_CONSTRUCTED |
+                                                    MBEDTLS_ASN1_SEQUENCE ) );
 
     /*
      *  Issuer  ::=  Name
      */
-	ret = mbedtls_x509_write_names(&c, tmp_buf, ctx->issuer);
-	if (ret < 0)
-		goto out;
-	len += ret;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_x509_write_names( &c, tmp_buf, ctx->issuer ) );
 
     /*
      *  Signature   ::=  AlgorithmIdentifier
      */
-	ret = mbedtls_asn1_write_algorithm_identifier(&c, tmp_buf,
-				sig_oid, strlen(sig_oid), 0);
-	if (ret < 0)
-		goto out;
-	len += ret;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_algorithm_identifier( &c, tmp_buf,
+                       sig_oid, strlen( sig_oid ), 0 ) );
 
     /*
      *  Serial   ::=  INTEGER
      */
-	ret = mbedtls_asn1_write_mpi(&c, tmp_buf, &ctx->serial);
-	if (ret < 0)
-		goto out;
-	len += ret;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_mpi( &c, tmp_buf, &ctx->serial ) );
 
     /*
      *  Version  ::=  INTEGER  {  v1(0), v2(1), v3(2)  }
      */
-	sub_len = 0;
-	ret = mbedtls_asn1_write_int(&c, tmp_buf, ctx->version);
-	if (ret < 0)
-		goto out;
-	sub_len += ret;
-	len += sub_len;
-	ret = mbedtls_asn1_write_len(&c, tmp_buf, sub_len);
-	if (ret < 0)
-		goto out;
-	len += ret;
-	ret = mbedtls_asn1_write_tag(&c, tmp_buf,
-						MBEDTLS_ASN1_CONTEXT_SPECIFIC |
-						MBEDTLS_ASN1_CONSTRUCTED | 0);
-	if (ret < 0)
-		goto out;
-	len += ret;
+    sub_len = 0;
+    MBEDTLS_ASN1_CHK_ADD( sub_len, mbedtls_asn1_write_int( &c, tmp_buf, ctx->version ) );
+    len += sub_len;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &c, tmp_buf, sub_len ) );
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &c, tmp_buf, MBEDTLS_ASN1_CONTEXT_SPECIFIC |
+                                                    MBEDTLS_ASN1_CONSTRUCTED | 0 ) );
 
-	ret = mbedtls_asn1_write_len(&c, tmp_buf, len);
-	if (ret < 0)
-		goto out;
-	len += ret;
-	ret = mbedtls_asn1_write_tag(&c, tmp_buf, MBEDTLS_ASN1_CONSTRUCTED |
-						MBEDTLS_ASN1_SEQUENCE);
-	if (ret < 0)
-		goto out;
-	len += ret;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &c, tmp_buf, len ) );
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &c, tmp_buf, MBEDTLS_ASN1_CONSTRUCTED |
+                                                    MBEDTLS_ASN1_SEQUENCE ) );
 
-#ifdef CFG_MBEDTLS_MP
-  /* the signature is done in the TA with the MPSign functionnality*/
-  if (mbedtls_pk_can_do(ctx->issuer_key, MBEDTLS_PK_IMX_MP) == 2)
-    goto out_mpsign;
-#endif
     /*
      * Make signature
      */
-	mbedtls_md(mbedtls_md_info_from_type(ctx->md_alg), c, len, hash);
-	ret = mbedtls_pk_sign(ctx->issuer_key, ctx->md_alg, hash, 0,
-			sig, &sig_len, f_rng, p_rng);
-	if (ret != 0)
-		goto out;
+    mbedtls_md( mbedtls_md_info_from_type( ctx->md_alg ), c, len, hash );
+
+    if( ( ret = mbedtls_pk_sign( ctx->issuer_key, ctx->md_alg, hash, 0, sig, &sig_len,
+                         f_rng, p_rng ) ) != 0 )
+    {
+        return( ret );
+    }
 
     /*
      * Write data to output buffer
      */
-	c2 = buf + size;
-	ret = mbedtls_x509_write_sig(&c2, buf, sig_oid,
-			sig_oid_len, sig, sig_len);
-	if (ret < 0)
-		goto out;
-	sig_and_oid_len += ret;
+    c2 = buf + size;
+    MBEDTLS_ASN1_CHK_ADD( sig_and_oid_len, mbedtls_x509_write_sig( &c2, buf,
+                                        sig_oid, sig_oid_len, sig, sig_len ) );
 
-	if (len > (size_t)(c2 - buf)) {
-		ret = MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
-		goto out;
-	}
+    if( len > (size_t)( c2 - buf ) )
+        return( MBEDTLS_ERR_ASN1_BUF_TOO_SMALL );
 
-    /*
-     * Note that the data filling in buf starts with the end
-     * Signature first then the certificate
-     * End potential 0 at the beginning
-     */
+    c2 -= len;
+    memcpy( c2, c, len );
 
-	c2 -= len;
-	memcpy(c2, c, len);
+    len += sig_and_oid_len;
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &c2, buf, len ) );
+    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &c2, buf, MBEDTLS_ASN1_CONSTRUCTED |
+                                                 MBEDTLS_ASN1_SEQUENCE ) );
 
-	len += sig_and_oid_len;
-	ret = mbedtls_asn1_write_len(&c2, buf, len);
-	if (ret < 0)
-		goto out;
-	len += ret;
-	ret = mbedtls_asn1_write_tag(&c2, buf, MBEDTLS_ASN1_CONSTRUCTED |
-						MBEDTLS_ASN1_SEQUENCE);
-	if (ret < 0)
-		goto out;
-	len += ret;
-
-#ifdef CFG_MBEDTLS_MP
-out_mpsign:
-#endif
-
-    /* size of the certificate without the signature */
-	ret = (int)len;
-
-out:
-	free(hash);
-	free(sig);
-
-	return ret;
+    return( (int) len );
 }
 
 #define PEM_BEGIN_CRT           "-----BEGIN CERTIFICATE-----\n"
 #define PEM_END_CRT             "-----END CERTIFICATE-----\n"
 
 #if defined(MBEDTLS_PEM_WRITE_C)
-int mbedtls_x509write_crt_pem(mbedtls_x509write_cert *crt,
-	unsigned char *buf, size_t size,
-	int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
+int mbedtls_x509write_crt_pem( mbedtls_x509write_cert *crt, unsigned char *buf, size_t size,
+                       int (*f_rng)(void *, unsigned char *, size_t),
+                       void *p_rng )
 {
-	int ret = 0;
-	unsigned char *output_buf = malloc(4096);
-	size_t olen = 0;
+    int ret;
+    unsigned char output_buf[4096];
+    size_t olen = 0;
 
-	if (!output_buf) {
-		EMSG("malloc failed\n");
-		ret = -1;
-		goto out;
-	}
+    if( ( ret = mbedtls_x509write_crt_der( crt, output_buf, sizeof(output_buf),
+                                   f_rng, p_rng ) ) < 0 )
+    {
+        return( ret );
+    }
 
-	ret = mbedtls_x509write_crt_der(crt, output_buf,
-				sizeof(output_buf)*4096, f_rng, p_rng);
-	if (ret < 0)
-		goto out;
+    if( ( ret = mbedtls_pem_write_buffer( PEM_BEGIN_CRT, PEM_END_CRT,
+                                  output_buf + sizeof(output_buf) - ret,
+                                  ret, buf, size, &olen ) ) != 0 )
+    {
+        return( ret );
+    }
 
-	ret = mbedtls_pem_write_buffer(PEM_BEGIN_CRT, PEM_END_CRT,
-			output_buf + sizeof(output_buf)*4096 - ret,
-			ret, buf, size, &olen);
-	if (ret != 0)
-		goto out;
-
-out:
-	free(output_buf);
-	return ret;
-	}
+    return( 0 );
+}
 #endif /* MBEDTLS_PEM_WRITE_C */
 
 #endif /* MBEDTLS_X509_CRT_WRITE_C */

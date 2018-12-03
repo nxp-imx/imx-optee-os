@@ -5,7 +5,6 @@
  * \brief Public Key abstraction layer
  *
  *  Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
- *  Copyright 2018 NXP
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may
  *  not use this file except in compliance with the License.
@@ -80,7 +79,6 @@ typedef enum {
     MBEDTLS_PK_ECDSA,
     MBEDTLS_PK_RSA_ALT,
     MBEDTLS_PK_RSASSA_PSS,
-    MBEDTLS_PK_IMX_MP, /* Manufacturing Protection i.MX proprietary */
 } mbedtls_pk_type_t;
 
 /**
