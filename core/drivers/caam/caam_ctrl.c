@@ -148,6 +148,14 @@ static TEE_Result crypto_driver_init(void)
 		goto exit_init;
 	}
 #endif
+#ifdef CFG_CRYPTO_ECC_HW
+	/* Initialize the ECC Module */
+	retstatus = caam_ecc_init(jr_cfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+#endif
 
 	/* Everything is OK, register the Power Management handler */
 	caam_pwr_init();

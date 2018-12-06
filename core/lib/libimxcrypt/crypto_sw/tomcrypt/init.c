@@ -52,9 +52,11 @@ TEE_Result imxcrypt_libsoft_init(void)
 	LIB_TRACE("libsoft_dsa_init ret %d", status);
 	ret |= status;
 
+#ifndef CFG_CRYPTO_ECC_HW
 	status = libsoft_ecc_init();
 	LIB_TRACE("libsoft_ecc_init ret %d", status);
 	ret |= status;
+#endif
 
 	status = libsoft_dh_init();
 	LIB_TRACE("libsoft_dh_init ret %d", status);

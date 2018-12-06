@@ -420,6 +420,9 @@ TEE_Result crypto_acipher_ecc_shared_secret(
 	if (size_bits == 0)
 		return ret;
 
+	if (*secret_len < (size_bits / 8))
+		return TEE_ERROR_SHORT_BUFFER;
+
 	ecc = imxcrypt_getmod(CRYPTO_ECC);
 	if (ecc) {
 		/*

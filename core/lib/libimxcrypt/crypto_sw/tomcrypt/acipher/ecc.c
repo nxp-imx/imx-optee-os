@@ -26,20 +26,7 @@
 #define LIB_TRACE(...)
 #endif
 
-/**
- * @brief   Allocate the maximum bignumber
- *
- * @retval bignumber allocated if success
- * @retval NULL if error
- */
-static struct bignum *do_allocate_max_bn(void)
-{
-	size_t max_size = (mpa_StaticVarSizeInU32(LTC_MAX_BITS_PER_VARIABLE)
-						* sizeof(uint32_t) * 8);
-
-	return crypto_bignum_allocate(max_size);
-}
-
+#ifndef CFG_CRYPTO_ECC_HW
 /**
  * @brief    Find in the ECC curve constant into the list of the LibTomCrypt
  *           ECC constant array.
@@ -80,23 +67,23 @@ static TEE_Result find_ecc_param(ecc_key *ltc_key, size_t size_sec)
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  */
 static TEE_Result do_allocate_keypair(struct ecc_keypair *key,
-					size_t size_bits __unused)
+					size_t size_bits)
 {
 	/* Initialize the key fields to NULL */
 	memset(key, 0, sizeof(*key));
 
 	/* Allocate Secure Scalar */
-	key->d = do_allocate_max_bn();
+	key->d = crypto_bignum_allocate(size_bits);
 	if (!key->d)
 		goto err_alloc_keypair;
 
 	/* Allocate Public coordinate X */
-	key->x = do_allocate_max_bn();
+	key->x = crypto_bignum_allocate(size_bits);
 	if (!key->x)
 		goto err_alloc_keypair;
 
 	/* Allocate Public coordinate Y */
-	key->y = do_allocate_max_bn();
+	key->y = crypto_bignum_allocate(size_bits);
 	if (!key->y)
 		goto err_alloc_keypair;
 
@@ -121,18 +108,18 @@ err_alloc_keypair:
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  */
 static TEE_Result do_allocate_publickey(struct ecc_public_key *key,
-					size_t size_bits __unused)
+					size_t size_bits)
 {
 	/* Initialize the key fields to NULL */
 	memset(key, 0, sizeof(*key));
 
 	/* Allocate Public coordinate X */
-	key->x = do_allocate_max_bn();
+	key->x = crypto_bignum_allocate(size_bits);
 	if (!key->x)
 		goto err_alloc_publickey;
 
 	/* Allocate Public coordinate Y */
-	key->y = do_allocate_max_bn();
+	key->y = crypto_bignum_allocate(size_bits);
 	if (!key->y)
 		goto err_alloc_publickey;
 
@@ -199,9 +186,9 @@ static TEE_Result do_gen_keypair(struct ecc_keypair *key, size_t key_size)
 		/* Check if coordinate z == 1 to validate the key */
 		if (mp_count_bits(tmp_key.pubkey.z) == 1) {
 			/* Copy the generated key to the output key */
-			mp_copy(tmp_key.pubkey.x,  key->x);
-			mp_copy(tmp_key.pubkey.y,  key->y);
-			mp_copy(tmp_key.k,  key->d);
+			mp_copy(tmp_key.pubkey.x, key->x);
+			mp_copy(tmp_key.pubkey.y, key->y);
+			mp_copy(tmp_key.k, key->d);
 		}
 	}
 
@@ -438,3 +425,6 @@ int libsoft_ecc_init(void)
 
 	return ret;
 }
+
+#endif /* CFG_CRYPTO_ECC_HW */
+

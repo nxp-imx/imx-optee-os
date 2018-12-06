@@ -40,7 +40,7 @@ ifeq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)),y)
 $(call force, CFG_CRYPTO_RSA_HW,y)
 $(call force, CFG_CRYPTO_DSA_HW,n)
 $(call force, CFG_CRYPTO_DH_HW,n)
-$(call force, CFG_CRYPTO_ECC_HW,n)
+$(call force, CFG_CRYPTO_ECC_HW,y)
 endif
 
 $(call force, CFG_CRYPTO_CMAC_HW,y)

@@ -425,22 +425,48 @@ static inline void dump_desc(void *desc)
  * @brief   RSA Encryption using format \a format
  */
 #define RSA_ENCRYPT(format) \
-			(CMD_OP_TYPE | OP_PROTID(RSA_ENC) | \
+			(CMD_OP_TYPE | PROTID(RSA_ENC) | \
 			 PROT_RSA_FMT(format))
 
 /**
  * @brief   RSA Decryption using format \a format
  */
 #define RSA_DECRYPT(format) \
-			(CMD_OP_TYPE | OP_PROTID(RSA_DEC) | \
+			(CMD_OP_TYPE | PROTID(RSA_DEC) | \
 			 PROT_RSA_FMT(format))
 
 /**
  * @brief   RSA Finalize Key in format \a format
  */
 #define RSA_FINAL_KEY(format) \
-			(CMD_OP_TYPE | OP_PROTID(RSA_FINISH_KEY) | \
+			(CMD_OP_TYPE | PROTID(RSA_FINISH_KEY) | \
 			 PROT_RSA_KEY(format))
+
+/**
+ * @brief    Public Keypair generation
+ */
+#define PK_KEYPAIR_GEN(type) \
+			(CMD_OP_TYPE | OP_TYPE(UNI) | PROTID(PKKEY) | \
+			PROT_PK_TYPE(type))
+
+/**
+ * @brief    DSA/ECDSA signature of message hashed
+ */
+#define DSA_SIGN(type) \
+			(CMD_OP_TYPE | OP_TYPE(UNI) | PROTID(DSASIGN) | \
+			PROT_PK_MSG(HASHED) | PROT_PK_TYPE(type))
+/**
+ * @brief    DSA/ECDSA signature verify message hashed
+ */
+#define DSA_VERIFY(type) \
+			(CMD_OP_TYPE | OP_TYPE(UNI) | PROTID(DSAVERIFY) | \
+			PROT_PK_MSG(HASHED) | PROT_PK_TYPE(type))
+/**
+ * @brief    DH/ECC Shared Secret
+ */
+#define SHARED_SECRET(type) \
+			(CMD_OP_TYPE | OP_TYPE(UNI) | PROTID(SHARED_SECRET) | \
+			PROT_PK_TYPE(type))
 
 #endif /* __DESC_HELPER_H__ */
 

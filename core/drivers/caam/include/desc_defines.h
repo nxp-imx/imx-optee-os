@@ -300,12 +300,11 @@
 /* Protocol Identifier */
 #define PROTID(id)			SHIFT_U32((PROTID_##id & 0xFF), 16)
 #define PROTID_MPKEY			0x14
+#define PROTID_PKKEY			0x14
 #define PROTID_MPSIGN			0x15
-
-/*
- * Protocol Identifier
- */
-#define OP_PROTID(id)			SHIFT_U32((PROTID_##id & 0xFF), 16)
+#define PROTID_DSASIGN			0x15
+#define PROTID_DSAVERIFY		0x16
+#define PROTID_SHARED_SECRET	0x17
 #define PROTID_RSA_ENC			0x18
 #define PROTID_RSA_DEC			0x19
 #define PROTID_RSA_FINISH_KEY	0x1A
@@ -323,6 +322,15 @@
 #define PROT_RSA_KEY(format)	SHIFT_U32((PROT_RSA_KEY_##format & 0x3), 0)
 #define PROT_RSA_KEY_ALL		0
 #define PROT_RSA_KEY_N_D		2
+
+/*
+ * ECC Protocol Information
+ */
+#define PROT_PK_MSG(type)		SHIFT_U32(PROT_PK_MSG_##type, 10)
+#define PROT_PK_MSG_HASHED		2
+#define PROT_PK_TYPE(type)		SHIFT_U32(PROT_PK_##type, 1)
+#define PROT_PK_DL				0
+#define PROT_PK_ECC				1
 
 /*
  * Algorithm Identifier
@@ -430,13 +438,6 @@
 
 /* Local Offset */
 #define JMP_LOCAL_OFFSET(off)	SHIFT_U32((off & 0xFF), 0)
-
-/*
- * Protocol Data Block
- */
-#define PDB_MP_CSEL_P256		0x03
-#define PDB_MP_CSEL_P384		0x04
-#define PDB_MP_CSEL_P521		0x05
 
 /*
  * MATH Command fields
@@ -595,6 +596,37 @@
 #define PDB_RSA_KEY_P_SIZE(len)		SHIFT_U32((len & 0x1FF), 0)
 #define PDB_RSA_KEY_E_SIZE(len)		SHIFT_U32((len & 0x3FF), 0)
 #define PDB_RSA_KEY_N_SIZE(len)		SHIFT_U32((len & 0x3FF), 16)
+
+/* Manufacturing Curve Select */
+#define PDB_MP_CSEL_P256		0x03
+#define PDB_MP_CSEL_P384		0x04
+#define PDB_MP_CSEL_P521		0x05
+
+/* Public Key Generation */
+#define PDB_PKGEN_PD1				SHIFT_U32(1, 25)
+/* Public Key Signature */
+#define PDB_PKSIGN_PD1				SHIFT_U32(1, 22)
+/* Public Key Verify */
+#define PDB_PKVERIFY_PD1			SHIFT_U32(1, 22)
+/* Shared Secret */
+#define PDB_SHARED_SECRET_PD1		SHIFT_U32(1, 25)
+
+
+/* ECC Domain Selection */
+#define PDB_ECC_ECDSEL(curve)		SHIFT_U32((curve & 0x3F), 7)
+
+/*
+ * ECC Predefined Domain
+ */
+enum caam_ecc_curve {
+	ECC_P192 = (0x00),
+	ECC_P224,
+	ECC_P256,
+	ECC_P384,
+	ECC_P521,
+	ECC_MAX,
+	ECC_UNKNOWN = (0xFF),
+};
 
 #endif /* __DESC_DEFINES_H__ */
 
