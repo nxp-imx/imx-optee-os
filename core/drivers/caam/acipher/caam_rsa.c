@@ -65,7 +65,7 @@
 #define MAX_DESC_DEC_3   (13 + 2)
 
 /**
- * @brief   Define the maximum number of entris in the RSA Finish Key
+ * @brief   Define the maximum number of entries in the RSA Finish Key
  *          descriptor
  */
 #define MAX_DESC_KEY_FINISH		15
@@ -466,11 +466,12 @@ static void do_free_publickey(struct rsa_public_key *key)
  * @param[in]  key_size   Key size in bits
  *
  * @retval TEE_SUCCESS                 Success
- * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
+ * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
+ * @retval TEE_ERROR_GENERIC           Generic error
  */
 static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 {
-	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
+	TEE_Result ret = TEE_ERROR_GENERIC;
 
 	enum CAAM_Status retstatus;
 	struct caambuf p   = {0};
@@ -502,8 +503,10 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 
 	/* First allocate primes p and q in one buffer */
 	retstatus = caam_alloc_align_buf(&p, (key_size / 8));
-	if (retstatus != CAAM_NO_ERROR)
+	if (retstatus != CAAM_NO_ERROR) {
+		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto exit_gen_keypair;
+	}
 
 	/* Prepare q */
 	p.length /= 2;
@@ -511,10 +514,12 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 	q.length = p.length;
 	q.paddr  = p.paddr + (p.length * sizeof(uint8_t));
 
-	/* Convert Public exponent to a caam buffer */
+	/* Allocate Public exponent to a caam buffer */
 	retstatus = caam_alloc_buf(&e, crypto_bignum_num_bytes(key->e));
-	if (retstatus != CAAM_NO_ERROR)
+	if (retstatus != CAAM_NO_ERROR) {
+		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto exit_gen_keypair;
+	}
 
 	/*
 	 * Allocate d and n in one buffer.
@@ -525,14 +530,18 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 	size_n = key_size / 8;
 
 	retstatus = caam_alloc_align_buf(&d_n, (size_d + size_n));
-	if (retstatus != CAAM_NO_ERROR)
+	if (retstatus != CAAM_NO_ERROR) {
+		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto exit_gen_keypair;
+	}
 
 #if (RSA_PRIVATE_KEY_FORMAT > 2)
 	/* Allocate dp, dq and qp in one buffer */
 	retstatus = caam_alloc_align_buf(&dp, ((key_size / 8) / 2) * 3);
-	if (retstatus != CAAM_NO_ERROR)
+	if (retstatus != CAAM_NO_ERROR) {
+		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto exit_gen_keypair;
+	}
 
 	dp.length /= 3;
 	/* Prepare dq and qp */
@@ -554,7 +563,7 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 	prime.q        = &q;
 
 	/* Generate prime p and q */
-	retstatus =  caam_prime_gen(&prime);
+	retstatus = caam_prime_gen(&prime);
 	RSA_TRACE("Generate Prime P and Q returned 0x%"PRIx32"", retstatus);
 	if (retstatus != CAAM_NO_ERROR)
 		goto exit_gen_keypair;
@@ -601,8 +610,14 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 		RSA_DUMPBUF("N", d_n.data + size_d, size_n);
 		RSA_DUMPBUF("D", d_n.data + sizeof(uint32_t), size_d_gen);
 		ret = crypto_bignum_bin2bn(d_n.data + size_d, size_n, key->n);
+		if (ret != TEE_SUCCESS)
+			goto exit_gen_keypair;
+
 		ret = crypto_bignum_bin2bn(d_n.data + sizeof(uint32_t),
 				size_d_gen, key->d);
+		if (ret != TEE_SUCCESS)
+			goto exit_gen_keypair;
+
 
 #if (RSA_PRIVATE_KEY_FORMAT > 1)
 		cache_operation(TEE_CACHEINVALIDATE, p.data,
@@ -1615,7 +1630,7 @@ struct imxcrypt_rsa driver_rsa = {
 
 /**
  * @brief   Initialize the RSA module
- *l
+ *
  * @param[in] ctrl_addr   Controller base address
  *
  * @retval  CAAM_NO_ERROR    Success

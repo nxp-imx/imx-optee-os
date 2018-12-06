@@ -121,6 +121,7 @@ void crypto_acipher_free_rsa_public_key(struct rsa_public_key *key)
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
+ * @retval TEE_ERROR_GENERIC           Generic error
  */
 TEE_Result crypto_acipher_gen_rsa_key(struct rsa_keypair *key, size_t size_bits)
 {
