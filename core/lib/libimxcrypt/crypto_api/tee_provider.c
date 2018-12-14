@@ -56,6 +56,19 @@ int imxcrypt_register(enum imxcrypt_algo_id idx, void *ops)
 }
 
 /**
+ * @brief   Cryptographic module modify registration
+ *
+ * @param[in] idx  Crypto index in the array
+ * @param[in] ops  Reference to the cryptographic module
+ */
+void imxcrypt_register_change(enum imxcrypt_algo_id idx, void *ops)
+{
+	LIB_TRACE("Change registered module id %d with 0x%"PRIxPTR"",
+					idx, (uintptr_t)ops);
+	imxcrypt_algo[idx] = ops;
+}
+
+/**
  * @brief   Returns the address of the crypto module structure
  *
  * @param[in] idx  Crypto index in the array

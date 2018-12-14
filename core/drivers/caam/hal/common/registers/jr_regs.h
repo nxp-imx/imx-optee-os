@@ -43,6 +43,7 @@
 /* Interrupt Status */
 #define JRx_JRINTR					0x004C
 #define BM_JRx_JRINTR_HALT			SHIFT_U32(0x3, 2)
+#define JRINTR_HALT_RESUME			SHIFT_U32(0x2, 2)
 #define JRINTR_HALT_ONGOING			SHIFT_U32(0x1, 2)
 #define JRINTR_HALT_DONE			SHIFT_U32(0x2, 2)
 #define JRx_JRINTR_JRI				BIT32(0)
@@ -54,8 +55,21 @@
 #define JRx_JRCFGR_LS_ICEN			BIT32(1)
 #define JRx_JRCFGR_LS_IMSK			BIT32(0)
 
+/* Input Ring Read Index */
+#define JRx_IRRIR					0x005C
+
+/* Output Ring Write Index */
+#define JRx_ORWIR					0x0064
+
 /* Command */
 #define JRx_JRCR					0x006C
+#define JRx_JRCR_PARK				BIT32(1)
 #define JRx_JRCR_RESET				BIT32(0)
+
+/* CAAM Status register - duplicated */
+#define JRx_CSTA					0x0FD4
+#define JRx_CSTA_TRNG_IDLE			BIT32(2)
+#define JRx_CSTA_IDLE				BIT32(1)
+#define JRx_CSTA_BSY				BIT32(0)
 
 #endif /* __JR_REGS_H__ */

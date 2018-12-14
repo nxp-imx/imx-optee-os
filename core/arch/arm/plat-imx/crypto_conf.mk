@@ -35,7 +35,7 @@ $(call force, CFG_CRYPTO_GCM_HW,n)
 
 $(call force, CFG_CRYPTO_PKCS_HW,n)
 
-ifeq ($(filter y, $(CFG_MX6UL) $(CFG_MX6ULL)$(CFG_MX7)),y)
+ifeq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)),y)
 # Definition of the Asymmetric Cipher supported by HW
 $(call force, CFG_CRYPTO_RSA_HW,y)
 $(call force, CFG_CRYPTO_DSA_HW,n)
@@ -46,13 +46,13 @@ endif
 $(call force, CFG_CRYPTO_CMAC_HW,y)
 
 #
-# Enable Manufacturing Protection if the platform is the i.MX7
+# Enable Manufacturing Protection if the platform support it
 # CFG_CRYPTO_MP_HW enables the manufacturing protection functionnalities
 # _CFG_CRYPTO_WITH_MP enables the generic crypto api
 # CFG_MANUFACT_PROTEC_PTA enables the MP PTA
 # CFG_MBEDTLS_MP enables the setting of the public key type
 #
-ifeq ($(filter y, $(CFG_MX7)), y)
+ifeq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)), y)
 CFG_CRYPTO_MP_HW ?= y
 _CFG_CRYPTO_WITH_MP ?= y
 CFG_MANUFACT_PROTEC_PTA ?= y

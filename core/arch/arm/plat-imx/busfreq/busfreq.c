@@ -57,7 +57,7 @@ __weak TEE_Result imx7_busfreq_init(void)
  * @param[in] dll_off  switch DLL off or not
  *
  * @retval  TEE_SUCCESS              No error
- * @retvql  TEE_ERROR_NOT_SUPPORTED  Feature not supported
+ * @retval  TEE_ERROR_NOT_SUPPORTED  Feature not supported
  */
 TEE_Result busfreq_change(uint32_t freq, uint32_t dll_off)
 {

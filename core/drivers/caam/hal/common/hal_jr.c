@@ -13,6 +13,7 @@
 
 /* Local includes */
 #include "common.h"
+#include "caam_pwr.h"
 
 /* Hal includes */
 #include "hal_jr.h"
@@ -30,6 +31,17 @@
 #else
 #define HAL_TRACE(...)
 #endif
+
+/*
+ * List of common JR registers to save/restore
+ */
+const struct reglist jr_backup[] = {
+	{JRx_IRBAR, 2, 0, 0},
+	{JRx_IRSR, 1, 0, 0},
+	{JRx_ORBAR, 2, 0, 0},
+	{JRx_ORSR, 1, 0, 0},
+	{JRx_JRCFGR_LS, 1, 0, 0},
+};
 
 
 /**
@@ -124,6 +136,8 @@ void hal_jr_config(vaddr_t baseaddr, uint8_t nbJobs,
 	value |= JRx_JRCFGR_LS_ICEN;
 	value |= JRx_JRCFGR_LS_IMSK;
 	write32(value, baseaddr + JRx_JRCFGR_LS);
+
+	caam_pwr_add_backup(baseaddr, jr_backup, ARRAY_SIZE(jr_backup));
 
 }
 
@@ -221,5 +235,130 @@ bool hal_jr_poolackIT(vaddr_t baseaddr)
 	}
 
 	return false;
+}
+
+/**
+ * @brief   Halt the Job Ring processing. Stop fetching input
+ *          queue and wait all running jobs normal completion.
+ *
+ * @param[in] baseaddr   Jobr Ring Base Address
+ *
+ * @retval 0    Job Ring is halted
+ * @retval (-1) Error occurred
+ */
+int hal_jr_halt(vaddr_t baseaddr)
+{
+	uint16_t timeout = 10000;
+	uint32_t val;
+
+	/* Mask interrupts to poll for completion status */
+	io_mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
+			JRx_JRCFGR_LS_IMSK);
+
+	/* Request Job ring halt */
+	write32(JRx_JRCR_PARK, baseaddr + JRx_JRCR);
+
+	/* Check if there is a job running */
+	val = read32(baseaddr + JRx_IRSR);
+	if ((hal_jr_read_nbSlotAvailable(baseaddr) == val)
+			&& (read32(baseaddr + JRx_CSTA) != JRx_CSTA_BSY))
+		return 0;
+
+	/* Wait until all jobs complete */
+	do {
+		caam_udelay(10);
+		val = read32(baseaddr + JRx_JRINTR);
+		val &= BM_JRx_JRINTR_HALT;
+	} while ((val != JRINTR_HALT_DONE) && --timeout);
+
+	if (!timeout)
+		return (-1);
+
+	return 0;
+}
+
+/**
+ * @brief   Wait all Input queue Job Ring processing.
+ *
+ * @param[in] baseaddr   Jobr Ring Base Address
+ *
+ * @retval 0    Job Ring is halted
+ * @retval (-1) Error occurred
+ */
+int hal_jr_flush(vaddr_t baseaddr)
+{
+	uint16_t timeout = 10000;
+	uint32_t val;
+
+	/* Mask interrupts to poll for completion status */
+	io_mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
+			JRx_JRCFGR_LS_IMSK);
+
+	/* Request Job ring to flush input queue */
+	write32(JRx_JRCR_RESET, baseaddr + JRx_JRCR);
+
+	/* Check if there is a job running */
+	val = read32(baseaddr + JRx_IRSR);
+	if ((hal_jr_read_nbSlotAvailable(baseaddr) == val)
+			&& (read32(baseaddr + JRx_CSTA) != JRx_CSTA_BSY))
+		return 0;
+
+	/* Wait until all jobs complete */
+	do {
+		caam_udelay(10);
+		val = read32(baseaddr + JRx_JRINTR);
+		val &= BM_JRx_JRINTR_HALT;
+	} while ((val == JRINTR_HALT_DONE) && --timeout);
+
+	if (!timeout)
+		return (-1);
+
+	return 0;
+}
+
+/**
+ * @brief   Resume the Job Ring processing.
+ *
+ * @param[in] baseaddr   Jobr Ring Base Address
+ */
+void hal_jr_resume(vaddr_t baseaddr)
+{
+	write32(JRINTR_HALT_RESUME, baseaddr + JRx_JRINTR);
+
+	hal_jr_enableIT(baseaddr);
+}
+
+/**
+ * @brief   Get the current JR input queue index of the next job to read.
+ *          The HW increments register by 4. Convert it to a software
+ *          index number
+ *
+ * @param[in] baseaddr   CAAM JR Base Address
+ *
+ * @retval index of the next entry in the queue
+ */
+uint8_t hal_jr_input_index(vaddr_t baseaddr)
+{
+	uint32_t index;
+
+	index = read32(baseaddr + JRx_IRRIR);
+	return index >> 2;
+}
+
+/**
+ * @brief   Get the current JR output index of the next job completion.
+ *          The HW increments register by 8. Convert it to a software
+ *          index number
+ *
+ * @param[in] baseaddr   CAAM JR Base Address
+ *
+ * @retval index of the next entry in the queue
+ */
+uint8_t hal_jr_output_index(vaddr_t baseaddr)
+{
+	uint32_t index;
+
+	index = read32(baseaddr + JRx_ORWIR);
+	return index >> 3;
 }
 

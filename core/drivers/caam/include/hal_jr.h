@@ -110,5 +110,55 @@ void hal_jr_enableIT(vaddr_t baseaddr);
  */
 bool hal_jr_poolackIT(vaddr_t baseaddr);
 
+/**
+ * @brief   Halt the Job Ring processing. Stop fetching input
+ *          queue and wait all running jobs normal completion.
+ *
+ * @param[in] baseaddr   Jobr Ring Base Address
+ *
+ * @retval 0    Job Ring is halted
+ * @retval (-1) Error occurred
+ */
+int hal_jr_halt(vaddr_t baseaddr);
+
+/**
+ * @brief   Wait all Input queue Job Ring processing.
+ *
+ * @param[in] baseaddr   Jobr Ring Base Address
+ *
+ * @retval 0    Job Ring is halted
+ * @retval (-1) Error occurred
+ */
+int hal_jr_flush(vaddr_t baseaddr);
+
+/**
+ * @brief   Resume the Job Ring processing.
+ *
+ * @param[in] baseaddr   Jobr Ring Base Address
+ */
+void hal_jr_resume(vaddr_t baseaddr);
+
+/**
+ * @brief   Get the current JR input queue index of the next job to read.
+ *          The HW increments register by 4. Convert it to a software
+ *          index number
+ *
+ * @param[in] baseaddr   CAAM JR Base Address
+ *
+ * @retval index of the next entry in the queue
+ */
+uint8_t hal_jr_input_index(vaddr_t baseaddr);
+
+/**
+ * @brief   Get the current JR output index of the next job completion.
+ *          The HW increments register by 8. Convert it to a software
+ *          index number
+ *
+ * @param[in] baseaddr   CAAM JR Base Address
+ *
+ * @retval index of the next entry in the queue
+ */
+uint8_t hal_jr_output_index(vaddr_t baseaddr);
+
 #endif /* __HAL_JR_H__ */
 

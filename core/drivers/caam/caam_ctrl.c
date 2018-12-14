@@ -20,6 +20,7 @@
 #include "common.h"
 #include "caam_jr.h"
 #include "caam_rng.h"
+#include "caam_pwr.h"
 #ifdef CFG_CRYPTO_PK_HW
 #include "caam_acipher.h"
 #endif
@@ -147,6 +148,9 @@ static TEE_Result crypto_driver_init(void)
 		goto exit_init;
 	}
 #endif
+
+	/* Everything is OK, register the Power Management handler */
+	caam_pwr_init();
 
 	retresult = TEE_SUCCESS;
 

@@ -10,6 +10,10 @@
 
 /* Global includes */
 #include <io.h>
+#include <trace.h>
+
+/* Local includes */
+#include "caam_pwr.h"
 
 /* Hal includes */
 #include "hal_ctrl.h"
@@ -17,7 +21,18 @@
 /* Register includes */
 #include "ctrl_regs.h"
 
-#include <trace.h>
+/*
+ * List of control registers to save/restore
+ */
+const struct reglist ctrl_backup[] = {
+	{MCFGR, 1, 0, 0},
+#ifdef CFG_CRYPTO_MP_HW
+	{SCFGR, 1, BM_SCFGR_MPMRL | BM_SCFGR_MPCURVE, 0},
+#else
+	/* For device not supporting MP (bits not defined) */
+	{SCFGR, 1, 0, 0},
+#endif
+};
 
 /**
  * @brief   Initializes the CAAM HW Controller
@@ -43,6 +58,8 @@ void hal_ctrl_init(vaddr_t baseaddr)
 	 * mx7 devices, this bit has no effect.
 	 */
 	io_mask32(baseaddr + MCFGR, MCFGR_AXIPIPE(1), BM_MCFGR_AXIPIPE);
+
+	caam_pwr_add_backup(baseaddr, ctrl_backup, ARRAY_SIZE(ctrl_backup));
 }
 
 #ifdef CFG_CRYPTO_MP_HW

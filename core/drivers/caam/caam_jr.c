@@ -10,6 +10,7 @@
 
 /* Global includes */
 #include <kernel/interrupt.h>
+#include <kernel/pm.h>
 #include <kernel/spinlock.h>
 #include <mm/core_memprot.h>
 #include <tee/cache.h>
@@ -681,5 +682,47 @@ end_init:
 		do_jr_free(jr_privdata);
 
 	return retstatus;
+}
+
+/**
+ * @brief   Request the CAAM JR to halt.
+ *          Stop fetching input queue and wait running job
+ *          completion.
+ *
+ * @retval 0    Job Ring is halted
+ * @retval (-1) Error occurred
+ */
+int caam_jr_halt(void)
+{
+	return hal_jr_halt(jr_privdata->baseaddr);
+}
+
+/**
+ * @brief   Request the CAAM JR to flush all job running.
+ *
+ * @retval 0    Job Ring is halted
+ * @retval (-1) Error occurred
+ */
+int caam_jr_flush(void)
+{
+	return hal_jr_flush(jr_privdata->baseaddr);
+}
+
+/**
+ * @brief   Resume the CAAM JR processing.
+ *
+ * @param[in] mode    Power mode to resume from
+ */
+void caam_jr_resume(uint32_t pm_hint)
+{
+	if (pm_hint == PM_HINT_CONTEXT_STATE) {
+		/* Read the current job ring index */
+		jr_privdata->inwrite_index = hal_jr_input_index(
+				jr_privdata->baseaddr);
+		/* Read the current output ring index */
+		jr_privdata->outread_index = hal_jr_output_index(
+				jr_privdata->baseaddr);
+	} else
+		hal_jr_resume(jr_privdata->baseaddr);
 }
 

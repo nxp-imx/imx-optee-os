@@ -528,7 +528,7 @@ static void prepare_inst_desc(uint32_t nbSH, uint32_t sh_status,
  * @retval  CAAM_FAILURE     An error occurred
  * @retval  CAAM_OUT_MEMORY  Out of Memory
  */
-static enum CAAM_Status do_instantiation(void)
+enum CAAM_Status caam_rng_instantiation(void)
 {
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 	struct jr_jobctx jobctx = {0};
@@ -662,7 +662,7 @@ enum CAAM_Status caam_rng_init(vaddr_t ctrl_addr)
 	retstatus = do_allocate();
 	if (retstatus == CAAM_NO_ERROR) {
 		rng_privdata->baseaddr = ctrl_addr;
-		retstatus = do_instantiation();
+		retstatus = caam_rng_instantiation();
 	}
 
 #ifdef CFG_CRYPTO_RNG_HW

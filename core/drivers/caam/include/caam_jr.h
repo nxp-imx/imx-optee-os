@@ -9,6 +9,7 @@
 #ifndef __CAAM_JR_H__
 #define __CAAM_JR_H__
 
+/* Local includes */
 #include "jr_status.h"
 
 /**
@@ -86,6 +87,31 @@ enum CAAM_Status caam_jr_dequeue(uint32_t jobIds, uint32_t timeout_ms);
  * @retval  CAAM_TIMEOUT     Operation timeout
  */
 enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId);
+
+/**
+ * @brief   Request the CAAM JR to halt.
+ *          Stop fetching input queue and wait running job
+ *          completion.
+ *
+ * @retval 0    Job Ring is halted
+ * @retval (-1) Error occurred
+ */
+int caam_jr_halt(void);
+
+/**
+ * @brief   Request the CAAM JR to flush input queue.
+ *
+ * @retval 0    Job Ring is halted
+ * @retval (-1) Error occurred
+ */
+int caam_jr_flush(void);
+
+/**
+ * @brief   Resume the CAAM JR processing.
+ *
+ * @param[in] mode    Power mode to resume from
+ */
+void caam_jr_resume(uint32_t pm_hints);
 
 #endif /* __CAAM_JR_H__ */
 
