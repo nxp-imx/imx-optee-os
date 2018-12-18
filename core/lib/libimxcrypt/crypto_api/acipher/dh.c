@@ -12,7 +12,6 @@
 #include <mpalib.h>
 #include <tee/tee_cryp_utl.h>
 #include <trace.h>
-#include <utee_defines.h>
 
 /* Library i.MX includes */
 #include <libimxcrypt.h>

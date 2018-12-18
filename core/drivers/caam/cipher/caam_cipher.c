@@ -644,8 +644,7 @@ static TEE_Result do_init(struct imxcrypt_cipher_init *dinit)
 	}
 
 	if (alg->require_key & NEED_IV) {
-		if (((!dinit->iv.data) || (dinit->iv.length == 0)) &&
-			(alg->size_ctx != 0))
+		if ((!dinit->iv.data) || (dinit->iv.length == 0))
 			goto exit_init;
 
 		if (dinit->iv.length != alg->size_ctx) {

@@ -11,7 +11,6 @@
 #include <crypto/crypto.h>
 #include <mpalib.h>
 #include <trace.h>
-#include <utee_defines.h>
 
 //#define LIB_DEBUG
 #ifdef LIB_DEBUG

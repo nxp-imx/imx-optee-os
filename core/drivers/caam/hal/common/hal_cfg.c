@@ -85,7 +85,7 @@ static int dt_get_irq(void *fdt, int node)
 	 */
 	int_prop = fdt_getprop(fdt, node, "interrupts", &len_prop);
 
-	if ((int_prop == NULL) && (len_prop >= 2)) {
+	if ((int_prop == NULL) || (len_prop < 2)) {
 		HAL_TRACE("Interrupts property error (0x%08x)", len_prop);
 		return (-1);
 	}

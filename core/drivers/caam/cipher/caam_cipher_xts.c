@@ -284,6 +284,7 @@ TEE_Result do_update_xts(struct imxcrypt_cipher_update *dupdate)
 	if (retstatus != CAAM_NO_ERROR) {
 		CIPHER_TRACE("Tweak decryption error");
 		ret = TEE_ERROR_GENERIC;
+		goto end_xts;
 	}
 
 	ret = TEE_SUCCESS;

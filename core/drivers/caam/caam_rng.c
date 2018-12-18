@@ -623,14 +623,13 @@ enum CAAM_Status caam_rng_instantiation(void)
 				jobctx.status);
 			if ((JRSTA_SRC_GET(jobctx.status) != JRSTA_SRC(CCB)) ||
 		   		(JRSTA_CCB_GET_ERR(jobctx.status) !=
-				 (JRSTA_CCB_CHAID_RNG | JRSTA_CCB_ERRID_HW)))
+				 (JRSTA_CCB_CHAID_RNG | JRSTA_CCB_ERRID_HW))) {
+				retstatus = CAAM_FAILURE;
 				goto end_inst;
-			else
+			} else
 				retstatus = CAAM_NO_ERROR;
 		}
 	} while (retstatus == CAAM_NO_ERROR);
-
-	retstatus = CAAM_NO_ERROR;
 
 end_inst:
 	if (retstatus == CAAM_NO_ERROR)

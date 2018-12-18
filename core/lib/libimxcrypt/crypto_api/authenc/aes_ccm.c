@@ -11,7 +11,6 @@
 /* Global includes */
 #include <crypto/aes-ccm.h>
 #include <crypto/crypto.h>
-#include <utee_defines.h>
 
 /* Local include */
 #include "local.h"

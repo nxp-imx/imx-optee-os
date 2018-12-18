@@ -11,7 +11,6 @@
 /* Global includes */
 #include <crypto/crypto.h>
 #include <trace.h>
-#include <utee_defines.h>
 
 /* Library i.MX includes */
 #include <libimxcrypt_mp.h>

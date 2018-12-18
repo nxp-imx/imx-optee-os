@@ -104,7 +104,7 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
 		return TEE_ERROR_NOT_IMPLEMENTED;
 
 	hash_ctx = calloc(1, sizeof(hash_state));
-	if (!ctx) {
+	if (!hash_ctx) {
 		LIB_TRACE("HASH_SW: Allocation Hash data error");
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}

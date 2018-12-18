@@ -41,7 +41,6 @@
 #include "hal_cfg.h"
 #include "hal_clk.h"
 #include "hal_ctrl.h"
-#include "hal_jr.h"
 
 #define CTRL_DEBUG
 #ifdef CTRL_DEBUG

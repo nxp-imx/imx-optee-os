@@ -194,8 +194,8 @@ static enum CAAM_Status do_jr_alloc(struct jr_privdata **privdata,
 end_alloc:
 	if (retstatus != CAAM_NO_ERROR)
 		do_jr_free(jr_priv);
-
-	*privdata = jr_priv;
+	else
+		*privdata = jr_priv;
 
 	return retstatus;
 }
@@ -590,7 +590,7 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 	 * Job is synchronous wait until job complete or timeout
 	 */
 	while ((jobctx->completion == false) && (timeout--))
-		retstatus = caam_jr_dequeue(jobctx->jobId, 100);
+		caam_jr_dequeue(jobctx->jobId, 100);
 
 	if (timeout <= 0) {
 		/* Job timeout, cancel it and return in error */
@@ -609,7 +609,7 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 	 * so the timeout in not precise
 	 */
 	while (jobctx->completion == false)
-		retstatus = caam_jr_dequeue(jobctx->jobId, 100);
+		caam_jr_dequeue(jobctx->jobId, 100);
 
 	if (JRSTA_SRC_GET(jobctx->status) != JRSTA_SRC(NONE))
 		retstatus = CAAM_JOB_STATUS;

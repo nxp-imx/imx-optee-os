@@ -839,6 +839,8 @@ exit_final:
  */
 static void do_cpy_state(void *dst_ctx, void *src_ctx)
 {
+	enum CAAM_Status retstatus;
+
 	struct hashdata *dst = dst_ctx;
 	struct hashdata *src = src_ctx;
 
@@ -848,8 +850,11 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 	dst->algo_id = src->algo_id;
 	dst->alg     = src->alg;
 
-	if (!dst->ctx.data)
-		do_allocate_intern(dst_ctx);
+	if (!dst->ctx.data) {
+		retstatus = do_allocate_intern(dst_ctx);
+		if (retstatus != CAAM_NO_ERROR)
+			return;
+	}
 
 	memcpy(dst->ctx.data, src->ctx.data, src->ctx.length);
 	dst->ctx.length = src->ctx.length;
