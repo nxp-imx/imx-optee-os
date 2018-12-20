@@ -14,7 +14,9 @@
 #include <io.h>
 
 /* Library i.MX includes */
+#ifdef CFG_CRYPTO_MP_HW
 #include <libimxcrypt.h>
+#endif
 
 /* Local includes */
 #include "common.h"
