@@ -22,7 +22,6 @@
 #include "common.h"
 #include "caam_jr.h"
 #include "caam_pwr.h"
-#include "caam_rng.h"
 
 /* Hal includes */
 #include "hal_clk.h"
@@ -170,19 +169,12 @@ static TEE_Result pm_enter(uint32_t pm_hint)
  */
 static TEE_Result pm_resume(uint32_t pm_hint)
 {
-	enum CAAM_Status retstatus;
-
 	PWR_TRACE("CAAM power mode %d resume", pm_hint);
 	if (pm_hint == PM_HINT_CONTEXT_STATE) {
 		/* Enable the CAAM Clock */
 		hal_clk_enable(true);
 		do_restore_regs();
 		caam_jr_resume(pm_hint);
-
-		retstatus = caam_rng_instantiation();
-		PWR_TRACE("CAAM RNG instantiation ret 0x%"PRIx32"", retstatus);
-		if (retstatus != CAAM_NO_ERROR)
-			panic();
 
 #ifdef CFG_CRYPTO_MP_HW
 		/*

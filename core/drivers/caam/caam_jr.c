@@ -10,6 +10,7 @@
 
 /* Global includes */
 #include <kernel/interrupt.h>
+#include <kernel/panic.h>
 #include <kernel/pm.h>
 #include <kernel/spinlock.h>
 #include <mm/core_memprot.h>
@@ -18,6 +19,7 @@
 /* Local includes */
 #include "common.h"
 #include "caam_jr.h"
+#include "caam_rng.h"
 
 /* Utils includes */
 #include "utils_delay.h"
@@ -85,6 +87,11 @@ struct caller_info {
  */
 struct jr_privdata {
 	vaddr_t baseaddr;               ///< Job Ring base address
+
+	vaddr_t ctrladdr;               ///< CAAM virtual base address
+	paddr_t jroffset;               ///< Job Ring address offset
+	uint64_t paddr_inrings;         ///< Physical address of input queue
+	uint64_t paddr_outrings;        ///< Physical address of output queue
 
 	uint8_t nbJobs;                 ///< Number of Job ring entries managed
 
@@ -628,8 +635,6 @@ enum CAAM_Status caam_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 enum CAAM_Status caam_jr_init(struct jr_cfg *jr_cfg)
 {
 	enum CAAM_Status retstatus = CAAM_FAILURE;
-	uint64_t paddr_inrings;
-	uint64_t paddr_outrings;
 
 	JR_TRACE("Initialization");
 
@@ -637,6 +642,9 @@ enum CAAM_Status caam_jr_init(struct jr_cfg *jr_cfg)
 	retstatus = do_jr_alloc(&jr_privdata, jr_cfg->nb_jobs);
 	if (retstatus != CAAM_NO_ERROR)
 		goto end_init;
+
+	jr_privdata->ctrladdr = jr_cfg->base;
+	jr_privdata->jroffset = jr_cfg->offset;
 
 	retstatus = hal_jr_setowner(jr_cfg->base, jr_cfg->offset,
 								JROWN_ARM_S);
@@ -650,16 +658,20 @@ enum CAAM_Status caam_jr_init(struct jr_cfg *jr_cfg)
 	if (retstatus != CAAM_NO_ERROR)
 		goto end_init;
 
-	paddr_inrings  = (uint64_t)virt_to_phys(jr_privdata->inrings);
-	paddr_outrings = (uint64_t)virt_to_phys(jr_privdata->outrings);
-	if ((!paddr_inrings) || (!paddr_outrings)) {
+	jr_privdata->paddr_inrings  = (uint64_t)virt_to_phys(
+			jr_privdata->inrings);
+	jr_privdata->paddr_outrings = (uint64_t)virt_to_phys(
+			jr_privdata->outrings);
+	if ((!jr_privdata->paddr_inrings) ||
+		(!jr_privdata->paddr_outrings)) {
 		JR_TRACE("JR bad queue pointers");
 		retstatus = CAAM_FAILURE;
 		goto end_init;
 	}
 
 	hal_jr_config(jr_privdata->baseaddr, jr_privdata->nbJobs,
-					paddr_inrings, paddr_outrings);
+					jr_privdata->paddr_inrings,
+					jr_privdata->paddr_outrings);
 
 	/*
 	 * Prepare the interrupt handler to secure the interrupt even
@@ -715,13 +727,40 @@ int caam_jr_flush(void)
  */
 void caam_jr_resume(uint32_t pm_hint)
 {
+	enum CAAM_Status retstatus;
+
 	if (pm_hint == PM_HINT_CONTEXT_STATE) {
+#ifndef CFG_IMXCRYPT
+		/*
+		 * In case the CAAM is not used the JR used to
+		 * instantiate the RNG has been released to Non-Secure
+		 * hence, need reconfigur the Secure JR and release
+		 * it after RNG instantiation
+		 */
+		hal_jr_setowner(jr_privdata->ctrladdr,
+						jr_privdata->jroffset,
+						JROWN_ARM_S);
+
+		hal_jr_config(jr_privdata->baseaddr, jr_privdata->nbJobs,
+					jr_privdata->paddr_inrings,
+					jr_privdata->paddr_outrings);
+#endif
 		/* Read the current job ring index */
 		jr_privdata->inwrite_index = hal_jr_input_index(
 				jr_privdata->baseaddr);
 		/* Read the current output ring index */
 		jr_privdata->outread_index = hal_jr_output_index(
 				jr_privdata->baseaddr);
+
+		retstatus = caam_rng_instantiation();
+		if (retstatus != CAAM_NO_ERROR)
+			panic();
+
+#ifndef CFG_IMXCRYPT
+		hal_jr_setowner(jr_privdata->ctrladdr,
+						jr_privdata->jroffset,
+						JROWN_ARM_NS);
+#endif
 	} else
 		hal_jr_resume(jr_privdata->baseaddr);
 }
