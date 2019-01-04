@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    dsa.c
  *
@@ -162,8 +162,7 @@ TEE_Result crypto_acipher_dsa_sign(uint32_t algo,
 	}
 
 	/* Check if the message length is digest hash size */
-	ret = tee_hash_get_digest_size(TEE_DIGEST_HASH_TO_ALGO(algo),
-					&size_digest);
+	ret = tee_hash_get_digest_size(algo, &size_digest);
 	if (ret != TEE_SUCCESS)
 		return ret;
 

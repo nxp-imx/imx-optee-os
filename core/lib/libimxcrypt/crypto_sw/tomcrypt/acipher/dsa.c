@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    dsa.c
  *
@@ -164,7 +164,7 @@ static TEE_Result do_gen_keypair(struct dsa_keypair *key, size_t key_size)
 	if (modulus <= 128)
 		group = 20;
 	else if (modulus <= 256)
-		group = 30;
+		group = 32;
 	else if (modulus <= 384)
 		group = 35;
 	else
