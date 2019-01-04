@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    caam_cipher.c
  *
@@ -27,6 +27,11 @@
 /* Utils includes */
 #include "utils_mem.h"
 #include "utils_sgt.h"
+
+/**
+ * @brief   Max Cipher Buffer to encrypt/decrypt at each operation
+ */
+#define MAX_CIPHER_BUFFER	(8 * 1024)
 
 /* Local Function declaration */
 static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate);
@@ -1007,6 +1012,9 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 	int realloc = 0;
 	struct caambuf dst_align = {0};
 
+	uint32_t nbBuf  = 0;
+	size_t   offset = 0;
+
 	CIPHER_TRACE("Algo %d length=%d - %s", ctx->algo_id,
 				dupdate->src.length,
 				(dupdate->encrypt ? "Encrypt" : " Decrypt"));
@@ -1019,12 +1027,32 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	realloc = caam_realloc_align(dupdate->dst.data, &dst_align,
-			dupdate->dst.length);
-	if (realloc == (-1)) {
-		CIPHER_TRACE("Destination buffer reallocation error");
-		ret = TEE_ERROR_OUT_OF_MEMORY;
-		goto end_cipher;
+	/*
+	 * If the output memory area is cacheable and the size of
+	 * buffer is bigger than MAX_CIPHER_BUFFER, calculate
+	 * the number of buffer to do (prevent output reallocation
+	 * buffer on cache alignement to fail
+	 */
+	if ((dupdate->dst.length > MAX_CIPHER_BUFFER) &&
+		(core_vbuf_is(CORE_MEM_CACHED, dupdate->dst.data,
+					  dupdate->dst.length))) {
+		nbBuf = dupdate->dst.length / MAX_CIPHER_BUFFER;
+
+		retstatus = caam_alloc_align_buf(&dst_align, MAX_CIPHER_BUFFER);
+		if (retstatus != CAAM_NO_ERROR) {
+			CIPHER_TRACE("Destination buffer allocation error");
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto end_cipher;
+		}
+		realloc = 1;
+	} else {
+		realloc = caam_realloc_align(dupdate->dst.data, &dst_align,
+				dupdate->dst.length);
+		if (realloc == (-1)) {
+			CIPHER_TRACE("Destination buffer reallocation error");
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto end_cipher;
+		}
 	}
 
 	psrc = virt_to_phys(dupdate->src.data);
@@ -1045,21 +1073,58 @@ static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
 	dstbuf.paddr   = dst_align.paddr;
 	dstbuf.nocache = dst_align.nocache;
 
-	retstatus = do_block(ctx, true, NEED_KEY1, dupdate->encrypt,
-		&src, &dst);
+	if (nbBuf > 0) {
+		srcbuf.length = MAX_CIPHER_BUFFER;
+		dstbuf.length = MAX_CIPHER_BUFFER;
 
-	if (retstatus == CAAM_NO_ERROR) {
-		if (dst_align.nocache == 0)
-			cache_operation(TEE_CACHEINVALIDATE, dst_align.data,
-					dupdate->dst.length);
+		do {
+			srcbuf.data  += offset;
+			srcbuf.paddr += offset;
 
-		if (realloc)
-			memcpy(dupdate->dst.data, dst_align.data,
-				dupdate->dst.length);
+			CIPHER_TRACE("Do Idx=%d, offset %d", nbBuf, offset);
+			retstatus = do_block(ctx, true, NEED_KEY1, dupdate->encrypt,
+					&src, &dst);
 
-		ret = TEE_SUCCESS;
+			if (retstatus == CAAM_NO_ERROR) {
+				cache_operation(TEE_CACHEINVALIDATE, dst_align.data,
+							MAX_CIPHER_BUFFER);
+
+				memcpy(dupdate->dst.data + offset, dst_align.data,
+							MAX_CIPHER_BUFFER);
+			} else {
+				ret = TEE_ERROR_GENERIC;
+				goto end_cipher;
+			}
+
+			offset += MAX_CIPHER_BUFFER;
+		} while (--nbBuf);
+	}
+
+	if ((dupdate->src.length - offset) > 0) {
+		CIPHER_TRACE("Do Last %d offset %d", dupdate->src.length - offset, offset);
+		srcbuf.data  += offset;
+		srcbuf.length = (dupdate->src.length - offset);
+		srcbuf.paddr += offset;
+
+		dstbuf.length = (dupdate->dst.length - offset);
+
+		retstatus = do_block(ctx, true, NEED_KEY1, dupdate->encrypt,
+			&src, &dst);
+
+		if (retstatus == CAAM_NO_ERROR) {
+			if (dst_align.nocache == 0)
+				cache_operation(TEE_CACHEINVALIDATE, dst_align.data,
+						dstbuf.length);
+
+			if (realloc)
+				memcpy(dupdate->dst.data + offset, dst_align.data,
+						dstbuf.length);
+			ret = TEE_SUCCESS;
+		} else {
+			ret = TEE_ERROR_GENERIC;
+		}
 	} else {
-		ret = TEE_ERROR_GENERIC;
+		ret = TEE_SUCCESS;
 	}
 
 end_cipher:
