@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    caam_rsa.c
  *
@@ -716,9 +716,11 @@ static TEE_Result do_hash(enum imxcrypt_hash_id hash_id,
 	if (ret != TEE_SUCCESS)
 		goto exit_hash;
 
-	ret = hash->update(ctx, hash_id, data->data, data->length);
-	if (ret != TEE_SUCCESS)
-		goto exit_hash;
+	if (data->length > 0) {
+		ret = hash->update(ctx, hash_id, data->data, data->length);
+		if (ret != TEE_SUCCESS)
+			goto exit_hash;
+	}
 
 	ret = hash->final(ctx, hash_id, digest->data, digest->length);
 

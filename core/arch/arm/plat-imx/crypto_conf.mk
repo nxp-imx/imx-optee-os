@@ -83,5 +83,5 @@ $(call force, CFG_CRYPTO_HMAC_FULL_HW, $(call cryp-full-hw-enabled, HASH, \
 
 $(call force, CFG_CRYPTO_AUTHENC_HW, $(call cryp-one-hw-enabled, CCM GCM))
 
-$(call force, CFG_CRYPTO_PK_HW, $(call cryp-one-hw-enabled, RSA))
+$(call force, CFG_CRYPTO_PK_HW, $(call cryp-one-hw-enabled, RSA ECC DH DSA))
 endif
