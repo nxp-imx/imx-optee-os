@@ -88,4 +88,5 @@ $(call force, CFG_CRYPTO_AUTHENC_HW, $(call cryp-one-hw-enabled, CCM GCM))
 $(call force, CFG_CRYPTO_PK_HW, $(call cryp-one-hw-enabled, RSA ECC DH DSA))
 
 $(call force, _CFG_CRYPTO_WITH_HUK, $(call cryp-one-hw-enabled, BLOB))
+$(call force, _CFG_CRYPTO_WITH_BLOB, $(call cryp-one-hw-enabled, BLOB))
 endif

@@ -13,15 +13,6 @@
 #include <tee_api_types.h>
 
 /**
- * @brief   Blob Key Modifier size in bytes
- */
-#define BLOB_KEY_MODIFIER_SIZE	16
-/**
- * @brief   Blob Key (BKEK) size in bytes
- */
-#define BLOB_BKEK_SIZE			32
-
-/**
  * @brief   Initialize the Blob module
  *
  * @param[in] ctrl_addr   Controller base address

@@ -21,6 +21,7 @@
 /* Library i.MX includes */
 #include <libimxcrypt.h>
 #include <libimxcrypt_huk.h>
+#include <libimxcrypt_blob.h>
 
 /* Local includes */
 #include "common.h"
@@ -35,8 +36,8 @@
  */
 //#define BLOB_DEBUG
 #ifdef BLOB_DEBUG
-#define DUMP_DESC
-#define DUMP_BUF
+//#define DUMP_DESC
+//#define DUMP_BUF
 #define BLOB_TRACE		DRV_TRACE
 #else
 #define BLOB_TRACE(...)
@@ -168,6 +169,230 @@ struct imxcrypt_huk driver_huk = {
 };
 
 /**
+ * @brief
+ *   - Encapsulates input data to RED or BLACK blob.\n
+ *   - Decapsulates the input blob to provide the encapsulated data.\n
+ *   \n
+ *   If resulting blob is black, the data must be black as well.\n
+ *   If resulting blob is red, the data are plain text.\n
+ *   \n
+ *   Output data length is:\n
+ *      - encapsulation = inLen + BLOB_BPAD_SIZE\n
+ *      - decapsulation = inLen - BLOB_BPAD_SIZE\n
+ *   \n
+ * @param[in/out] blob_data    Blob data to encapsulate/decapsulate
+ *
+ * @retval TEE_SUCCESS               Success
+ * @retval TEE_ERROR_OUT_OF_MEMORY   Not enough memory
+ * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
+ * @retval TEE_ERROR_GENERIC         Any other error
+ */
+static TEE_Result do_operate(struct imxcrypt_blob_data *blob_data)
+{
+#define BLOB_OPERATE_DESC_ENTRIES	9
+
+	TEE_Result ret = TEE_ERROR_GENERIC;
+	enum CAAM_Status retstatus = CAAM_FAILURE;
+
+	struct jr_jobctx jobctx = {0};
+	descPointer_t desc = NULL;
+
+	paddr_t paddr_input = 0;
+	paddr_t paddr_key = 0;
+
+	struct caambuf out_buf = {0};
+	size_t insize, rinsize;
+	size_t outsize, routsize;
+
+	uint32_t opflag   = 0;
+	int retS = 0;
+	uint8_t desclen = 1;
+
+	BLOB_TRACE("Blob %s - Type %d - Payload %d bytes - Blob %d bytes",
+			(blob_data->encaps) ? "Encaps" : "Decaps",
+			blob_data->type,
+			blob_data->payload.length,
+			blob_data->blob.length);
+
+	paddr_key = virt_to_phys(blob_data->key.data);
+	if (!paddr_key)
+		goto exit_operate;
+
+	if (blob_data->encaps) {
+		retS = caam_realloc_align(blob_data->blob.data, &out_buf,
+				blob_data->blob.length);
+		if (retS == (-1)) {
+			BLOB_TRACE("Signature reallocation error");
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto exit_operate;
+		}
+
+		insize  = blob_data->payload.length;
+		outsize = blob_data->blob.length;
+
+		paddr_input = virt_to_phys(blob_data->payload.data);
+		if (!paddr_input)
+			goto exit_operate;
+
+		BLOB_DUMPBUF("Input",
+			blob_data->payload.data, blob_data->payload.length);
+	} else {
+		retS = caam_realloc_align(blob_data->payload.data, &out_buf,
+		blob_data->payload.length);
+		if (retS == (-1)) {
+			BLOB_TRACE("Signature reallocation error");
+			ret = TEE_ERROR_OUT_OF_MEMORY;
+			goto exit_operate;
+		}
+		insize  = blob_data->blob.length;
+		outsize = blob_data->payload.length;
+
+		paddr_input = virt_to_phys(blob_data->blob.data);
+		if (!paddr_input)
+			goto exit_operate;
+
+		BLOB_DUMPBUF("Input",
+			blob_data->blob.data, blob_data->blob.length);
+	}
+
+	rinsize  = insize;
+	routsize = outsize;
+
+	switch (blob_data->type) {
+	case BLACK_CCM:
+		opflag = PROT_BLOB_TYPE(BLACK_KEY) | PROT_BLOB_INFO(CCM);
+		/*
+		 * Round up the size of buffer to clean/flush real buffer
+		 * which contains more data
+		 */
+		if (blob_data->encaps)
+			rinsize = BLACK_KEY_CCM_SIZE(insize);
+		else
+			routsize = ROUNDUP(BLACK_KEY_CCM_SIZE(outsize), 16);
+		break;
+
+	case BLACK_ECB:
+		opflag = PROT_BLOB_TYPE(BLACK_KEY) | PROT_BLOB_INFO(ECB);
+		/*
+		 * Round up the size of buffer to clean/flush real buffer
+		 * which contains more data
+		 */
+		if (blob_data->encaps)
+			rinsize = BLACK_KEY_CCM_SIZE(insize);
+		else
+			routsize = ROUNDUP(BLACK_KEY_ECB_SIZE(outsize), 16);
+		break;
+
+	case RED:
+		break;
+
+	default:
+		ret = TEE_ERROR_BAD_PARAMETERS;
+		goto exit_operate;
+	}
+
+	/* Allocate the descriptor */
+	desc = caam_alloc_desc(BLOB_OPERATE_DESC_ENTRIES);
+	if (!desc) {
+		BLOB_TRACE("CAAM Context Descriptor Allocation error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto exit_operate;
+	}
+
+	/*
+	 * Create the Blob encapsulation/decapsulation descriptor
+	 */
+	/* Load the key modifier */
+	desc[desclen++] = LD_NOIMM(CLASS_2, REG_KEY, blob_data->key.length);
+	desc[desclen++] = paddr_key;
+
+	/* Define the Input data sequence */
+	desc[desclen++] = SEQ_IN_PTR(insize);
+	desc[desclen++] = paddr_input;
+
+	/* Define the Output data sequence */
+	desc[desclen++] = SEQ_OUT_PTR(outsize);
+	desc[desclen++] = out_buf.paddr;
+
+	if (blob_data->encaps) {
+		/* Define the encapsulation operation */
+		desc[desclen++] = BLOB_ENCAPS | opflag;
+	} else {
+		/* Define the decapsulation operation */
+		desc[desclen++] = BLOB_DECAPS | opflag;
+	}
+
+	/* Set the descriptor Header with length and index */
+	desc[0] = DESC_HEADER(desclen);
+
+	BLOB_DUMPDESC(desc);
+
+	cache_operation(TEE_CACHECLEAN, blob_data->key.data,
+		blob_data->key.length);
+
+	if (blob_data->encaps)
+		cache_operation(TEE_CACHECLEAN, blob_data->payload.data,
+			rinsize);
+	else
+		cache_operation(TEE_CACHECLEAN, blob_data->blob.data,
+			rinsize);
+
+	if (out_buf.nocache == 0)
+		cache_operation(TEE_CACHEFLUSH, out_buf.data, out_buf.length);
+
+	jobctx.desc = desc;
+	retstatus = caam_jr_enqueue(&jobctx, NULL);
+
+	if (retstatus == CAAM_NO_ERROR) {
+		BLOB_TRACE("Done CAAM BLOB %s",
+				blob_data->encaps ? "Encaps" : "Decaps");
+
+		if (out_buf.nocache == 0)
+			cache_operation(TEE_CACHEINVALIDATE, out_buf.data,
+				out_buf.length);
+
+		BLOB_DUMPBUF("Output", out_buf.data, routsize);
+
+		if (retS == 1) {
+			/*
+			 * Copy the result data in the correct output
+			 * buffer function of the operation direction
+			 */
+			if (blob_data->encaps)
+				memcpy(blob_data->blob.data,
+					out_buf.data, routsize);
+			else
+				memcpy(blob_data->payload.data,
+					out_buf.data, routsize);
+
+			ret = TEE_SUCCESS;
+		}
+
+		if (blob_data->encaps)
+			blob_data->blob.length = routsize;
+		else
+			blob_data->payload.length = routsize;
+	} else {
+		BLOB_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+		ret = TEE_ERROR_GENERIC;
+	}
+
+exit_operate:
+	if (retS == 1)
+		caam_free_buf(&out_buf);
+
+	caam_free_desc(&desc);
+	return ret;
+}
+
+/**
+ * @brief   Registration of the Blob Driver
+ */
+struct imxcrypt_blob driver_blob = {
+	.operate = &do_operate,
+};
+
+/**
  * @brief   Initialize the Blob module
  *
  * @param[in] ctrl_addr   Controller base address
@@ -180,8 +405,10 @@ enum CAAM_Status caam_blob_init(vaddr_t ctrl_addr __unused)
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 
 	/* Register the HUK Driver */
-	if (imxcrypt_register(CRYPTO_HUK, &driver_huk) == 0)
-		retstatus = CAAM_NO_ERROR;
+	if (imxcrypt_register(CRYPTO_HUK, &driver_huk) == 0) {
+		if (imxcrypt_register(CRYPTO_BLOB, &driver_blob) == 0)
+			retstatus = CAAM_NO_ERROR;
+	}
 
 	return retstatus;
 }

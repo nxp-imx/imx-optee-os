@@ -31,7 +31,8 @@ enum imxcrypt_algo_id {
 	CRYPTO_MP,           ///< Manufacturing Protection driver
 	CRYPTO_MATH_HW,      ///< Mathematical HW operation driver
 	CRYPTO_HUK,          ///< Hardware Unique Key operation driver
-	CRYPTO_MAX_ALGO      ///< Maximum numer of algo supported
+	CRYPTO_BLOB,         ///< Blob Encapsulation operation driver
+	CRYPTO_MAX_ALGO      ///< Maximum number of algo supported
 };
 
 /**
@@ -41,6 +42,33 @@ struct imxcrypt_buf {
 	uint8_t *data;   ///< Pointer to the data buffer
 	size_t  length;  ///< Length in bytes of the data buffer
 };
+
+/**
+ * @brief Blob encryption type
+ */
+enum blob_type {
+	RED       = 0,  ///< Red Blob mode   - data in plain text
+	BLACK_ECB,      ///< Black Blob mode - data encrypted in AES ECB
+	BLACK_CCM,      ///< Black Blod mode - data encrypted in AES CCM
+	BLOB_MAX_TYPE   ///< Maximum number of blob type supported
+};
+
+/**
+ * @brief   Blob Key Modifier size in bytes
+ */
+#define BLOB_KEY_MODIFIER_SIZE	16
+/**
+ * @brief   Blob Key (BKEK) size in bytes
+ */
+#define BLOB_BKEK_SIZE			32
+/**
+ * @brief   Blob MAC (BMAC) size in bytes
+ */
+#define BLOB_BMAC_SIZE			16
+/**
+ * @brief   Blob PAD (BPAD) size in bytes
+ */
+#define BLOB_BPAD_SIZE			(BLOB_BKEK_SIZE + BLOB_BMAC_SIZE)
 
 /**
  * @brief   Cryptographic module registration

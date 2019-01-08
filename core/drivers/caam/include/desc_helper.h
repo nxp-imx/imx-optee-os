@@ -476,10 +476,41 @@ static inline void dump_desc(void *desc)
 			PROT_BLOB_FMT_MSTR)
 
 /**
+ * @brief   Blob encapsulation
+ */
+#define BLOB_ENCAPS \
+			(CMD_OP_TYPE | OP_TYPE(ENCAPS) | PROTID(BLOB) | \
+			PROT_BLOB_FORMAT(NORMAL))
+
+/**
+ * @brief   Blob decapsulation
+ */
+#define BLOB_DECAPS \
+			(CMD_OP_TYPE | OP_TYPE(DECAPS) | PROTID(BLOB) | \
+			PROT_BLOB_FORMAT(NORMAL))
+
+/**
+ * @brief Black key CCM size
+ */
+#define BLACK_KEY_CCM_SIZE(size) \
+			(ROUNDUP(size, 8) + BLACK_KEY_NONCE_SIZE + \
+			BLACK_KEY_ICV_SIZE)
+/**
+ * @brief Black key ECB size
+ */
+#define BLACK_KEY_ECB_SIZE(size) \
+			ROUNDUP(size, 16)
+
+/**
+ * @brief   Sequence Inout Pointer of length \a len
+ */
+#define SEQ_IN_PTR(len) \
+			(CMD_SEQ_IN_TYPE | SEQ_LENGTH(len))
+
+/**
  * @brief   Sequence Output Pointer of length \a len
  */
 #define SEQ_OUT_PTR(len) \
-			(CMD_SEQ_OUT_TYPE | SEQ_OUT_LENGTH(len))
+			(CMD_SEQ_OUT_TYPE | SEQ_LENGTH(len))
 
 #endif /* __DESC_HELPER_H__ */
-

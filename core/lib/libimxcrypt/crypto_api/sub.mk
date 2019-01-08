@@ -12,3 +12,4 @@ subdirs-$(_CFG_CRYPTO_WITH_ACIPHER) += oid
 subdirs-$(_CFG_CRYPTO_WITH_AUTHENC) += authenc
 subdirs-$(_CFG_CRYPTO_WITH_MP)      += mp
 subdirs-$(_CFG_CRYPTO_WITH_HUK)     += huk
+subdirs-$(_CFG_CRYPTO_WITH_BLOB)    += blob
