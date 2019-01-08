@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    caam_jr.c
  *
@@ -727,9 +727,11 @@ int caam_jr_flush(void)
  */
 void caam_jr_resume(uint32_t pm_hint)
 {
-	enum CAAM_Status retstatus;
+	enum CAAM_Status retstatus __maybe_unused;
 
 	if (pm_hint == PM_HINT_CONTEXT_STATE) {
+#if !(defined(CFG_MX6DL) || defined(CFG_MX6D) || \
+		defined(CFG_MX6Q) || defined (CFG_MX6QP))
 #ifndef CFG_IMXCRYPT
 		/*
 		 * In case the CAAM is not used the JR used to
@@ -755,11 +757,11 @@ void caam_jr_resume(uint32_t pm_hint)
 		retstatus = caam_rng_instantiation();
 		if (retstatus != CAAM_NO_ERROR)
 			panic();
-
 #ifndef CFG_IMXCRYPT
 		hal_jr_setowner(jr_privdata->ctrladdr,
 						jr_privdata->jroffset,
 						JROWN_ARM_NS);
+#endif
 #endif
 	} else
 		hal_jr_resume(jr_privdata->baseaddr);
