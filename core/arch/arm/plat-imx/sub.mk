@@ -27,7 +27,7 @@ srcs-$(CFG_CSU) += imx_csu.c
 srcs-$(CFG_SCU) += imx_scu.c
 srcs-$(CFG_IMX_OCRAM) += imx_ocram.c
 srcs-$(CFG_MANUFACT_PROTEC_PTA) += pta/pta_manufact_protec_mx.c
-
+srcs-$(CFG_XRDC) += xrdc.c
 subdirs-$(CFG_PSCI_ARM32) += pm
 
 # Build the busfreq module
