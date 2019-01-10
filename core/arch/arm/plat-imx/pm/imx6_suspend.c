@@ -8,9 +8,9 @@
 #include <drivers/imx_uart.h>
 #include <io.h>
 #include <imx.h>
+#include <imx_pl310.h>
 #include <imx_pm.h>
 #include <kernel/boot.h>
-#include <imx_pl310.h>
 #include <kernel/cache_helpers.h>
 #include <kernel/misc.h>
 #include <kernel/panic.h>
