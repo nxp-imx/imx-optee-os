@@ -8,8 +8,8 @@
 #include <drivers/imx_uart.h>
 #include <io.h>
 #include <imx.h>
-#include <imx_pm.h>
 #include <imx_pl310.h>
+#include <imx_pm.h>
 #include <kernel/cache_helpers.h>
 #include <kernel/generic_boot.h>
 #include <kernel/misc.h>
