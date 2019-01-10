@@ -70,7 +70,7 @@
 	ands	r6, r6, #(1 << 31)
 	bne	3b
 
-	/* check if lppdr2 2 channel mode is enabled */
+	/* check if second channel mode is enabled */
 	ldr	r7, =MX6Q_MMDC_MISC
 	ldr	r6, [r11, r7]
 	ands	r6, r6, #(1 << 2)
@@ -207,9 +207,15 @@
 	bne	13f
 12:
 	resume_iomuxc_gpr
+	reset_read_fifo
 
 	b	17f
 13:
+	/*
+	 * This part of code is executed only if
+	 * MMU is OFF
+     */
+
 	/* restore MMDC settings */
 	ldr	r6, [r0, #PM_INFO_MMDC_NUM_OFF]
 	ldr	r7, =PM_INFO_MMDC_VAL_OFF
@@ -231,6 +237,8 @@
 	beq	15b
 
 	resume_iomuxc_gpr
+
+	ldr		r12, [r0, #PM_INFO_MMDC1_P_OFF]
 	reset_read_fifo
 
 	/* let DDR out of self-refresh */
@@ -624,8 +632,21 @@ ldo_analog_bypass:
 	orr	r10, r10, #0x1e
 	str	r10, [r11, #MX6Q_ANATOP_CORE]
 ldo_check_done1:
+
+	dsb
+	dmb
+	isb
+
 	/* enter stop mode */
 	wfi
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
 
 	/*
 	 * Run to here means there is pending GPC wakeup interrupt.
@@ -651,6 +672,11 @@ ldo_check_done2:
 only_resume_io:
 	resume_io
 resume_mmdc_done:
+	/* Clear CORE0's entry and arg */
+	ldr	r11, [r0, #PM_INFO_SRC_V_OFF]
+	mov	r7, #0
+	str	r7, [r11, #SRC_GPR1]
+	str	r7, [r11, #SRC_GPR2]
 
 	restore_ttbr1
 
@@ -673,11 +699,6 @@ resume:
 	write_iciallu
 	write_bpiall
 	dsb
-	isb
-
-	/* Enable Instruction cache and Branch predictors */
-	mov	r6, #0x1800
-	write_sctlr r6
 	isb
 
 	/* r0 is get from SCR_GPR2, ROM did this */
@@ -712,6 +733,15 @@ dsm_only_resume_io:
 	ldr	r3, [r0, #PM_INFO_DDR_TYPE_OFF]
 	resume_io
 dsm_resume_mmdc_done:
+
+	/* Enable Instruction cache and Branch predictors */
+	read_sctlr r6
+	orr r6, #SCTLR_Z
+	add r6, r6, #SCTLR_I
+	write_sctlr r6
+	isb
+
+
 	bx	lr
 UNWIND( .fnend)
 END_FUNC imx6_suspend
