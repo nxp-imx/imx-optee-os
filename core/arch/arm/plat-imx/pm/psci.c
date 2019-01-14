@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (C) 2016 Freescale Semiconductor, Inc.
- * Copyright 2018 NXP
+ * Copyright 2019 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -167,10 +167,9 @@ void __noreturn psci_system_off(void)
 #ifndef CFG_MX7ULP
 	vaddr_t snvs_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC);
 
-	io_write32(snvs_base + SNVS_LPCR_OFF,
-		   SNVS_LPCR_TOP_MASK |
-		   SNVS_LPCR_DP_EN_MASK |
-		   SNVS_LPCR_SRTC_ENV_MASK);
+	io_write32(snvs_base + SNVS_LPCR, BM_SNVS_LPCR_TOP |
+						  BM_SNVS_LPCR_DP_EN |
+						  BM_SNVS_LPCR_SRTC_ENV);
 	dsb();
 #endif
 
