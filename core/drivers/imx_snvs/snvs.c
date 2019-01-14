@@ -42,3 +42,8 @@ enum snvs_ssm_mode snvs_get_ssm_mode(void)
 	DMSG("HPSR: SSM ST Mode: 0x%01"PRIx32, val);
 	return val;
 }
+
+bool imx_is_device_closed(void)
+{
+	return (snvs_get_security_cfg() == SNVS_SECURITY_CFG_CLOSED);
+}

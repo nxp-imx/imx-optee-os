@@ -39,4 +39,12 @@ enum snvs_ssm_mode snvs_get_ssm_mode(void);
 
 enum snvs_security_cfg snvs_get_security_cfg(void);
 
+/**
+ * @brief   Set the OTPMK Key as Master key.
+ *          If device is a closed device and OTMPK can not be set
+ *          system stop in panic.
+ *          If device is NOT a closed device and OTPMK can not be
+ *          set, continue anyway.
+ */
+void snvs_set_master_otpmk(void);
 #endif /* __DRIVERS_IMX_SNVS_H */
