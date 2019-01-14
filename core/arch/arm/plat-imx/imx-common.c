@@ -133,3 +133,4 @@ uint16_t soc_revision(void)
 
 	return imx_soc_revision;
 }
+
