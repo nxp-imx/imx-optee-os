@@ -64,4 +64,17 @@ TEE_Result crypto_mp_export_mpmr(struct imxcrypt_buf *mpmr_reg);
  */
 TEE_Result crypto_mp_sign(struct imxcrypt_mp_sign *sdata);
 
+/**
+ * @brief   Generation of the Hardware Unique Key (HUK)
+ *
+ * @param[out] huk  HUK key generated
+ *
+ * @retval TEE_SUCCESS                 Success
+ * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
+ * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
+ * @retval TEE_ERROR_GENERIC           Generic error
+ */
+TEE_Result crypto_generate_huk(struct imxcrypt_buf *huk);
+
 #endif /* __CRYPTO_EXTENSION_H */

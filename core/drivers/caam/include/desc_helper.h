@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    desc_interface.h
  *
@@ -467,6 +467,19 @@ static inline void dump_desc(void *desc)
 #define SHARED_SECRET(type) \
 			(CMD_OP_TYPE | OP_TYPE(UNI) | PROTID(SHARED_SECRET) | \
 			PROT_PK_TYPE(type))
+
+/**
+ * @brief   Blob Master Key Verification
+ */
+#define BLOB_MSTR_KEY \
+			(CMD_OP_TYPE | OP_TYPE(ENCAPS) | PROTID(BLOB) | \
+			PROT_BLOB_FMT_MSTR)
+
+/**
+ * @brief   Sequence Output Pointer of length \a len
+ */
+#define SEQ_OUT_PTR(len) \
+			(CMD_SEQ_OUT_TYPE | SEQ_OUT_LENGTH(len))
 
 #endif /* __DESC_HELPER_H__ */
 

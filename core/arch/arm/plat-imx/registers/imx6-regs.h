@@ -2,7 +2,7 @@
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * Copyright (c) 2016, Wind River Systems.
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -43,6 +43,7 @@
 #define GPC_BASE		0x020DC000
 #define MMDC_P0_BASE		0x021B0000
 #define MMDC_P1_BASE		0x021B4000
+#define OCOTP_BASE		0x021BC000
 #define TZASC_BASE		0x021D0000
 #define TZASC2_BASE		0x021D4000
 #define UART2_BASE		0x021E8000

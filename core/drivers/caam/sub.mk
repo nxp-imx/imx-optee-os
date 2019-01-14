@@ -10,6 +10,7 @@ srcs-y += caam_jr.c
 srcs-y += caam_rng.c
 srcs-$(CFG_CRYPTO_HASH_HW)      += caam_hash.c
 srcs-$(CFG_CRYPTO_MP_HW)        += caam_mp.c
+srcs-$(CFG_CRYPTO_BLOB_HW)      += caam_blob.c
 subdirs-$(CFG_CRYPTO_CIPHER_HW) += cipher
 subdirs-$(CFG_CRYPTO_PK_HW)     += acipher
 

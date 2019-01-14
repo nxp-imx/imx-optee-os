@@ -1,11 +1,15 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  */
 #ifndef __IMX6_SRC_REGS_H__
 #define __IMX6_SRC_REGS_H__
 
 #define SRC_SCR				0x0000
+
+#define SRC_SBMR2			0x001C
+#define BP_SRC_SBMR2_SEC_CONFIG_CLOSED		BIT32(1)
+
 #define SRC_GPR1			0x0020
 #define SRC_GPR2			0x0024
 

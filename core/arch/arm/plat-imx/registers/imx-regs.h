@@ -50,6 +50,7 @@
 #endif
 
 #include <registers/snvs-regs.h>
+#include <registers/ocotp-regs.h>
 
 /* Register offset used to get the CPU Type and Revision */
 #define HW_ANADIG_DIGPROG		0x260

@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  */
 #ifndef __IMX7_REGS_H__
 #define __IMX7_REGS_H__
@@ -24,6 +24,7 @@
 #define LPSR_BASE		0x30270000
 #define IOMUXC_BASE		0x30330000
 #define IOMUXC_GPR_BASE		0x30340000
+#define OCOTP_BASE		0x30350000
 #define ANATOP_BASE		0x30360000
 #define SNVS_BASE		0x30370000
 #define CCM_BASE		0x30380000

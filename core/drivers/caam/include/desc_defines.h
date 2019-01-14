@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    desc_defines.h
  *
@@ -299,6 +299,7 @@
 
 /* Protocol Identifier */
 #define PROTID(id)			SHIFT_U32((PROTID_##id & 0xFF), 16)
+#define PROTID_BLOB				0x0D
 #define PROTID_MPKEY			0x14
 #define PROTID_PKKEY			0x14
 #define PROTID_MPSIGN			0x15
@@ -318,7 +319,7 @@
 
 #define PROT_RSA_DEC_KEYFORM(format)	SHIFT_U32(((format - 1) & 0x3), 0)
 
-/* RSA Key PROT ID */
+/* RSA Key Protocol Information */
 #define PROT_RSA_KEY(format)	SHIFT_U32((PROT_RSA_KEY_##format & 0x3), 0)
 #define PROT_RSA_KEY_ALL		0
 #define PROT_RSA_KEY_N_D		2
@@ -331,6 +332,11 @@
 #define PROT_PK_TYPE(type)		SHIFT_U32(PROT_PK_##type, 1)
 #define PROT_PK_DL				0
 #define PROT_PK_ECC				1
+
+/*
+ * BLOB Protocol Information
+ */
+#define PROT_BLOB_FMT_MSTR		BIT32(1)
 
 /*
  * Algorithm Identifier
@@ -510,6 +516,15 @@
 #define MATHI_SRC(reg)			SHIFT_U32((MATH_SRC0_##reg & 0xF), 16)
 #define MATHI_DST(reg)			SHIFT_U32((MATH_DST_##reg & 0xF), 12)
 #define MATHI_IMM_VALUE(val)	SHIFT_U32((val & 0xFF), 4)
+
+/*
+ * Sequence Output
+ */
+#define CMD_SEQ_OUT_TYPE		CMD_TYPE(0x1F)
+
+/* Length */
+#define SEQ_OUT_LENGTH(len)		SHIFT_U32((len & 0xFFFF), 0)
+
 /*
  * PKHA Operation
  */

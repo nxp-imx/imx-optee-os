@@ -219,4 +219,14 @@ bool imx_is_device_closed(void)
 
 	return false;
 }
+#else
+/**
+ * @brief   Returns if the device is not closed (full secure)
+ *
+ * @retval  false if not closed device
+ */
+bool imx_is_device_closed(void)
+{
+	return false;
+}
 #endif

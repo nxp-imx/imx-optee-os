@@ -33,6 +33,9 @@
 #ifdef CFG_CRYPTO_MP_HW
 #include "caam_mp.h"
 #endif
+#ifdef CFG_CRYPTO_BLOB_HW
+#include "caam_blob.h"
+#endif
 
 /* Utils includes */
 #include "utils_mem.h"
@@ -150,6 +153,15 @@ static TEE_Result crypto_driver_init(void)
 #ifdef CFG_CRYPTO_ECC_HW
 	/* Initialize the ECC Module */
 	retstatus = caam_ecc_init(jr_cfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+#endif
+
+#ifdef CFG_CRYPTO_BLOB_HW
+	/* Initialize the Blob Module */
+	retstatus = caam_blob_init(jr_cfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
