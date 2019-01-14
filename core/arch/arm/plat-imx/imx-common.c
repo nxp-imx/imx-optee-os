@@ -186,3 +186,4 @@ bool soc_is_imx8mq_b0_layer(void)
 	else
 		return false;
 }
+

@@ -154,7 +154,7 @@ $(call force,CFG_MX7ULP,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
 $(call force,CFG_TZC380,n)
 $(call force,CFG_CSU,n)
-$(call force,CFG_NXP_CAAM,n)
+$(call force,CFG_IMX_SNVS,n)
 include core/arch/arm/cpu/cortex-a7.mk
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8mq-flavorlist)))
 $(call force,CFG_MX8MQ,y)
@@ -396,6 +396,7 @@ endif
 ifneq (,$(filter y, $(CFG_MX6) $(CFG_MX7) $(CFG_MX7ULP)))
 $(call force,CFG_GIC,y)
 
+CFG_IMX_SNVS ?= y
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_DT ?= y
 CFG_DTB_MAX_SIZE ?= 0x20000
@@ -432,7 +433,7 @@ $(call force,CFG_WITH_ARM_TRUSTED_FW,y)
 $(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)
 
 CFG_CRYPTO_WITH_CE ?= y
-
+CFG_IMX_SNVS ?= y
 supported-ta-targets = ta_arm64
 endif
 
