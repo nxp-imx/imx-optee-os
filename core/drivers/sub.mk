@@ -8,7 +8,6 @@ srcs-$(CFG_PL022) += pl022_spi.c
 srcs-$(CFG_SP805_WDT) += sp805_wdt.c
 srcs-$(CFG_8250_UART) += serial8250_uart.c
 srcs-$(CFG_16550_UART) += ns16550.c
-srcs-$(CFG_IMX_SNVS) += imx_snvs.c
 srcs-$(CFG_IMX_UART) += imx_uart.c
 srcs-$(CFG_IMX_LPUART) += imx_lpuart.c
 srcs-$(CFG_IMX_WDOG) += imx_wdog.c
@@ -32,3 +31,4 @@ srcs-$(CFG_BCM_SOTP) += bcm_sotp.c
 srcs-$(CFG_BCM_GPIO) += bcm_gpio.c
 
 subdirs-y += crypto
+subdirs-$(CFG_IMX_SNVS) += snvs

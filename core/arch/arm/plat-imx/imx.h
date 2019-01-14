@@ -44,6 +44,7 @@ bool soc_is_imx7ds(void);
 bool soc_is_imx7ulp(void);
 uint16_t soc_revision(void);
 uint32_t imx_soc_type(void);
+bool imx_is_device_closed(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);
 void imx_gpcv2_set_core1_pup_by_software(void);
 void imx_gpcv2_set_core_pgc(bool enable, uint32_t offset);
