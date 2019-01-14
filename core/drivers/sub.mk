@@ -1,4 +1,5 @@
 subdirs-$(CFG_IMX_CAAM) += caam
+subdirs-$(CFG_IMX_SNVS) += snvs
 
 srcs-$(CFG_CDNS_UART) += cdns_uart.c
 srcs-$(CFG_PL011) += pl011.c
@@ -9,7 +10,6 @@ srcs-$(CFG_PL061) += pl061_gpio.c
 srcs-$(CFG_PL022) += pl022_spi.c
 srcs-$(CFG_8250_UART) += serial8250_uart.c
 srcs-$(CFG_16550_UART) += ns16550.c
-srcs-$(CFG_IMX_SNVS) += imx_snvs.c
 srcs-$(CFG_IMX_UART) += imx_uart.c
 srcs-$(CFG_IMX_LPUART) += imx_lpuart.c
 srcs-$(CFG_IMX_WDOG) += imx_wdog.c

@@ -138,6 +138,7 @@ CFG_TZC380 ?= y
 CFG_IMX_UART ?= y
 CFG_IMX_LPUART ?= y
 CFG_IMX_CAAM ?= y
+CFG_IMX_SNVS ?= y
 else
 # arm-v7 platforms Common definition
 ta-targets = ta_arm32
@@ -157,6 +158,7 @@ CFG_IMX_UART ?= y
 CFG_TZC380 ?= y
 CFG_CSU ?= y
 CFG_IMX_CAAM ?= y
+CFG_IMX_SNVS ?= y
 $(call force,CFG_BOOT_SYNC_CPU,n)
 $(call force,CFG_BOOT_SECONDARY_REQUEST,n)
 $(call force,CFG_IMX_LPUART,n)
@@ -177,6 +179,7 @@ CFG_BOOT_SYNC_CPU ?= y
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_ENABLE_SCTLR_RR ?= y
 CFG_IMX_CAAM ?= y
+CFG_IMX_SNVS ?= y
 $(call force,CFG_IMX_LPUART,n)
 endif
 
@@ -189,6 +192,7 @@ CFG_IMX_UART ?= y
 CFG_TZC380 ?= y
 CFG_CSU ?= y
 CFG_IMX_CAAM ?= y
+CFG_IMX_SNVS ?= y
 $(call force,CFG_IMX_LPUART,n)
 endif
 

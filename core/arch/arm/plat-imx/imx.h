@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -45,6 +45,8 @@ bool soc_is_imx8mq_b1_layer(void);
 uint16_t soc_revision(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);
 void imx_gpcv2_set_core1_pup_by_software(void);
+
+bool imx_is_device_closed(void);
 
 void plat_cpu_wakeup_late(void);
 

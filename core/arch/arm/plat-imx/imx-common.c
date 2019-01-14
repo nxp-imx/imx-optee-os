@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (C) 2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -198,3 +198,25 @@ uint16_t soc_revision(void)
 
 	return imx_soc_revision;
 }
+
+#ifdef CFG_IMX_SNVS
+/**
+ * @brief   Returns if the device is closed (full secure) or not
+ *
+ * @retval  true if closed device
+ * @retval  false if not closed device
+ */
+bool imx_is_device_closed(void)
+{
+	uint32_t val;
+	vaddr_t  snvs_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC);
+
+	val = read32(snvs_base + SNVS_HPSTATUS);
+	val &= BM_SNVS_HPSTATUS_SYS_SEC_CFG;
+
+	if ((val & SNVS_HPSTATUS_CLOSED) && !(val & SNVS_HPSTATUS_BAD))
+		return true;
+
+	return false;
+}
+#endif

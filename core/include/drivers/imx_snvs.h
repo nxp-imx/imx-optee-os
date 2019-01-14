@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2019 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,5 +30,14 @@
 #include <tee_api_types.h>
 
 TEE_Result snvs_srtc_enable(void);
+
+/**
+ * @brief   Set the OTPMK Key as Master key.
+ *          If device is a closed device and OTMPK can not be set
+ *          system stop in panic.
+ *          If device is NOT a closed device and OTPMK can not be
+ *          set, continue anyway.
+ */
+void snvs_set_master_otpmk(void);
 
 #endif /* __DRIVERS_IMX_SNVS_H */

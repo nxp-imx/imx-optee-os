@@ -4,7 +4,7 @@
  * All rights reserved.
  * Copyright (c) 2016, Wind River Systems.
  * All rights reserved.
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2019 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -49,18 +49,14 @@
 #error "PLATFORM not defined"
 #endif
 
+#include <registers/snvs-regs.h>
+
 /* Register offset used to get the CPU Type and Revision */
 #define HW_ANADIG_DIGPROG		0x260
 #define HW_ANADIG_DIGPROG_IMX6SL	0x280
 #define HW_ANADIG_DIGPROG_IMX7D		0x800
 #define HW_ANADIG_DIGPROG_IMX8MQ	0x06c
 #define HW_ANADIG_DIGPROG_IMX8MM	0x800
-
-#define SNVS_LPCR_OFF			0x38
-#define SNVS_LPCR_TOP_MASK		BIT(6)
-#define SNVS_LPCR_DP_EN_MASK		BIT(5)
-#define SNVS_LPCR_SRTC_ENV_MASK		1
-
 
 #define IOMUXC_GPR4_OFFSET	0x10
 #define IOMUXC_GPR5_OFFSET	0x14

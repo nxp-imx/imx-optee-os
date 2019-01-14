@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017 NXP
+ * Copyright 2017-2019 NXP
  *
  */
 
@@ -16,5 +16,6 @@
 #define TZASC_BASE	0x32F80000
 #define CAAM_BASE	0x30900000
 #define ANATOP_BASE 0x30360000
+#define SNVS_BASE   0x30370000
 
 #endif /* __IMX8_REGS_H__ */
