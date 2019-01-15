@@ -238,7 +238,9 @@ static TEE_Result init_ocram(void)
 #ifdef CFG_DT
 	/* Move ocram nodes to the OCRAM for Linux */
 	dt_overwrite("fsl,optee-lpm-sram", "reg", "overw_reg", 3);
-	dt_overwrite("fsl,optee-lpm-sram", "clocks", "overw_clock", 3);
+
+	if (soc_is_imx6sx())
+		dt_overwrite("fsl,optee-lpm-sram", "clocks", "overw_clock", 3);
 #endif
 
 	if (soc_is_imx6sx()) {
@@ -385,8 +387,10 @@ static TEE_Result init_ocram(void)
 
 #ifdef CFG_DT
 	/* Move ocram nodes to the OCRAM for Linux */
-	dt_overwrite("fsl,optee-lpm-sram", "reg", "overw_reg", 3);
-	dt_overwrite("fsl,optee-lpm-sram", "clocks", "overw_clock", 3);
+	if (soc_is_imx7ds()) {
+		dt_overwrite("fsl,optee-lpm-sram", "reg", "overw_reg", 3);
+		dt_overwrite("fsl,optee-lpm-sram", "clocks", "overw_clock", 3);
+	}
 #endif
 
 #ifdef CFG_MX7
