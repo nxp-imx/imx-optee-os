@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2017-2018 NXP
+ * @copyright 2017-2019 NXP
  *
  * @file    hal_cfg.c
  *
@@ -14,8 +14,6 @@
 #include <kernel/generic_boot.h>
 #include <libfdt.h>
 
-/* Platform includes */
-#include <imx.h>
 #else
 
 /* Global includes */
@@ -25,6 +23,9 @@
 #include "jr_regs.h"
 
 #endif // CFG_DT
+
+/* Platform includes */
+#include <imx.h>
 
 /* Local includes */
 #include "common.h"
@@ -52,6 +53,11 @@
  */
 #define CFG_JR_INDEX		0
 #define CFG_JR_IRQ			105
+
+#ifdef CFG_WITH_HAB
+#define CFG_JR_INDEX_HAB	1
+#define CFG_JR_IRQ_HAB		106
+#endif
 #endif
 
 #ifdef CFG_DT
@@ -225,6 +231,12 @@ enum CAAM_Status hal_cfg_get_conf(struct jr_cfg *jr_cfg)
 	// Add index of the first SPI interrupt
 	jr_cfg->it_num  = CFG_JR_IRQ + 32;
 
+#ifdef CFG_WITH_HAB
+	if (imx_is_device_closed()) {
+		jr_cfg->offset = (CFG_JR_INDEX_HAB + 1) * JRx_BLOCK_SIZE;
+		jr_cfg->it_num = CFG_JR_IRQ_HAB + 32;
+	}
+#endif
 #endif // CFG_DT
 
 	retstatus = CAAM_NO_ERROR;

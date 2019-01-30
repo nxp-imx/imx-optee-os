@@ -767,3 +767,23 @@ void caam_jr_resume(uint32_t pm_hint)
 		hal_jr_resume(jr_privdata->baseaddr);
 }
 
+#ifdef CFG_WITH_HAB
+/**
+ * @brief   Forces the completion of all CAAM Job to ensure
+ *          CAAM is not BUSY. This enable the HAB to execute
+ *          CAAM Jobs.
+ *
+ * @retval 0    CAAM is no more busy
+ * @retval (-1) CAAM is still busy
+ */
+int caam_jr_complete(void)
+{
+	int ret;
+
+	ret = hal_jr_flush(jr_privdata->baseaddr);
+	if (ret == 0)
+		hal_jr_resume(jr_privdata->baseaddr);
+
+	return ret;
+}
+#endif
