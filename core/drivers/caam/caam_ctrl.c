@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2017-2018 NXP
+ * @copyright 2017-2019 NXP
  *
  * @file    caam_ctrl.c
  *
@@ -188,4 +188,26 @@ exit_init:
 
 #ifndef CFG_IMXCRYPT
 driver_init(crypto_driver_init);
+#endif
+
+#ifdef CFG_WITH_HAB
+/**
+ * @brief   Crypto driver late initialization function to complete
+ *          CAAM operation in case of HAB usage on Closed devices
+ *
+ * @retval  TEE_SUCCESS        Success
+ * @retval  TEE_ERROR_GENERIC  Generic Error (driver init failure)
+ */
+static TEE_Result init_caam_late(void)
+{
+	int ret = 0;
+
+	ret = caam_jr_complete();
+
+	if (ret == 0)
+		return TEE_SUCCESS;
+	else
+		return TEE_ERROR_GENERIC;
+}
+driver_init_late(init_caam_late);
 #endif
