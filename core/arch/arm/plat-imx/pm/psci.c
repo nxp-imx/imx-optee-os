@@ -400,6 +400,9 @@ static TEE_Result init_psci(void)
 
 void psci_system_reset(void)
 {
+#ifdef CFG_XRDC
+	xrdc_reset();
+#endif
 	imx_wdog_restart();
 }
 

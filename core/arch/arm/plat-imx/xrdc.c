@@ -677,3 +677,26 @@ static TEE_Result pm_enter_resume(enum pm_op op, uint32_t pm_hint,
 	else
 		return pm_resume(pm_hint);
 }
+
+/**
+ * @brief      Disable XRDC before reboot.
+ *             During reboot, registers related to memory region controller are
+ *             wiped. During restart, MMDC access does not hit any region
+ *             descriptor because MRC registers are wiped. This results in an
+ *             access error.
+ */
+void xrdc_reset(void)
+{
+	struct xrdc_reg_desc *xrdc_reg = NULL;
+	vaddr_t xrdc_va_base_addr;
+
+	/* Get xrdc registers */
+	xrdc_va_base_addr = core_mmu_get_va(XRDC_BASE, MEM_AREA_IO_SEC);
+	if (!xrdc_va_base_addr)
+		return;
+
+	xrdc_reg = (struct xrdc_reg_desc *)xrdc_va_base_addr;
+
+	/* Disable XRDC */
+	xrdc_reg->cr &= ~XRDC_CR_GVLD_MASK;
+}
