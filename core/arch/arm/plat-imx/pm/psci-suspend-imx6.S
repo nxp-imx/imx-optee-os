@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2018, 2020 NXP
  *
  */
 
@@ -28,19 +28,21 @@
 	.endm
 
 #define L2X0_CACHE_SYNC                 0x730
+#define PL310_8WAYS_MASK		0x00FF
+#define PL310_16WAYS_UPPERMASK		0xFF00
+#define PL310_LOCKDOWN_SZREG		4
+#define PL310_LOCKDOWN_NBREGS		8
 
-	.macro  sync_l2_cache
+	.macro  sync_l2_cache pl310_base
 
 	/* sync L2 cache to drain L2's buffers to DRAM. */
 #ifdef CFG_PL310
-	ldr	r11, [r0, #PM_INFO_PL310_V_OFF]
 	mov	r6, #0x0
-	str	r6, [r11, #L2X0_CACHE_SYNC]
+	str	r6, [\pl310_base, #L2X0_CACHE_SYNC]
 1:
-	ldr	r6, [r11, #L2X0_CACHE_SYNC]
+	ldr	r6, [\pl310_base, #L2X0_CACHE_SYNC]
 	ands	r6, r6, #0x1
 	bne	1b
-
 #endif
 
 	.endm
@@ -251,23 +253,22 @@
 	.macro store_ttbr1
 
 	/* Store TTBR1 to pm_info->ttbr1 */
-	read_ttbr1 r7
-	str	r7, [r0, #PM_INFO_TTBR1_OFF]
+	read_ttbr1	r7
+	str		r7, [r0, #PM_INFO_TTBR1_OFF]
 
 	/* Disable Branch Prediction, Z bit in SCTLR. */
-	read_sctlr r6
-	bic	r6, r6, #SCTLR_Z
-	write_sctlr r6
+	read_sctlr	r6
+	bic		r6, r6, #SCTLR_Z
+	write_sctlr	r6
 
 	/* Flush the BTAC. */
 	write_bpiallis
 
+	/* Store the IRAM table in TTBR1 */
 	ldr	r6, =iram_tlb_phys_addr
 	ldr	r6, [r6]
 	dsb
 	isb
-
-	/* Store the IRAM table in TTBR1 */
 	write_ttbr1 r6
 
 	/* Read TTBCR and set PD0=1 and PD1=0 */
@@ -275,11 +276,10 @@
 #ifdef CFG_WITH_LPAE
 #error "Case not supported"
 #endif
-	read_ttbcr r6
-	bic	r6, r6, #0x30
-	orr	r6, r6, #0x10
-	write_ttbcr r6
-
+	read_ttbcr	r6
+	bic		r6, r6, #0x30
+	orr		r6, r6, #0x10
+	write_ttbcr	r6
 	dsb
 	isb
 
@@ -289,51 +289,23 @@
 	write_tlbiall
 	isb
 
-	/* Disable L1 data cache. */
-	read_sctlr r6
-	bic	r6, r6, #SCTLR_C
-	write_sctlr r6
-
-#ifdef CFG_PL310
-	sync_l2_cache
-
-	/* Disable PL310 */
-	ldr	r8, [r0, #PM_INFO_PL310_V_OFF]
-	mov	r6, #0x0
-	str	r6, [r8, #PL310_CTRL]
-
-	dsb
-	isb
-#endif
 17:
 	.endm
 
 	.macro restore_ttbr1
 
-	is_cortex_a7
-	beq	18f
-
-#ifdef CFG_PL310
-	/* Enable L2. */
-	ldr	r8, [r0, #PM_INFO_PL310_V_OFF]
-	ldr	r7, =0x1
-	str	r7, [r8, #PL310_CTRL]
-#endif
-
-18:
 	/* Enable L1 data cache. */
-	read_sctlr r6
-	orr	r6, r6, #SCTLR_C
-	write_sctlr r6
-
+	read_sctlr	r6
+	orr		r6, r6, #SCTLR_C
+	write_sctlr	r6
 	dsb
 	isb
 
 	/* Restore TTBCR */
 	/* Read TTBCR and set PD0=0 and PD1=0 */
-	read_ttbcr r6
-	bic	r6, r6, #0x30
-	write_ttbcr r6
+	read_ttbcr	r6
+	bic		r6, r6, #0x30
+	write_ttbcr	r6
 	dsb
 	isb
 
@@ -341,17 +313,58 @@
 	write_tlbiallis
 
 	/* Enable Branch Prediction */
-	read_sctlr r6
-	orr	r6, r6, #SCTLR_Z
-	write_sctlr r6
+	read_sctlr	r6
+	orr		r6, r6, #SCTLR_Z
+	write_sctlr	r6
 
 	/* Flush the Branch Target Address Cache (BTAC) */
 	write_bpiallis
 
 	/* Restore TTBR1, get the origin ttbr1 from pm info */
-	ldr	r6, [r0, #PM_INFO_TTBR1_OFF]
-	write_ttbr1 r6
+	ldr		r6, [r0, #PM_INFO_TTBR1_OFF]
+	write_ttbr1	r6
 	isb
+
+#ifdef CFG_PL310
+	/* Unlock L2 */
+	ldr		r5, [r0, #PM_INFO_PL310_V_OFF]
+	unlock_l2	r5
+#endif
+	.endm
+
+	/* Expect PL310 base address */
+	/* Uses r6, r7, r11 */
+	.macro lock_l2 base
+
+	ldr	r6, [\base, #PL310_AUX_CTRL]
+	tst	r6, #PL310_AUX_16WAY_BIT
+	mov	r6, #PL310_8WAYS_MASK
+	orrne	r6, #PL310_16WAYS_UPPERMASK
+	mov	r7, #PL310_LOCKDOWN_NBREGS
+	add	r11, \base, #PL310_DCACHE_LOCKDOWN_BASE
+19:	/* lock Dcache and Icache */
+	str	r6, [r11], #PL310_LOCKDOWN_SZREG
+	str	r6, [r11], #PL310_LOCKDOWN_SZREG
+	subs	r7, r7, #1
+	bne	19b
+
+	.endm
+
+	/* Expect PL310 base address */
+	/* Uses r6, r7, r11 */
+	.macro unlock_l2 base
+
+	ldr	r6, [\base, #PL310_AUX_CTRL]
+	tst	r6, #PL310_AUX_16WAY_BIT
+	mov	r6, #0x00
+	orrne	r6, #0x0000
+	mov	r7, #PL310_LOCKDOWN_NBREGS
+	add	r11, \base, #PL310_DCACHE_LOCKDOWN_BASE
+20:	/* unlock Dcache and Icache */
+	str	r6, [r11], #PL310_LOCKDOWN_SZREG
+	str	r6, [r11], #PL310_LOCKDOWN_SZREG
+	subs	r7, r7, #1
+	bne	20b
 
 	.endm
 
@@ -378,10 +391,10 @@ FUNC imx6_suspend, :
 	 * Calculate the Physical address of the resume function
 	 * to initialize the SRC register
 	 */
-	ldr		r6, =imx6_suspend
-	ldr		r9, =resume
-	sub		r9, r6
-	add		r9, r1
+	ldr	r6, =imx6_suspend
+	ldr	r9, =resume
+	sub	r9, r6
+	add	r9, r1
 
 	ldr	r1, [r0, #PM_INFO_PBASE_OFF]
 
@@ -409,57 +422,51 @@ FUNC imx6_suspend, :
 	str	r9, [r11, #SRC_GPR1]
 	str	r1, [r11, #SRC_GPR2]
 
-	/*
-	 * Check if the cpu is Cortex-A7, for Cortex-A7
-	 * the cache implementation is not the same as
-	 * Cortex-A9, so the cache maintenance operation
-	 * is different.
-	 */
-	is_cortex_a7
-	beq	a7_dache_flush
-
-#ifdef CFG_PL310
-	/* need to sync L2 cache before DSM. */
-	sync_l2_cache
-#endif
-
-	b	ttbr_store
-
-	/* r0/r1/r2 */
-a7_dache_flush:
-	/* Clean Dcache */
 	push	{r0 - r10, lr}
+
+#if CFG_PL310
+	/* Save pm_info to r12 */
+	mov	r12, r0
+
+	/* Lock L2 */
+	ldr		r0, [r12, #PM_INFO_PL310_V_OFF]
+	lock_l2		r0
+
+	/* Sync L2 */
+	ldr		r11, [r12, #PM_INFO_PL310_V_OFF]
+	sync_l2_cache	r11
+
+	/* Clean L2 */
+	ldr	r0, [r12, #PM_INFO_PL310_V_OFF]
+	ldr	r1, =arm_cl2_cleaninvbyway
+	mov	lr, pc
+	bx	r1
+
+	/* Sync L2 */
+	ldr		r11, [r12, #PM_INFO_PL310_V_OFF]
+	sync_l2_cache	r11
+#endif
+	/* Clean L1$ */
 	ldr	r1, =dcache_op_all
 	mov	r0, #DCACHE_OP_CLEAN_INV
 	mov	lr, pc
 	bx	r1
 
-	ldr	r1, =dcache_op_level1
-	mov	r0, #DCACHE_OP_CLEAN_INV
-	mov	lr, pc
-	bx	r1
-
-	/* Disable DATA Cache */
-	read_sctlr r0
-	bic	r0, r0, #SCTLR_C
-	write_sctlr r0
-
+	/* Disable L1$ */
+	read_sctlr	r0
+	bic		r0, r0, #SCTLR_C
+	write_sctlr	r0
 	dsb
 	isb
 
+	/* Clean L1$ */
 	ldr	r1, =dcache_op_all
-	mov	r0, #DCACHE_OP_CLEAN_INV
-	mov	lr, pc
-	bx	r1
-
-	ldr	r1, =dcache_op_level1
 	mov	r0, #DCACHE_OP_CLEAN_INV
 	mov	lr, pc
 	bx	r1
 
 	pop	{r0 - r10, lr}
 
-ttbr_store:
 	store_ttbr1
 
 	ldr	r11, [r0, #PM_INFO_MMDC0_V_OFF]
