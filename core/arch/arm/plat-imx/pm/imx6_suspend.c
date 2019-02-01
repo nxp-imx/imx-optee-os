@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2018, 2020 NXP
  *
  */
 #include <arm.h>
@@ -9,6 +9,7 @@
 #include <io.h>
 #include <imx.h>
 #include <imx_pm.h>
+#include <imx_pl310.h>
 #include <kernel/cache_helpers.h>
 #include <kernel/generic_boot.h>
 #include <kernel/misc.h>
@@ -68,11 +69,12 @@ int imx6_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 	 * when bootup. Now MMU is up, L1 enabled.
 	 */
 #ifdef CFG_PL310
+	if (pl310_enabled(pl310_base()))
+		return 0;
+
 	arm_cl2_config(pl310_base());
 	arm_cl2_invbyway(pl310_base());
 	arm_cl2_enable(pl310_base());
-	/* Do we need to lock? cpu performance? */
-	/*arm_cl2_lockallways(pl310_base()); */
 	arm_cl2_invbyway(pl310_base());
 #endif
 
