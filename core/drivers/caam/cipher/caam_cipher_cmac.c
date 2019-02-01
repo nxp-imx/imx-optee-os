@@ -119,7 +119,8 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 
 		/* If context already allocated, this is an update */
 		if (ctx->ctx.length) {
-			CIPHER_TRACE("Update Operation");
+			CIPHER_TRACE("%s Operation",
+					(dupdate->last ? "Final" : "Update"));
 
 			desc[desclen++] = LD_NOIMM_OFF(CLASS_1, REG_CTX,
 				ctx->ctx.length, ctx->alg->ctx_offset);
@@ -132,7 +133,8 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 				desc[desclen++] = CIPHER_UPDATE(ctx->alg->type,
 					true);
 		} else {
-			CIPHER_TRACE("Init Operation");
+			CIPHER_TRACE("%s Operation",
+					(dupdate->last ? "Init/Final" : "Init"));
 			/* Allocate the CAAM Context register */
 			retstatus = caam_alloc_align_buf(&ctx->ctx,
 				ctx->alg->size_ctx);
@@ -156,7 +158,7 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 		 */
 		if (ctx->blockbuf.filled != 0) {
 			/* Add the temporary buffer */
-			if (dupdate->src.length) {
+			if (size_inmade) {
 				desc[desclen++] = FIFO_LD_EXT(CLASS_1, MSG,
 					NOACTION);
 			} else {
@@ -171,9 +173,9 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 			cache_operation(TEE_CACHECLEAN,
 					ctx->blockbuf.buf.data,
 					ctx->blockbuf.filled);
-		};
+		}
 
-		if (dupdate->src.length) {
+		if (size_inmade) {
 			/* Add the input data multiple of blocksize */
 			desc[desclen++] = FIFO_LD_EXT(CLASS_1, MSG, LAST_C1);
 			desc[desclen++] = psrc;
