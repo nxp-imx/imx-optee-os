@@ -6,6 +6,8 @@ $(call force, CFG_JR_BLOCK_SIZE,0x10000)
 ifeq ($(PLATFORM_FLAVOR),ls1046ardb)
 $(call force,CFG_JR_IDX,0x2)
 $(call force,CFG_JR_IRQ_ID,105)
+$(call force,CFG_PHYS_64BIT,y)
+$(call force,CFG_NXP_SEC_BE,y)
 endif
 
 ifeq ($(CFG_IMXCRYPT), y)
