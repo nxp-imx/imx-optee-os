@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    hal_ctrl.c
  *
@@ -9,7 +9,7 @@
  */
 
 /* Global includes */
-#include <io.h>
+#include <caam_io.h>
 
 /* Hal includes */
 #include "hal_ctrl.h"
@@ -27,6 +27,6 @@ void hal_ctrl_init(vaddr_t baseaddr)
 	/*
 	 * Enable DECO watchdogs
 	 */
-	io_mask32(baseaddr + MCFGR, MCFGR_WDE, MCFGR_WDE);
+	mask32(baseaddr + MCFGR, MCFGR_WDE, MCFGR_WDE);
 }
 

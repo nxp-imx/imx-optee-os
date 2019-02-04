@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    hal_jr.c
  *
@@ -8,12 +8,10 @@
  *          Implementation of primitives to access HW
  */
 
-/* Global includes */
-#include <io.h>
-
 /* Local includes */
 #include "common.h"
 #include "caam_pwr.h"
+#include "caam_io.h"
 
 /* Hal includes */
 #include "hal_jr.h"
@@ -62,7 +60,7 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 	uint8_t  jr_idx = JRx_IDX(jr_offset);
 
 	/* Read the Job Ring Lock bit */
-	val = read32(ctrl_base + JRxMIDR_MS(jr_idx));
+	val = get32(ctrl_base + JRxMIDR_MS(jr_idx));
 	HAL_TRACE("JR%dMIDR_MS value 0x%x", jr_idx, val);
 
 	/* Prepare the Job Ring MS/LS registers */
@@ -93,7 +91,7 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 			/* Read the LS register and compare with expected
 			 * value
 			 */
-			val = read32(ctrl_base + JRxMIDR_LS(jr_idx));
+			val = get32(ctrl_base + JRxMIDR_LS(jr_idx));
 			HAL_TRACE("JR%dMIDR_LS value 0x%x (0x%x)",
 					jr_idx, val, cfg_ls);
 			if (val == cfg_ls)
@@ -103,8 +101,8 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 		HAL_TRACE("JR%dMIDR_LS set value 0x%x", jr_idx, cfg_ls);
 		HAL_TRACE("JR%dMIDR_MS set value 0x%x", jr_idx, cfg_ms);
 		/* Set the configuration */
-		write32(cfg_ls, ctrl_base + JRxMIDR_LS(jr_idx));
-		write32(cfg_ms, ctrl_base + JRxMIDR_MS(jr_idx));
+		put32(ctrl_base + JRxMIDR_LS(jr_idx), cfg_ls);
+		put32(ctrl_base + JRxMIDR_MS(jr_idx), cfg_ms);
 		retstatus = CAAM_NO_ERROR;
 	}
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    hal_ctrl.c
  *
@@ -8,8 +8,8 @@
  *          Implementation of primitives to access HW
  */
 
-/* Global includes */
-#include <io.h>
+/* Local includes */
+#include "caam_io.h"
 
 #ifdef CFG_CRYPTO_HASH_HW
 /* Library i.MX includes */
@@ -33,7 +33,7 @@ uint8_t hal_ctrl_jrnum(vaddr_t baseaddr)
 {
 	uint32_t val;
 
-	val = read32(baseaddr + CHANUM_MS);
+	val = get32(baseaddr + CHANUM_MS);
 
 	return GET_CHANUM_MS_JRNUM(val);
 }
@@ -52,11 +52,11 @@ int hal_ctrl_hash_limit(vaddr_t baseaddr)
 	uint32_t val;
 
 	/* Read the number of instance */
-	val = read32(baseaddr + CHANUM_LS);
+	val = get32(baseaddr + CHANUM_LS);
 
 	if (GET_CHANUM_LS_MDNUM(val)) {
 		/* Hashing is supported */
-		val = read32(baseaddr + CHAVID_LS);
+		val = get32(baseaddr + CHAVID_LS);
 		val &= BM_CHAVID_LS_MDVID;
 		if (val == CHAVID_LS_MDVID_LP256)
 			return HASH_SHA256;
@@ -81,7 +81,7 @@ bool hal_ctrl_splitkey(vaddr_t baseaddr)
 	uint32_t val;
 
 	/* Read the number of instance */
-	val = read32(baseaddr + CAAMVID_MS);
+	val = get32(baseaddr + CAAMVID_MS);
 
 	if (GET_CAAMVID_MS_MAJ_REV(val) < 3) {
 		return false;
@@ -104,7 +104,7 @@ uint8_t hal_ctrl_caam_era(vaddr_t baseaddr)
 	uint32_t val;
 
 	/* Read the number of instance */
-	val = read32(baseaddr + CCBVID);
+	val = get32(baseaddr + CCBVID);
 
 	return GET_CCBVID_CAAM_ERA(val);
 }

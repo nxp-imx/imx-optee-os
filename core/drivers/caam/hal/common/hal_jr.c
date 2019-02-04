@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    hal_jr.c
  *
@@ -8,12 +8,10 @@
  *          Implementation of primitives to access HW
  */
 
-/* Global includes */
-#include <io.h>
-
 /* Local includes */
 #include "common.h"
 #include "caam_pwr.h"
+#include "caam_io.h"
 
 /* Hal includes */
 #include "hal_jr.h"
@@ -65,14 +63,15 @@ enum CAAM_Status hal_jr_reset(vaddr_t baseaddr)
 	uint32_t reg_val;
 
 	/* Mask interrupts to poll for reset completion status */
-	io_mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
+	mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
 			JRx_JRCFGR_LS_IMSK);
 
 	/* Initiate flush (required prior to reset) */
-	write32(JRx_JRCR_RESET, baseaddr + JRx_JRCR);
+	put32(baseaddr + JRx_JRCR, JRx_JRCR_RESET);
+
 	do {
 		caam_udelay(100);
-		reg_val = read32(baseaddr + JRx_JRINTR);
+		reg_val = get32(baseaddr + JRx_JRINTR);
 		reg_val &= BM_JRx_JRINTR_HALT;
 	} while ((reg_val == JRINTR_HALT_ONGOING) && --timeout);
 
@@ -83,10 +82,10 @@ enum CAAM_Status hal_jr_reset(vaddr_t baseaddr)
 
 	/* Initiate reset */
 	timeout = 100;
-	write32(JRx_JRCR_RESET, baseaddr + JRx_JRCR);
+	put32(baseaddr + JRx_JRCR, JRx_JRCR_RESET);
 	do {
 		caam_udelay(100);
-		reg_val = read32(baseaddr + JRx_JRCR);
+		reg_val = get32(baseaddr + JRx_JRCR);
 	} while ((reg_val & JRx_JRCR_RESET) && --timeout);
 
 	if (!timeout) {
@@ -112,14 +111,14 @@ void hal_jr_config(vaddr_t baseaddr, uint8_t nbJobs,
 	uint32_t value;
 
 	/* Setup the JR input queue */
-	write32(((inrings >> 32) & 0xFFFFFFFF), baseaddr + JRx_IRBAR);
-	write32((inrings & 0xFFFFFFFF), baseaddr + JRx_IRBAR + 4);
-	write32(nbJobs, baseaddr + JRx_IRSR);
+	put32(baseaddr + JRx_IRBAR, ((inrings >> 32) & 0xFFFFFFFF));
+	put32(((baseaddr + JRx_IRBAR) + 4), (inrings & 0xFFFFFFFF));
+	put32(baseaddr + JRx_IRSR, nbJobs);
 
 	/* Setup the JR output queue */
-	write32(((outrings >> 32) & 0xFFFFFFFF), baseaddr + JRx_ORBAR);
-	write32((outrings & 0xFFFFFFFF), baseaddr + JRx_ORBAR + 4);
-	write32(nbJobs, baseaddr + JRx_ORSR);
+	put32(baseaddr + JRx_ORBAR, ((outrings >> 32) & 0xFFFFFFFF));
+	put32(((baseaddr + JRx_ORBAR) + 4), (outrings & 0xFFFFFFFF));
+	put32(baseaddr + JRx_ORSR, nbJobs);
 
 	/* Disable the JR interrupt */
 	hal_jr_disableIT(baseaddr);
@@ -135,7 +134,7 @@ void hal_jr_config(vaddr_t baseaddr, uint8_t nbJobs,
 	value |= JRx_JRCFGR_LS_ICDCT((nbJobs / 2));
 	value |= JRx_JRCFGR_LS_ICEN;
 	value |= JRx_JRCFGR_LS_IMSK;
-	write32(value, baseaddr + JRx_JRCFGR_LS);
+	put32(baseaddr + JRx_JRCFGR_LS, (uint32_t)value);
 
 #ifdef CFG_IMXCRYPT
 	caam_pwr_add_backup(baseaddr, jr_backup, ARRAY_SIZE(jr_backup));
@@ -152,7 +151,7 @@ void hal_jr_config(vaddr_t baseaddr, uint8_t nbJobs,
  */
 uint32_t hal_jr_read_nbSlotAvailable(vaddr_t baseaddr)
 {
-	return read32(baseaddr + JRx_IRSAR);
+	return get32(baseaddr + JRx_IRSAR);
 }
 
 /**
@@ -163,7 +162,7 @@ uint32_t hal_jr_read_nbSlotAvailable(vaddr_t baseaddr)
  */
 void hal_jr_add_newjob(vaddr_t baseaddr)
 {
-	write32(1, baseaddr + JRx_IRJAR);
+	put32(baseaddr + JRx_IRJAR, 1);
 }
 
 /**
@@ -175,7 +174,7 @@ void hal_jr_add_newjob(vaddr_t baseaddr)
  */
 uint32_t hal_jr_get_nbJobDone(vaddr_t baseaddr)
 {
-	return read32(baseaddr + JRx_ORSFR);
+	return get32(baseaddr + JRx_ORSFR);
 }
 
 /**
@@ -186,7 +185,7 @@ uint32_t hal_jr_get_nbJobDone(vaddr_t baseaddr)
  */
 void hal_jr_del_job(vaddr_t baseaddr)
 {
-	write32(1, baseaddr + JRx_ORJRR);
+	put32(baseaddr + JRx_ORJRR, 1);
 }
 
 /**
@@ -197,9 +196,9 @@ void hal_jr_del_job(vaddr_t baseaddr)
  */
 void hal_jr_disableIT(vaddr_t baseaddr)
 {
-	io_mask32(baseaddr + JRx_JRCFGR_LS,	JRx_JRCFGR_LS_IMSK,
+	mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
 			JRx_JRCFGR_LS_IMSK);
-	io_mask32(baseaddr + JRx_JRINTR, JRx_JRINTR_JRI, JRx_JRINTR_JRI);
+	mask32(baseaddr + JRx_JRINTR, JRx_JRINTR_JRI, JRx_JRINTR_JRI);
 }
 
 /**
@@ -210,7 +209,7 @@ void hal_jr_disableIT(vaddr_t baseaddr)
  */
 void hal_jr_enableIT(vaddr_t baseaddr)
 {
-	io_mask32(baseaddr + JRx_JRCFGR_LS,	~JRx_JRCFGR_LS_IMSK,
+	mask32(baseaddr + JRx_JRCFGR_LS, ~JRx_JRCFGR_LS_IMSK,
 				JRx_JRCFGR_LS_IMSK);
 }
 
@@ -226,11 +225,11 @@ bool hal_jr_poolackIT(vaddr_t baseaddr)
 {
 	uint32_t val;
 
-	val = read32(baseaddr + JRx_JRINTR);
+	val = get32(baseaddr + JRx_JRINTR);
 
 	if ((val & JRx_JRINTR_JRI) == JRx_JRINTR_JRI) {
 		/* Acknowledge interrupt */
-		io_mask32(baseaddr + JRx_JRINTR, JRx_JRINTR_JRI,
+		mask32(baseaddr + JRx_JRINTR, JRx_JRINTR_JRI,
 				JRx_JRINTR_JRI);
 		return true;
 	}
@@ -253,22 +252,22 @@ int hal_jr_halt(vaddr_t baseaddr)
 	uint32_t val;
 
 	/* Mask interrupts to poll for completion status */
-	io_mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
+	mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
 			JRx_JRCFGR_LS_IMSK);
 
 	/* Request Job ring halt */
-	write32(JRx_JRCR_PARK, baseaddr + JRx_JRCR);
+	put32(baseaddr + JRx_JRCR, JRx_JRCR_PARK);
 
 	/* Check if there is a job running */
-	val = read32(baseaddr + JRx_IRSR);
+	val = get32(baseaddr + JRx_IRSR);
 	if ((hal_jr_read_nbSlotAvailable(baseaddr) == val)
-			&& (read32(baseaddr + JRx_CSTA) != JRx_CSTA_BSY))
+			&& (get32(baseaddr + JRx_CSTA) != JRx_CSTA_BSY))
 		return 0;
 
 	/* Wait until all jobs complete */
 	do {
 		caam_udelay(10);
-		val = read32(baseaddr + JRx_JRINTR);
+		val = get32(baseaddr + JRx_JRINTR);
 		val &= BM_JRx_JRINTR_HALT;
 	} while ((val != JRINTR_HALT_DONE) && --timeout);
 
@@ -292,22 +291,22 @@ int hal_jr_flush(vaddr_t baseaddr)
 	uint32_t val;
 
 	/* Mask interrupts to poll for completion status */
-	io_mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
+	mask32(baseaddr + JRx_JRCFGR_LS, JRx_JRCFGR_LS_IMSK,
 			JRx_JRCFGR_LS_IMSK);
 
 	/* Request Job ring to flush input queue */
-	write32(JRx_JRCR_RESET, baseaddr + JRx_JRCR);
+	put32(baseaddr + JRx_JRCR, JRx_JRCR_RESET);
 
 	/* Check if there is a job running */
-	val = read32(baseaddr + JRx_IRSR);
+	val = get32(baseaddr + JRx_IRSR);
 	if ((hal_jr_read_nbSlotAvailable(baseaddr) == val)
-			&& (read32(baseaddr + JRx_CSTA) != JRx_CSTA_BSY))
+			&& (get32(baseaddr + JRx_CSTA) != JRx_CSTA_BSY))
 		return 0;
 
 	/* Wait until all jobs complete */
 	do {
 		caam_udelay(10);
-		val = read32(baseaddr + JRx_JRINTR);
+		val = get32(baseaddr + JRx_JRINTR);
 		val &= BM_JRx_JRINTR_HALT;
 	} while ((val == JRINTR_HALT_DONE) && --timeout);
 
@@ -324,7 +323,7 @@ int hal_jr_flush(vaddr_t baseaddr)
  */
 void hal_jr_resume(vaddr_t baseaddr)
 {
-	write32(JRINTR_HALT_RESUME, baseaddr + JRx_JRINTR);
+	put32(baseaddr + JRx_JRINTR, JRINTR_HALT_RESUME);
 
 	hal_jr_enableIT(baseaddr);
 }
@@ -342,7 +341,7 @@ uint8_t hal_jr_input_index(vaddr_t baseaddr)
 {
 	uint32_t index;
 
-	index = read32(baseaddr + JRx_IRRIR);
+	index = get32(baseaddr + JRx_IRRIR);
 	return index >> 2;
 }
 
@@ -359,7 +358,7 @@ uint8_t hal_jr_output_index(vaddr_t baseaddr)
 {
 	uint32_t index;
 
-	index = read32(baseaddr + JRx_ORWIR);
+	index = get32(baseaddr + JRx_ORWIR);
 	return index >> 3;
 }
 

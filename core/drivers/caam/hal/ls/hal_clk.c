@@ -7,8 +7,8 @@
  * @brief   CAAM Clock functions.
  */
 
-/* Global includes */
-#include <io.h>
+/* Local includes */
+#include <caam_io.h>
 
 /* Hal includes */
 #include "hal_clk.h"

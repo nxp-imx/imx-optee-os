@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    caam_pwr.c
  *
@@ -11,7 +11,6 @@
 #include <malloc.h>
 #include <kernel/pm.h>
 #include <kernel/panic.h>
-#include <io.h>
 
 /* Library i.MX includes */
 #ifdef CFG_CRYPTO_MP_HW
@@ -22,6 +21,7 @@
 #include "common.h"
 #include "caam_jr.h"
 #include "caam_pwr.h"
+#include "caam_io.h"
 
 /* Hal includes */
 #include "hal_clk.h"
@@ -96,7 +96,7 @@ static void do_save_regs(void)
 		for (idx = 0; idx < elem->nbEntries; idx++, reg++) {
 			for (regidx = 0; regidx < reg->nbRegs;
 				regidx++, validx++) {
-				elem->val[validx] = read32(elem->baseaddr +
+				elem->val[validx] = get32(elem->baseaddr +
 						reg->offset + (4 * regidx));
 				elem->val[validx] &= ~reg->mask_clr;
 				PWR_TRACE("Save @0x%"PRIxPTR"=0x%"PRIx32"",
@@ -128,8 +128,8 @@ static void do_restore_regs(void)
 				PWR_TRACE("Restore @0x%"PRIxPTR"=0x%"PRIx32"",
 				elem->baseaddr + reg->offset + (4 * regidx),
 				elem->val[validx]);
-				write32(elem->val[validx] | reg->mask_set,
-				elem->baseaddr + reg->offset + (4 * regidx));
+				put32((elem->baseaddr + reg->offset + (4 * regidx)),
+				elem->val[validx] | reg->mask_set);
 
 			}
 		}

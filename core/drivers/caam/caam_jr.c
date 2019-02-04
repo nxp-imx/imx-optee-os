@@ -20,6 +20,7 @@
 #include "common.h"
 #include "caam_jr.h"
 #include "caam_rng.h"
+#include "caam_io.h"
 
 /* Utils includes */
 #include "utils_delay.h"
@@ -285,9 +286,9 @@ static uint32_t do_jr_dequeue(uint32_t waitJobIds)
 			 * buffer
 			 */
 			caller = &jr_privdata->callers[idx_jr];
-			if (jr_out->desc == caller->pdesc) {
+			if (sec_read_addr(&jr_out->desc) == caller->pdesc) {
 				jobctx         = caller->jobctx;
-				jobctx->status = jr_out->status;
+				jobctx->status = get32(&jr_out->status);
 
 				/* Update return Job Id mask */
 				if (caller->jobid & waitJobIds)
@@ -399,7 +400,7 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 			jr_privdata->inwrite_index, job_mask, (vaddr_t)jobctx);
 
 	/* Push the descriptor into the JR HW list */
-	jr_privdata->inrings[jr_privdata->inwrite_index].desc = caller->pdesc;
+	sec_write_addr(&(jr_privdata->inrings[jr_privdata->inwrite_index]), caller->pdesc);
 
 	/* Ensure that physical memory is up to date */
 	cache_operation(

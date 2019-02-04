@@ -8,11 +8,9 @@
  *          Implementation of primitives to access HW
  */
 
-/* Global includes */
-#include <io.h>
-
 /* Local includes */
 #include "common.h"
+#include "caam_io.h"
 
 /* Hal includes */
 #include "hal_jr.h"
@@ -51,11 +49,11 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 
 	if (owner == JROWN_ARM_S) {
 		/* Read the Job Ring Lock bit */
-		val = read32(ctrl_base + JRxMIDR_MS(jr_idx));
+		val = get32(ctrl_base + JRxMIDR_MS(jr_idx));
 		HAL_TRACE("JR%dMIDR_MS value 0x%x", jr_idx, val);
 		val |= JRxMIDR_MS_TZ;
 
-		write32(ctrl_base + JRxMIDR_MS(jr_idx), val);
+		put32(ctrl_base + JRxMIDR_MS(jr_idx), val);
 	}
 
 	return CAAM_NO_ERROR;

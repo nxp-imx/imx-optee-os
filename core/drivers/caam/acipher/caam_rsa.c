@@ -23,6 +23,7 @@
 #include "local.h"
 #include "caam_acipher.h"
 #include "caam_jr.h"
+#include "caam_io.h"
 
 /* Hal includes */
 #include "hal_ctrl.h"
@@ -1518,7 +1519,8 @@ static TEE_Result do_caam_decrypt(struct imxcrypt_rsa_ed *rsa_data,
 			/* PKCS 1 v1.5 */
 			cache_operation(TEE_CACHEINVALIDATE, size_msg.data,
 							size_msg.length);
-			rsa_data->message.length = U8_TO_U32(size_msg.data);
+
+			rsa_data->message.length = get32(size_msg.data);
 			if (realloc == 1)
 				memcpy(rsa_data->message.data, msg_align.data,
 						rsa_data->message.length);
