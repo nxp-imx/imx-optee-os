@@ -417,7 +417,7 @@ static enum CAAM_Status do_jr_enqueue(struct jr_jobctx *jobctx, uint32_t *jobId)
 
 	/* Ensure that input descriptor is pushed in physical memory */
 	cache_operation(TEE_CACHECLEAN, (void *)jobctx->desc,
-				DESC_SZBYTES(DESC_NBENTRIES(jobctx->desc)));
+				DESC_SZBYTES(desc_get_len(jobctx->desc)));
 
 	/* Inform HW that a new JR is available */
 	hal_jr_add_newjob(jr_privdata->baseaddr);

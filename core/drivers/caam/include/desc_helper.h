@@ -15,7 +15,11 @@
 /**
  * @brief   Descriptor Entry type
  */
+#ifdef CFG_PHYS_64BIT
+typedef uint64_t descEntry_t;
+#else
 typedef uint32_t descEntry_t;
+#endif
 
 /**
  * @brief   Descriptor pointer type
@@ -30,11 +34,10 @@ typedef uint32_t descStatus_t;
 /**
  * @brief  Returns the number of entries of the descriptor \a desc
  */
-#define DESC_NBENTRIES(desc)	GET_JD_DESCLEN(*(descEntry_t *)desc)
+uint32_t desc_get_len(uint32_t * desc);
 
 /* Descriptor Modification function */
 void desc_init(uint32_t *desc);
-uint32_t desc_get_len(uint32_t * desc);
 void desc_update_hdr(uint32_t *desc, uint32_t word);
 void desc_add_ptr(uint32_t *desc, paddr_t ptr);
 void desc_add_word(uint32_t *desc, uint32_t word);
@@ -46,7 +49,7 @@ static inline void dump_desc(void *desc)
 	size_t len;
 	descPointer_t buf = desc;
 
-	len = DESC_NBENTRIES(desc);
+	len = desc_get_len(desc);
 
 	for (idx = 0; idx < len; idx++)
 		trace_printf(NULL, 0, 0, false, "[%02d] %08X",
@@ -56,7 +59,7 @@ static inline void dump_desc(void *desc)
 /**
  * @brief  Returns the descriptor size in bytes of \a nbEntries
  */
-#define DESC_SZBYTES(nbEntries)	(nbEntries * sizeof(descEntry_t))
+#define DESC_SZBYTES(nbEntries)	(nbEntries * sizeof(uint32_t))
 
 /**
  * @brief  Descriptor Header starting at index \a idx w/o descriptor length
