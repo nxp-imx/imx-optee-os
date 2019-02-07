@@ -32,6 +32,13 @@ typedef uint32_t descStatus_t;
  */
 #define DESC_NBENTRIES(desc)	GET_JD_DESCLEN(*(descEntry_t *)desc)
 
+/* Descriptor Modification function */
+void desc_init(uint32_t *desc);
+uint32_t desc_get_len(uint32_t * desc);
+void desc_update_hdr(uint32_t *desc, uint32_t word);
+void desc_add_ptr(uint32_t *desc, paddr_t ptr);
+void desc_add_word(uint32_t *desc, uint32_t word);
+
 /* Debug print function to dump a Descriptor in hex */
 static inline void dump_desc(void *desc)
 {
