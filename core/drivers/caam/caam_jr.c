@@ -63,7 +63,7 @@ struct inring_entry {
 /**
  * @brief   Definition of output ring object
  */
-struct outring_entry {
+struct __attribute__((__packed__)) outring_entry {
 	descEntry_t  desc;   ///< Physical address of the descriptor
 	descStatus_t status; ///< Status of the executed job
 };
