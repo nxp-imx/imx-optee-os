@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2017-2018 NXP
+ * @copyright 2017-2019 NXP
  *
  * @file    caam_rng.c
  *
@@ -213,17 +213,17 @@ static enum CAAM_Status prepare_gen_desc(struct rngdata *rng)
 
 	desc = rng->jobctx.desc;
 
-	desc[0] = DESC_HEADER(4);
-	desc[1] = RNG_GEN_DATA;
-	desc[2] = FIFO_ST(RNG_TO_MEM, rng->size);
-	desc[3] = paddr;
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+	desc_add_word(desc, RNG_GEN_DATA);
+	desc_add_word(desc, FIFO_ST(RNG_TO_MEM, rng->size));
+	desc_add_ptr(desc, paddr);
 
 	RNG_DUMPDESC(desc);
 
 	/* Prepare the job context */
 	rng->jobctx.context = rng;
 	rng->jobctx.callbk  = rng_data_done;
-
 	return CAAM_NO_ERROR;
 }
 
@@ -455,9 +455,7 @@ static enum CAAM_Status caam_rng_init_data(void)
 static void prepare_inst_desc(uint32_t nbSH, uint32_t sh_status,
 							 descPointer_t desc)
 {
-	descPointer_t pdesc     = desc;
 	bool          key_loaded;
-	uint8_t       desc_size = 1;
 	uint8_t       sh_idx    = 0;
 	uint8_t       nbMaxSh   = nbSH;
 
@@ -472,11 +470,11 @@ static void prepare_inst_desc(uint32_t nbSH, uint32_t sh_status,
 	RNG_TRACE("Instantiation start at SH%d (%d)", sh_idx, nbMaxSh);
 
 	/* Don't set the descriptor header now */
-	pdesc++;
-
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
 	/* First State Handle to instantiate */
-	*pdesc++ = RNG_SH_INST(sh_idx);
-	desc_size++;
+	desc_add_word(desc, RNG_SH_INST(sh_idx));
+
 	/* Next State Handle */
 	sh_idx++;
 
@@ -487,14 +485,12 @@ static void prepare_inst_desc(uint32_t nbSH, uint32_t sh_status,
 			 * followed by a reset the done status to execute next
 			 * command
 			 */
-			*pdesc++ = JUMP_C1_LOCAL(ALL_COND_TRUE,
-						JMP_COND(NONE), 1);
-			*pdesc++ = LD_NOCLASS_IMM(REG_CLEAR_WRITTEN,
-					sizeof(uint32_t));
-			*pdesc++ = 1;
-			*pdesc++ = RNG_SH_INST(sh_idx);
-			desc_size += 4;
-
+			desc_add_word(desc, JUMP_C1_LOCAL(ALL_COND_TRUE,
+                                                JMP_COND(NONE), 1));
+			desc_add_word(desc, LD_NOCLASS_IMM(REG_CLEAR_WRITTEN,
+                                        sizeof(uint32_t)));
+			desc_add_word(desc, 0x1);
+			desc_add_word(desc, RNG_SH_INST(sh_idx));
 		}
 		/* Next State Handle */
 		sh_idx++;
@@ -506,17 +502,12 @@ static void prepare_inst_desc(uint32_t nbSH, uint32_t sh_status,
 		 * Add a wait loop followed by a reset the done status
 		 * to execute next command
 		 */
-		*pdesc++ = JUMP_C1_LOCAL(ALL_COND_TRUE, JMP_COND(NONE), 1);
-		*pdesc++ = LD_NOCLASS_IMM(REG_CLEAR_WRITTEN,
-				sizeof(uint32_t));
-		*pdesc++ = 1;
-
-		*pdesc = RNG_GEN_SECKEYS;
-		desc_size += 4;
+		desc_add_word(desc, JUMP_C1_LOCAL(ALL_COND_TRUE, JMP_COND(NONE), 1));
+		desc_add_word(desc, LD_NOCLASS_IMM(REG_CLEAR_WRITTEN,
+                                sizeof(uint32_t)));
+		desc_add_word(desc, 0x1);
+		desc_add_word(desc, RNG_GEN_SECKEYS);
 	}
-
-	/* Add the Descriptor Header with the length of the descriptor */
-	desc[0] = DESC_HEADER(desc_size);
 
 	RNG_DUMPDESC(desc);
 }

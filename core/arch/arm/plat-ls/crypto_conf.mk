@@ -27,7 +27,7 @@ endif
 #
 # Definition of all HW accelerations for all LS
 #
-$(call force, CFG_CRYPTO_RNG_HW,n)
+$(call force, CFG_CRYPTO_RNG_HW,y)
 ifeq ($(CFG_CRYPTO_RNG_HW),y)
 $(call force, CFG_WITH_SOFTWARE_PRNG,n)
 else
