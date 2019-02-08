@@ -60,16 +60,28 @@
  * @brief   Define the maximum number of entries in a descriptor
  *          function of the encrypt/decrypt and private key format
  */
+#ifdef	CFG_PHYS_64BIT
+#define MAX_DESC_ENC     (8 + 4)
+#define MAX_DESC_DEC_1   (7 + 2 + 4)
+#define MAX_DESC_DEC_2   (11 + 2 + 7)
+#define MAX_DESC_DEC_3   (13 + 2 + 10)
+/**
+ * @brief   Define the maximum number of entries in the RSA Finish Key
+ *          descriptor
+ */
+#define MAX_DESC_KEY_FINISH		24
+#else
 #define MAX_DESC_ENC     8
 #define MAX_DESC_DEC_1   (7 + 2)
 #define MAX_DESC_DEC_2   (11 + 2)
 #define MAX_DESC_DEC_3   (13 + 2)
-
 /**
  * @brief   Define the maximum number of entries in the RSA Finish Key
  *          descriptor
  */
 #define MAX_DESC_KEY_FINISH		15
+#endif
+
 /**
  * @brief   Define the RSA Private Key Format used by the CAAM
  *           Format #1: (n, d)
@@ -79,9 +91,9 @@
 #define RSA_PRIVATE_KEY_FORMAT  3
 
 static TEE_Result do_caam_encrypt(struct imxcrypt_rsa_ed *rsa_data,
-				descEntry_t operation);
+				uint32_t operation);
 static TEE_Result do_caam_decrypt(struct imxcrypt_rsa_ed *rsa_data,
-				descEntry_t operation);
+				uint32_t operation);
 
 /**
  * @brief   Definition of the local RSA keypair
@@ -489,7 +501,7 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 
 	struct jr_jobctx jobctx  = {0};
 	descPointer_t desc = 0;
-	uint8_t desclen    = 1;
+	uint8_t desclen    = 0;
 
 	struct caam_prime_data prime;
 
@@ -569,25 +581,30 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 	if (retstatus != CAAM_NO_ERROR)
 		goto exit_gen_keypair;
 
-	desc[desclen++] = 0x00000000;
-	desc[desclen++] = PDB_RSA_KEY_P_SIZE(p.length);
-	desc[desclen++] = PDB_RSA_KEY_N_SIZE(size_n) |
-					PDB_RSA_KEY_E_SIZE(e.length);
-	desc[desclen++] = p.paddr;
-	desc[desclen++] = q.paddr;
-	desc[desclen++] = e.paddr;
-	desc[desclen++] = d_n.paddr + size_d;
-	desc[desclen++] = d_n.paddr + sizeof(uint32_t);
-	desc[desclen++] = d_n.paddr; /* Retrieve d length generated */
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+
+	desc_add_word(desc, 0x00000000);
+	desc_add_word(desc, PDB_RSA_KEY_P_SIZE(p.length));
+	desc_add_word(desc, PDB_RSA_KEY_N_SIZE(size_n) |
+				PDB_RSA_KEY_E_SIZE(e.length));
+
+	desc_add_ptr(desc, p.paddr);
+	desc_add_ptr(desc, q.paddr);
+	desc_add_ptr(desc, e.paddr);
+	desc_add_ptr(desc, (d_n.paddr + size_d));
+	desc_add_ptr(desc, (d_n.paddr + sizeof(uint32_t)));
+	desc_add_ptr(desc, d_n.paddr);
 #if (RSA_PRIVATE_KEY_FORMAT > 2)
-	desc[desclen++] = dp.paddr;
-	desc[desclen++] = dq.paddr;
-	desc[desclen++] = qp.paddr;
-	desc[desclen++] = RSA_FINAL_KEY(ALL);
+	desc_add_ptr(desc, dp.paddr);
+	desc_add_ptr(desc, dq.paddr);
+	desc_add_ptr(desc, qp.paddr);
+	desc_add_word(desc, RSA_FINAL_KEY(ALL));
 #else
-	desc[desclen++] = RSA_FINAL_KEY(N_D);
+	desc_add_word(desc, RSA_FINAL_KEY(N_D));
 #endif
-	desc[0] = DESC_HEADER_IDX(desclen, (desclen - 1));
+	desclen = desc_get_len(desc);
+	desc_update_hdr(desc, DESC_HEADER_IDX(desclen, (desclen - 1)));
 
 	jobctx.desc = desc;
 	RSA_DUMPDESC(desc);
@@ -1195,7 +1212,7 @@ exit_oaep_encrypt:
  * @retval TEE_ERROR_GENERIC           Generic error
  */
 static TEE_Result do_caam_encrypt(struct imxcrypt_rsa_ed *rsa_data,
-				descEntry_t operation)
+				uint32_t operation)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
@@ -1208,7 +1225,7 @@ static TEE_Result do_caam_encrypt(struct imxcrypt_rsa_ed *rsa_data,
 
 	struct jr_jobctx jobctx  = {0};
 	descPointer_t    desc    = NULL;
-	uint8_t          desclen = 1;
+	uint8_t          desclen = 0;
 
 	RSA_TRACE("RSA Encrypt mode %d", rsa_data->rsa_id);
 
@@ -1249,17 +1266,21 @@ static TEE_Result do_caam_encrypt(struct imxcrypt_rsa_ed *rsa_data,
 		goto exit_encrypt;
 	}
 
-	desc[desclen++] = PDB_RSA_ENC_E_SIZE(key.e.length) |
-					PDB_RSA_ENC_N_SIZE(key.n.length);
-	desc[desclen++] = paddr_src;
-	desc[desclen++] = cipher_align.paddr;
-	desc[desclen++] = key.n.paddr;
-	desc[desclen++] = key.e.paddr;
-	desc[desclen++] = PDB_RSA_ENC_F_SIZE(rsa_data->message.length);
-	desc[desclen++] = operation;
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+
+	desc_add_word(desc, PDB_RSA_ENC_E_SIZE(key.e.length) |
+			PDB_RSA_ENC_N_SIZE(key.n.length));
+	desc_add_ptr(desc, paddr_src);
+	desc_add_ptr(desc, cipher_align.paddr);
+	desc_add_ptr(desc, key.n.paddr);
+	desc_add_ptr(desc, key.e.paddr);
+	desc_add_word(desc, PDB_RSA_ENC_F_SIZE(rsa_data->message.length));
+	desc_add_word(desc, operation);
 
 	/* Set the descriptor Header with length */
-	desc[0] = DESC_HEADER_IDX(desclen, (desclen - 1));
+	desclen = desc_get_len(desc);
+	desc_update_hdr(desc, DESC_HEADER_IDX(desclen, (desclen - 1)));
 	RSA_DUMPDESC(desc);
 
 	cache_operation(TEE_CACHECLEAN, rsa_data->message.data,
@@ -1313,7 +1334,7 @@ exit_encrypt:
  * @retval TEE_ERROR_GENERIC           Generic error
  */
 static TEE_Result do_caam_decrypt(struct imxcrypt_rsa_ed *rsa_data,
-				descEntry_t operation)
+				uint32_t operation)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
@@ -1330,7 +1351,7 @@ static TEE_Result do_caam_decrypt(struct imxcrypt_rsa_ed *rsa_data,
 
 	struct jr_jobctx jobctx  = {0};
 	descPointer_t    desc    = NULL;
-	uint8_t          desclen = 1;
+	uint8_t          desclen = 0;
 
 	struct caambuf   size_msg = {0};
 
@@ -1423,47 +1444,50 @@ static TEE_Result do_caam_decrypt(struct imxcrypt_rsa_ed *rsa_data,
 		goto exit_decrypt;
 	}
 
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+
 	/* Build the descriptor function of the Private Key format */
 	switch (key.format) {
 	case 1:
-		desc[desclen++] = PDB_RSA_DEC_D_SIZE(key.d.length) |
-					PDB_RSA_DEC_N_SIZE(key.n.length);
-		desc[desclen++] = paddr_src;
-		desc[desclen++] = msg_align.paddr;
-		desc[desclen++] = key.n.paddr;
-		desc[desclen++] = key.d.paddr;
-		break;
+		desc_add_word(desc, PDB_RSA_DEC_D_SIZE(key.d.length) |
+				PDB_RSA_DEC_N_SIZE(key.n.length));
+		desc_add_ptr(desc, paddr_src);
+		desc_add_ptr(desc, msg_align.paddr);
+		desc_add_ptr(desc, key.n.paddr);
+		desc_add_ptr(desc, key.d.paddr);
 
+		break;
 #if (RSA_PRIVATE_KEY_FORMAT > 1)
 	case 2:
-		desc[desclen++] = PDB_RSA_DEC_D_SIZE(key.d.length) |
-					PDB_RSA_DEC_N_SIZE(key.n.length);
-		desc[desclen++] = paddr_src;
-		desc[desclen++] = msg_align.paddr;
-		desc[desclen++] = key.d.paddr;
-		desc[desclen++] = key.p.paddr;
-		desc[desclen++] = key.q.paddr;
-		desc[desclen++] = tmp.paddr;
-		desc[desclen++] = tmp.paddr + (key.p.length * sizeof(uint8_t));
-		desc[desclen++] = PDB_RSA_DEC_Q_SIZE(key.q.length) |
-					PDB_RSA_DEC_P_SIZE(key.p.length);
+		desc_add_word(desc, PDB_RSA_DEC_D_SIZE(key.d.length) |
+				PDB_RSA_DEC_N_SIZE(key.n.length));
+		desc_add_ptr(desc, paddr_src);
+		desc_add_ptr(desc, msg_align.paddr);
+		desc_add_ptr(desc, key.d.paddr);
+		desc_add_ptr(desc, key.p.paddr);
+		desc_add_ptr(desc, key.q.paddr);
+		desc_add_ptr(desc, tmp.paddr);
+		desc_add_ptr(desc, (tmp.paddr + (key.p.length * sizeof(uint8_t))));
+		desc_add_word(desc, PDB_RSA_DEC_Q_SIZE(key.q.length) |
+				PDB_RSA_DEC_P_SIZE(key.p.length));
 		break;
 #endif
 
 #if (RSA_PRIVATE_KEY_FORMAT > 2)
 	case 3:
-		desc[desclen++] = PDB_RSA_DEC_N_SIZE(key.n.length);
-		desc[desclen++] = paddr_src;
-		desc[desclen++] = msg_align.paddr;
-		desc[desclen++] = key.qp.paddr;
-		desc[desclen++] = key.p.paddr;
-		desc[desclen++] = key.q.paddr;
-		desc[desclen++] = key.dp.paddr;
-		desc[desclen++] = key.dq.paddr;
-		desc[desclen++] = tmp.paddr;
-		desc[desclen++] = tmp.paddr + (key.p.length * sizeof(uint8_t));
-		desc[desclen++] = PDB_RSA_DEC_Q_SIZE(key.q.length) |
-					PDB_RSA_DEC_P_SIZE(key.p.length);
+		desc_add_word(desc, PDB_RSA_DEC_N_SIZE(key.n.length));
+		desc_add_ptr(desc, paddr_src);
+		desc_add_ptr(desc, msg_align.paddr);
+		desc_add_ptr(desc, key.qp.paddr);
+		desc_add_ptr(desc, key.p.paddr);
+		desc_add_ptr(desc, key.q.paddr);
+		desc_add_ptr(desc, key.dp.paddr);
+		desc_add_ptr(desc, key.dq.paddr);
+		desc_add_ptr(desc, tmp.paddr);
+		desc_add_ptr(desc, (tmp.paddr + (key.p.length * sizeof(uint8_t))));
+		desc_add_word(desc, PDB_RSA_DEC_Q_SIZE(key.q.length) |
+				PDB_RSA_DEC_P_SIZE(key.p.length));
 		break;
 #endif
 
@@ -1473,18 +1497,23 @@ static TEE_Result do_caam_decrypt(struct imxcrypt_rsa_ed *rsa_data,
 	}
 
 	/* Set the Decryption operation type */
-	desc[desclen++] = operation | PROT_RSA_DEC_KEYFORM(key.format);
+	desc_add_word(desc, (operation | PROT_RSA_DEC_KEYFORM(key.format)));
 
 	if (operation == RSA_DECRYPT(PKCS_V1_5)) {
 		/* Get the PPKCS1 v1.5 Message length generated */
-		desc[desclen++] = ST_NOIMM_OFF(CLASS_DECO, REG_MATH0, 4, 4);
-		desc[desclen++] = size_msg.paddr;
-
+		desc_add_word(desc, ST_NOIMM_OFF(CLASS_DECO, REG_MATH0, 4, 4));
+		desc_add_ptr(desc, size_msg.paddr);
 		/* Set the descriptor Header with length */
-		desc[0] = DESC_HEADER_IDX(desclen, (desclen - 1 - 2));
+		desclen = desc_get_len(desc);
+#ifdef	CFG_PHYS_64BIT
+		desc_update_hdr(desc, DESC_HEADER_IDX(desclen, (desclen - 1 - 3)));
+#else
+		desc_update_hdr(desc, DESC_HEADER_IDX(desclen, (desclen - 1 - 2)));
+#endif
 	} else {
+		desclen = desc_get_len(desc);
 		/* Set the descriptor Header with length */
-		desc[0] = DESC_HEADER_IDX(desclen, (desclen - 1));
+		desc_update_hdr(desc, DESC_HEADER_IDX(desclen, (desclen - 1)));
 	}
 
 	RSA_DUMPDESC(desc);

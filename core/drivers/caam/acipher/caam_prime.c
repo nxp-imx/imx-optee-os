@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    caam_prime.c
  *
@@ -54,10 +54,15 @@
 
 #define STATUS_GOOD_Q   0xCA
 
+#ifdef	CFG_PHYS_64BIT
+#define SETUP_PRIME_DESC_ENTRIES	20
+#define GEN_PRIME_DESC_ENTRIES		62
+#define CHECK_P_Q_DESC_ENTRIES		32
+#else
 #define SETUP_PRIME_DESC_ENTRIES	17
 #define GEN_PRIME_DESC_ENTRIES		58
 #define CHECK_P_Q_DESC_ENTRIES		29
-
+#endif
 /**
  * @brief   Predefined const value corresponding to the
  *          operation sqrt(2) * (2 ^ ((nlen / 2) - 1))
@@ -225,8 +230,6 @@ static enum CAAM_Status do_desc_setup(descPointer_t desc,
 		struct caam_prime_data *data,
 		const struct caambuf *small_prime, const paddr_t desc_prime)
 {
-	uint8_t desclen = 1;
-
 	/*
 	 * Build the descriptor setuping the generate prime parameters
 	 */
@@ -235,26 +238,29 @@ static enum CAAM_Status do_desc_setup(descPointer_t desc,
 	 * Maximum tries = 5 * (nlen / 2)
 	 * Where nlen is the RSA security length in bit
 	 */
-	desc[desclen++] = MATH(ADD, IMM_DATA, ZERO, SOL, 4);
-	desc[desclen++] = 5 * (data->key_size / 2);
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+
+	desc_add_word(desc, MATH(ADD, IMM_DATA, ZERO, SOL, 4));
+	desc_add_word(desc, 5 * (data->key_size / 2));
 
 	/*
 	 * Referring to FIPS.186-4, Table C.2
 	 * Get the number Miller-Rabin test interation function
 	 * of the prime number size
 	 */
-	desc[desclen++] = MATH(ADD, IMM_DATA, ZERO, SIL, 4);
+	desc_add_word(desc, MATH(ADD, IMM_DATA, ZERO, SIL, 4));
 	if (data->p->length > (1536 / 8))
-		desc[desclen++] = 4;
+		desc_add_word(desc, 0x4);
 	else
-		desc[desclen++] = 5;
+		desc_add_word(desc, 0x5);
 
 	/*
 	 * Preload PKHA A2 with the sqrt_value array (step 4.4)
 	 * Do it once, not at each loop
 	 */
-	desc[desclen++] = FIFO_LD(CLASS_1, PKHA_A2, NOACTION, data->p->length);
-	desc[desclen++] = virt_to_phys((void *)sqrt_value);
+	desc_add_word(desc, FIFO_LD(CLASS_1, PKHA_A2, NOACTION, data->p->length));
+	desc_add_ptr(desc, virt_to_phys((void *)sqrt_value));
 
 	if ((data->era >= 8)  && (small_prime->paddr)) {
 		/*
@@ -265,36 +271,32 @@ static enum CAAM_Status do_desc_setup(descPointer_t desc,
 		 * hence PKHA B2 must be reloaded if new prime tentative after
 		 * PRIME TEST on Era < 8
 		 */
-		desc[desclen++] = FIFO_LD(CLASS_1, PKHA_B2, NOACTION,
-				small_prime->length);
-		desc[desclen++] = small_prime->paddr;
+		desc_add_word(desc, FIFO_LD(CLASS_1, PKHA_B2, NOACTION,
+				small_prime->length));
+		desc_add_ptr(desc, small_prime->paddr);
 	}
 
 	/* Set the High order bit used to turn on MSB in prime candidate */
-	desc[desclen++] = MATHI_OP1(SHIFT_L, ONE, 0x3F, REG2, 8);
+	desc_add_word(desc, MATHI_OP1(SHIFT_L, ONE, 0x3F, REG2, 8));
 
 	/* Load PKHA N Size with the prime size */
-	desc[desclen++] = LD_IMM(CLASS_1, REG_PKHA_N_SIZE, 4);
-	desc[desclen++] = data->p->length;
+	desc_add_word(desc, LD_IMM(CLASS_1, REG_PKHA_N_SIZE, 4));
+	desc_add_word(desc, data->p->length);
 
 	/*
 	 * Set the number of maximum tries because of generated value
 	 * is too small. This value is used to not lock the system
 	 * in prime number generation
 	 */
-	desc[desclen++] = MATH(ADD, ZERO, IMM_DATA, DPOVRD, 4);
-	desc[desclen++] = 500000;
+	desc_add_word(desc, MATH(ADD, ZERO, IMM_DATA, DPOVRD, 4));
+	desc_add_word(desc, 500000);
 
 	/* Jump to the next descriptor desc */
-	desc[desclen++] = JUMP_NOTLOCAL(CLASS_NO, ALL_COND_TRUE,
-						JMP_COND(NONE));
-	desc[desclen++] = desc_prime;
-
-	/* Set the descriptor Header with length */
-	desc[0] = DESC_HEADER(desclen);
+	desc_add_word(desc, JUMP_NOTLOCAL(CLASS_NO, ALL_COND_TRUE,
+						JMP_COND(NONE)));
+	desc_add_ptr(desc, desc_prime);
 
 	PRIME_DUMPDESC(desc);
-
 	cache_operation(TEE_CACHECLEAN, (void *)sqrt_value, data->p->length);
 
 	return CAAM_NO_ERROR;
@@ -314,156 +316,160 @@ static void do_desc_prime(descPointer_t desc,
 		const struct caambuf *small_prime, bool do_prime_q,
 		const paddr_t desc_next)
 {
-	uint8_t desclen = 1;
+	uint8_t desclen = 0;
 
 	uint8_t retry_too_small;
 	uint8_t retry_new_number;
 	uint8_t retry_new_mr_failed;
 	uint8_t retry_mr_test;
 
-	/* Setup the number of try counter = MAX (counting down) */
-	desc[desclen++] = MATH(ADD, SOL, ZERO, VSOL, 4);
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
 
-	retry_new_mr_failed = desclen;
+	/* Setup the number of try counter = MAX (counting down) */
+	desc_add_word(desc, MATH(ADD, SOL, ZERO, VSOL, 4));
+
+	retry_new_mr_failed = desc_get_len(desc);
 	if ((data->era < 8)  && (small_prime->paddr)) {
 		/*
 		 * Preload PKHA B2 with small prime predefined
 		 * (preload only prime size requested)
 		 */
-		desc[desclen++] = FIFO_LD(CLASS_1, PKHA_B2, NOACTION,
-							small_prime->length);
-		desc[desclen++] = small_prime->paddr;
+		desc_add_word(desc, FIFO_LD(CLASS_1, PKHA_B2, NOACTION,
+					small_prime->length));
+		desc_add_ptr(desc, small_prime->paddr);
 	}
 
-	retry_new_number = desclen;
+	retry_new_number = desc_get_len(desc);
 	/* Decrement the number of try */
-	desc[desclen++] = MATH(SUB, VSOL, ONE, VSOL, 4);
+	desc_add_word(desc, MATH(SUB, VSOL, ONE, VSOL, 4));
 	/* Exceed retry count - exit with PRIME_TRY_FAIL error */
-	desc[desclen++] = HALT_USER(ALL_COND_TRUE, MATH_N, PRIME_TRY_FAIL);
+	desc_add_word(desc, HALT_USER(ALL_COND_TRUE, MATH_N, PRIME_TRY_FAIL));
 
-	retry_too_small = desclen;
+	retry_too_small = desc_get_len(desc);
 	/* Check internal limit on random value generation  */
-	desc[desclen++] = MATH(SUB, DPOVRD, ONE, DPOVRD, 4);
-	desc[desclen++] = HALT_USER(ALL_COND_TRUE, MATH_Z, RETRY_TOO_SMALL);
+	desc_add_word(desc, MATH(SUB, DPOVRD, ONE, DPOVRD, 4));
+	desc_add_word(desc, HALT_USER(ALL_COND_TRUE, MATH_Z, RETRY_TOO_SMALL));
 
 	/*
 	 * Step 4.2 - Obtain a string p of (nlen/2) bits
 	 * Step 4.3 - if (p is not odd) then p = p + 1
 	 */
 	/* Generate 16 random bytes load into DECO fifo */
-	desc[desclen++] = LD_IMM(CLASS_NO, REG_NFIFO, 4);
-	desc[desclen++] = NFIFO_PAD(DECO, NFIFO_LC1, MSG, RND, 16);
+	desc_add_word(desc, LD_IMM(CLASS_NO, REG_NFIFO, 4));
+	desc_add_word(desc, NFIFO_PAD(DECO, NFIFO_LC1, MSG, RND, 16));
+
 	/* Get the DECO Input fifo 8 MSB and force on high bit */
-	desc[desclen++] = MATH(OR, REG2, IFIFO, REG0, 8);
+	desc_add_word(desc, MATH(OR, REG2, IFIFO, REG0, 8));
 	/* Get the DECO Input fifo 8 LSB and force it be be odd */
-	desc[desclen++] = MATH(OR, ONE, IFIFO, REG1, 8);
+	desc_add_word(desc, MATH(OR, ONE, IFIFO, REG1, 8));
 	/* Move the MSB and LSB into IFIFO */
-	desc[desclen++] = MOVE(MATH_REG0, IFIFO, 0, 16);
+	desc_add_word(desc, MOVE(MATH_REG0, IFIFO, 0, 16));
 	/* Send the 8 MSB into PKHA N */
-	desc[desclen++] = LD_IMM(CLASS_NO, REG_NFIFO, 4);
-	desc[desclen++] = NFIFO_NOPAD(C1, 0, IFIFO, PKHA_N, 8);
+	desc_add_word(desc, LD_IMM(CLASS_NO, REG_NFIFO, 4));
+	desc_add_word(desc, NFIFO_NOPAD(C1, 0, IFIFO, PKHA_N, 8));
 
 	/*
 	 * Generate the "middle" random bytes and start them
 	 * on their way into PKHA N
 	 */
-	desc[desclen++] = LD_IMM(CLASS_NO, REG_NFIFO, 8);
-	desc[desclen++] = NFIFO_PAD(C1, 0, PKHA_N, RND, 0);
-	desc[desclen++] = data->p->length - 16;
+	desc_add_word(desc, LD_IMM(CLASS_NO, REG_NFIFO, 8));
+	desc_add_word(desc, NFIFO_PAD(C1, 0, PKHA_N, RND, 0));
+	desc_add_word(desc, data->p->length - 16);
 
 	/* And send the 8 LSB into PKHA N */
-	desc[desclen++] = LD_IMM(CLASS_NO, REG_NFIFO, 4);
-	desc[desclen++] = NFIFO_NOPAD(C1, NFIFO_FC1, IFIFO, PKHA_N, 8);
+	desc_add_word(desc, LD_IMM(CLASS_NO, REG_NFIFO, 4));
+	desc_add_word(desc, NFIFO_NOPAD(C1, NFIFO_FC1, IFIFO, PKHA_N, 8));
 
 	/*
 	 * Step 4.4 - if ((prime < (sqrt 2)(2^((nlen / 2) - 1))
 	 *    ==> retry_too_small
 	 */
-	desc[desclen++] = PKHA_CPY_SSIZE(A2, B0);
-	desc[desclen++] = PKHA_CPY_SSIZE(B0, A0);
-	desc[desclen++] = PKHA_OP(MOD_AMODN, A);
-	desc[desclen++] = PKHA_CPY_SSIZE(A2, B0);
-	desc[desclen++] = PKHA_F2M_OP(MOD_ADD_A_B, B);
-	desc[desclen]   = JUMP_CNO_LOCAL(ANY_COND_FALSE,
+	desc_add_word(desc, PKHA_CPY_SSIZE(A2, B0));
+	desc_add_word(desc, PKHA_CPY_SSIZE(B0, A0));
+	desc_add_word(desc, PKHA_OP(MOD_AMODN, A));
+	desc_add_word(desc, PKHA_CPY_SSIZE(A2, B0));
+	desc_add_word(desc, PKHA_F2M_OP(MOD_ADD_A_B, B));
+
+	desclen = desc_get_len(desc);
+	desc_add_word(desc, JUMP_CNO_LOCAL(ANY_COND_FALSE,
 					JMP_COND(PKHA_IS_ZERO),
-					(retry_too_small - desclen));
-	desclen++;
+					(retry_too_small - desclen)));
 
 	/*
 	 * Step 4.5 - Compute GCD(prime-1, e) and test if = 1 else try
 	 * another candidate
 	 */
-	desc[desclen++] = PKHA_CPY_SSIZE(N0, A0);
-	desc[desclen++] = FIFO_LD_IMM(CLASS_1, PKHA_B, NOACTION, 1);
-	desc[desclen++] = 0x01;
-	desc[desclen++] = PKHA_F2M_OP(MOD_ADD_A_B, B);
-	desc[desclen++] = PKHA_CPY_SSIZE(B0, N0);
+	desc_add_word(desc, PKHA_CPY_SSIZE(N0, A0));
+	desc_add_word(desc, FIFO_LD_IMM(CLASS_1, PKHA_B, NOACTION, 1));
+	desc_add_word(desc, 0x01);
+	desc_add_word(desc, PKHA_F2M_OP(MOD_ADD_A_B, B));
+	desc_add_word(desc, PKHA_CPY_SSIZE(B0, N0));
 
-	desc[desclen++] = FIFO_LD(CLASS_1, PKHA_A, NOACTION, data->e->length);
-	desc[desclen++] = data->e->paddr;
-	desc[desclen++] = PKHA_OP(GCD_A_N, B);
-	desc[desclen] = JUMP_CNO_LOCAL(ANY_COND_FALSE, JMP_COND(PKHA_GCD_1),
-					(retry_new_number - desclen));
-	desclen++;
+	desc_add_word(desc, FIFO_LD(CLASS_1, PKHA_A, NOACTION, data->e->length));
+	desc_add_ptr(desc, data->e->paddr);
+	desc_add_word(desc, PKHA_OP(GCD_A_N, B));
 
-	/* Restore "prime candidate" */
-	desc[desclen++] = PKHA_CPY_SSIZE(N0, A0);
-	desc[desclen++] = FIFO_LD_IMM(CLASS_1, PKHA_B, NOACTION, 1);
-	desc[desclen++] = 0x01;
-	desc[desclen++] = PKHA_F2M_OP(MOD_ADD_A_B, B);
-	desc[desclen++] = PKHA_CPY_SSIZE(B0, N0);
+	desclen = desc_get_len(desc);
+	desc_add_word(desc, JUMP_CNO_LOCAL(ANY_COND_FALSE, JMP_COND(PKHA_GCD_1),
+					(retry_new_number - desclen)));
+
+	desc_add_word(desc, PKHA_CPY_SSIZE(N0, A0));
+	desc_add_word(desc, FIFO_LD_IMM(CLASS_1, PKHA_B, NOACTION, 1));
+	desc_add_word(desc, 0x01);
+	desc_add_word(desc, PKHA_F2M_OP(MOD_ADD_A_B, B));
+	desc_add_word(desc, PKHA_CPY_SSIZE(B0, N0));
 
 	/*
 	 * Step 4.5.1 - test primality
 	 */
 	if (small_prime->paddr) {
-		/* Test if it has small prime factors */
-		desc[desclen++] = PKHA_CPY_SSIZE(B2, A0);
-		desc[desclen++] = PKHA_OP(GCD_A_N, B);
-		desc[desclen] = JUMP_CNO_LOCAL(ANY_COND_FALSE,
-						JMP_COND(PKHA_GCD_1),
-						(retry_new_number - desclen));
-		desclen++;
+		desc_add_word(desc, PKHA_CPY_SSIZE(B2, A0));
+		desc_add_word(desc, PKHA_OP(GCD_A_N, B));
+		desclen = desc_get_len(desc);
+		desc_add_word(desc, JUMP_CNO_LOCAL(ANY_COND_FALSE,
+					JMP_COND(PKHA_GCD_1),
+					(retry_new_number - desclen)));
 	}
 
 	/* Generate 8 random bytes 'miller-rabin seed' */
 	/* Load the number of Miller-Rabin test iteration */
-	desc[desclen++] = MATH(ADD, SIL, ZERO, VSIL, 4);
-	retry_mr_test = desclen;
-	desc[desclen++] = LD_IMM(CLASS_NO, REG_NFIFO, 8);
-	desc[desclen++] = NFIFO_PAD(C1, NFIFO_FC1, PKHA_A, RND, 0);
-	desc[desclen++] = data->p->length;
-	desc[desclen++] = FIFO_LD_IMM(CLASS_1, PKHA_B, NOACTION, 1);
-	desc[desclen++] = 0x01;
-	desc[desclen++] = PKHA_OP(MR_PRIMER_TEST, B);
-	desc[desclen] = JUMP_CNO_LOCAL(ANY_COND_FALSE,
+	desc_add_word(desc, MATH(ADD, SIL, ZERO, VSIL, 4));
+	retry_mr_test = desc_get_len(desc);
+	desc_add_word(desc, LD_IMM(CLASS_NO, REG_NFIFO, 8));
+	desc_add_word(desc, NFIFO_PAD(C1, NFIFO_FC1, PKHA_A, RND, 0));
+	desc_add_word(desc, data->p->length);
+	desc_add_word(desc, FIFO_LD_IMM(CLASS_1, PKHA_B, NOACTION, 1));
+	desc_add_word(desc, 0x01);
+	desc_add_word(desc, PKHA_OP(MR_PRIMER_TEST, B));
+
+	desclen = desc_get_len(desc);
+	desc_add_word(desc, JUMP_CNO_LOCAL(ANY_COND_FALSE,
 					JMP_COND(PKHA_IS_PRIME),
-					(retry_new_mr_failed - desclen));
-	desclen++;
-	desc[desclen++] = MATH(SUB, VSIL, ONE, VSIL, 4);
-	desc[desclen] = JUMP_CNO_LOCAL(ALL_COND_FALSE,
+					(retry_new_mr_failed - desclen)));
+	desc_add_word(desc, MATH(SUB, VSIL, ONE, VSIL, 4));
+
+	desclen = desc_get_len(desc);
+	desc_add_word(desc, JUMP_CNO_LOCAL(ALL_COND_FALSE,
 					(JMP_COND(MATH_N) | JMP_COND(MATH_Z)),
-					(retry_mr_test - desclen));
-	desclen++;
+					(retry_mr_test - desclen)));
 
 	/* Save prime generated */
-	desc[desclen++] = FIFO_ST(PKHA_N, data->p->length);
+	desc_add_word(desc, FIFO_ST(PKHA_N, data->p->length));
 
 	if (do_prime_q)
-		desc[desclen++] = data->q->paddr;
+		desc_add_ptr(desc, data->q->paddr);
 	else
-		desc[desclen++] = data->p->paddr;
+		desc_add_ptr(desc, data->p->paddr);
 
 	if (desc_next) {
 		/* Jump to the next descriptor desc */
-		desc[desclen++] = JUMP_NOTLOCAL(CLASS_NO, ALL_COND_TRUE,
-						JMP_COND(NONE));
-		desc[desclen++] = desc_next;
+		desc_add_word(desc, JUMP_NOTLOCAL(CLASS_NO, ALL_COND_TRUE,
+						JMP_COND(NONE)));
+		desc_add_ptr(desc, desc_next);
 	}
 
-	/* Set the descriptor Header with length */
-	desc[0] = DESC_HEADER(desclen);
-
+	desclen = desc_get_len(desc);
 	if (desclen > GEN_PRIME_DESC_ENTRIES)	{
 		PRIME_TRACE("Descriptor Size too short (%d vs %d)",
 					desclen, GEN_PRIME_DESC_ENTRIES);
@@ -490,28 +496,31 @@ static void do_checks_primes(descPointer_t desc,
 		const paddr_t desc_new_q)
 {
 	const uint8_t check_len = 16; /* Check 128 bits */
-	uint8_t desclen = 1;
+	uint8_t desclen = 0;
+
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
 
 	/* Load prime p */
-	desc[desclen++] = FIFO_LD(CLASS_1, PKHA_B, NOACTION, p->length);
-	desc[desclen++] = p->paddr;
+	desc_add_word(desc, FIFO_LD(CLASS_1, PKHA_B, NOACTION, p->length));
+	desc_add_ptr(desc, p->paddr);
 
 	/* Retrieve Q from PKHA N, previously computed */
-	desc[desclen++] = PKHA_CPY_SSIZE(N0, A0);
+	desc_add_word(desc, PKHA_CPY_SSIZE(N0, A0));
 
 	/* Calculate p - q, need a modulus of size prime p filled with 0xFF */
-	desc[desclen++] = FIFO_LD(CLASS_1, PKHA_N, NOACTION, max_n->length);
-	desc[desclen++] = max_n->paddr;
+	desc_add_word(desc, FIFO_LD(CLASS_1, PKHA_N, NOACTION, max_n->length));
+	desc_add_ptr(desc, max_n->paddr);
 
 	/* PKHA_B = p - q */
-	desc[desclen++] = PKHA_OP(MOD_SUB_A_B, B);
+	desc_add_word(desc, PKHA_OP(MOD_SUB_A_B, B));
 
 	/* Unload PKHA register B to output Data FIFO */
-	desc[desclen++] = LD_NOCLASS_IMM(REG_CHA_CTRL, 4);
-	desc[desclen++] = CCTRL_ULOAD_PKHA_B;
+	desc_add_word(desc, LD_NOCLASS_IMM(REG_CHA_CTRL, 4));
+	desc_add_word(desc, CCTRL_ULOAD_PKHA_B);
 
 	/* Get the first 128 bits in MATH 0 */
-	desc[desclen++] = MOVE_WAIT(OFIFO, MATH_REG0, 0, check_len);
+	desc_add_word(desc, MOVE_WAIT(OFIFO, MATH_REG0, 0, check_len));
 
 	/*
 	 * We now need to trash the rest of the result.
@@ -519,12 +528,12 @@ static void do_checks_primes(descPointer_t desc,
 	 * check_len bytes into MATH registers.
 	 */
 	if (p->length > (128 + check_len)) {
-		desc[desclen++] = MOVE(OFIFO, C1_CTX_REG, 0, check_len);
-		desc[desclen++] = MOVE(OFIFO, C1_CTX_REG, 0,
-						(p->length - 128 - check_len));
+		desc_add_word(desc, MOVE(OFIFO, C1_CTX_REG, 0, check_len));
+		desc_add_word(desc, MOVE(OFIFO, C1_CTX_REG, 0,
+						(p->length - 128 - check_len)));
 	} else if (p->length > check_len) {
-		desc[desclen++] = MOVE(OFIFO, C1_CTX_REG, 0,
-						(p->length - check_len));
+		desc_add_word(desc, MOVE(OFIFO, C1_CTX_REG, 0,
+						(p->length - check_len)));
 	}
 
 	/*
@@ -533,44 +542,44 @@ static void do_checks_primes(descPointer_t desc,
 	 * q is too close to p
 	 */
 	/* Check first 64 bits if not 0's check if 1's */
-	desc[desclen++] = MATH(ADD, ZERO, REG0, REG0, 8);
-	desc[desclen++] = JUMP_CNO_LOCAL(ANY_COND_FALSE, JMP_COND(MATH_Z), 6);
+	desc_add_word(desc, MATH(ADD, ZERO, REG0, REG0, 8));
+	desc_add_word(desc, JUMP_CNO_LOCAL(ANY_COND_FALSE, JMP_COND(MATH_Z), 6));
 	/* First 64 bits are 0's, check next 36 bits */
-	desc[desclen++] = MATH(AND, REG1, IMM_DATA, REG1, 8);
-	desc[desclen++] = 0xFFFFFFFF;
-	desc[desclen++] = 0xF0000000;
+	desc_add_word(desc, MATH(AND, REG1, IMM_DATA, REG1, 8));
+	desc_add_word(desc, 0xFFFFFFFF);
+	desc_add_word(desc, 0xF0000000);
 
 	/* Next 36 bits are 0 */
-	desc[desclen++] = JUMP_CNO_LOCAL(ALL_COND_TRUE, JMP_COND(MATH_Z), 10);
+	desc_add_word(desc, JUMP_CNO_LOCAL(ALL_COND_TRUE, JMP_COND(MATH_Z), 10));
 	/* Exit status GOOD Q */
-	desc[desclen++] = HALT_USER(ALL_COND_TRUE, NONE, STATUS_GOOD_Q);
+	desc_add_word(desc, HALT_USER(ALL_COND_TRUE, NONE, STATUS_GOOD_Q));
 
 	/* Check if 100 bits are 1's */
-	desc[desclen++] = MATH(ADD, ONE, REG0, REG0, 8);
+	desc_add_word(desc, MATH(ADD, ONE, REG0, REG0, 8));
 	/* Not all 1's exit status GOOD Q */
-	desc[desclen++] = HALT_USER(ANY_COND_FALSE, MATH_Z,
-					STATUS_GOOD_Q);
+	desc_add_word(desc, HALT_USER(ANY_COND_FALSE, MATH_Z,
+					STATUS_GOOD_Q));
 	/* First 64 bits are 1's, check next 36 bits */
-	desc[desclen++] = MATH(AND, REG1, IMM_DATA, REG1, 8);
-	desc[desclen++] = 0xFFFFFFFF;
-	desc[desclen++] = 0xF0000000;
+	desc_add_word(desc, MATH(AND, REG1, IMM_DATA, REG1, 8));
+	desc_add_word(desc, 0xFFFFFFFF);
+	desc_add_word(desc, 0xF0000000);
+
 	/* Use only 4 bytes of immediate data even is operation is 8 bytes */
-	desc[desclen++] = MATH(ADD, REG1, IMM_DATA, REG1, 8) | MATH_IFB;
-	desc[desclen++] = 0x10000000;
+	desc_add_word(desc, MATH(ADD, REG1, IMM_DATA, REG1, 8) | MATH_IFB);
+	desc_add_word(desc, 0x10000000);
+
 	/* Not all 1's exit status GOOD Q */
-	desc[desclen++] = HALT_USER(ANY_COND_FALSE, MATH_Z,
-					STATUS_GOOD_Q);
+	desc_add_word(desc, HALT_USER(ANY_COND_FALSE, MATH_Z,
+					STATUS_GOOD_Q));
 
 	if (desc_new_q) {
-		desc[desclen++] = JUMP_NOTLOCAL(CLASS_NO, ALL_COND_TRUE,
-						JMP_COND(NONE));
-		desc[desclen++] = desc_new_q;
+		desc_add_word(desc, JUMP_NOTLOCAL(CLASS_NO, ALL_COND_TRUE,
+						JMP_COND(NONE)));
+		desc_add_ptr(desc, desc_new_q);
 	}
 
-	/* Set the descriptor Header with length */
-	desc[0] = DESC_HEADER(desclen);
-
-	if (desclen > CHECK_P_Q_DESC_ENTRIES)	{
+	desclen = desc_get_len(desc);
+	if (desclen > CHECK_P_Q_DESC_ENTRIES){
 		PRIME_TRACE("Descriptor Size too short (%d vs %d)",
 					desclen, CHECK_P_Q_DESC_ENTRIES);
 		panic();

@@ -43,7 +43,7 @@ $(call force, CFG_CRYPTO_GCM_HW,n)
 $(call force, CFG_CRYPTO_PKCS_HW,n)
 
 # Definition of the Asymmetric Cipher supported by HW
-$(call force, CFG_CRYPTO_RSA_HW,n)
+$(call force, CFG_CRYPTO_RSA_HW,y)
 $(call force, CFG_CRYPTO_DSA_HW,n)
 $(call force, CFG_CRYPTO_DH_HW,n)
 $(call force, CFG_CRYPTO_ECC_HW,n)
