@@ -31,5 +31,14 @@
 #define JRxDID_MS_PRIM_TZ			BIT32(4)
 #define JRxDID_MS_PRIM_DID(val)		SHIFT_U32((val & 0xF), 0)
 
+/* Security Configuration */
+#define SCFGR					0x000C
+#define BM_SCFGR_MPCURVE		SHIFT_U32(0xF, 28)
+#define BM_SCFGR_MPMRL          BIT32(26)
+
+/* Manufacturing Protection Message */
+#define MPMR					0x0380
+#define MPMR_NB_REG             0x20
+
 #endif /* __CTRL_REGS_H__ */
 
