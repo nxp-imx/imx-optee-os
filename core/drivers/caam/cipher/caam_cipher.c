@@ -259,46 +259,50 @@ enum CAAM_Status do_block(struct cipherdata *ctx,
 
 	struct jr_jobctx   jobctx = {0};
 	descPointer_t desc    = ctx->descriptor;
-	uint8_t       desclen = 1;
+	uint8_t desclen = 0;
+
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
 
 	if (keyid == NEED_KEY1) {
 		/* Build the descriptor */
-		desc[desclen++] = LD_KEY_PLAIN(CLASS_1, REG, ctx->key1.length);
-		desc[desclen++] = ctx->key1.paddr;
+		desc_add_word(desc, LD_KEY_PLAIN(CLASS_1, REG, ctx->key1.length));
+		desc_add_ptr(desc, ctx->key1.paddr);
+
 	} else if (keyid == NEED_KEY2) {
 		/* Build the descriptor */
-		desc[desclen++] = LD_KEY_PLAIN(CLASS_1, REG, ctx->key2.length);
-		desc[desclen++] = ctx->key2.paddr;
+		desc_add_word(desc, LD_KEY_PLAIN(CLASS_1, REG, ctx->key2.length));
+		desc_add_ptr(desc, ctx->key2.paddr);
 	}
 
 	/* If there is a context register load it */
 	if ((ctx->ctx.length) && (ctx->alg->size_ctx)) {
-		desc[desclen++] = LD_NOIMM_OFF(CLASS_1, REG_CTX,
-				ctx->ctx.length, ctx->alg->ctx_offset);
-		desc[desclen++] = ctx->ctx.paddr;
-
+		desc_add_word(desc, LD_NOIMM_OFF(CLASS_1, REG_CTX,
+				ctx->ctx.length, ctx->alg->ctx_offset));
+		desc_add_ptr(desc, ctx->ctx.paddr);
 		/* Operation with the direction */
-		desc[desclen++] = CIPHER_INIT(ctx->alg->type, encrypt);
+		desc_add_word(desc, CIPHER_INIT(ctx->alg->type, encrypt));
 	} else {
 		/* Operation with the direction */
-		desc[desclen++] = CIPHER_INITFINAL(ctx->alg->type, encrypt);
+		desc_add_word(desc, CIPHER_INITFINAL(ctx->alg->type,
+				encrypt));
 	}
 
 	/* Load the source data */
 	if (src->sgt_type) {
-		desc[desclen++] = FIFO_LD_SGT(CLASS_1, MSG, LAST_C1,
-				(src->buf[0].length + src->buf[1].length));
-		desc[desclen++] = virt_to_phys(src->sgt);
+		desc_add_word(desc, FIFO_LD_SGT(CLASS_1, MSG, LAST_C1,
+				(src->buf[0].length + src->buf[1].length)));
+		desc_add_ptr(desc, virt_to_phys(src->sgt));
 		caam_cache_op_sgt(TEE_CACHECLEAN, src);
 	} else {
 		if (src->buf->length > FIFO_LOAD_MAX) {
-			desc[desclen++] = FIFO_LD_EXT(CLASS_1, MSG, LAST_C1);
-			desc[desclen++] = src->buf->paddr;
-			desc[desclen++] = src->buf->length;
+			desc_add_word(desc, FIFO_LD_EXT(CLASS_1, MSG, LAST_C1));
+			desc_add_ptr(desc, src->buf->paddr);
+			desc_add_word(desc, src->buf->length);
 		} else {
-			desc[desclen++] = FIFO_LD(CLASS_1, MSG, LAST_C1,
-					src->buf->length);
-			desc[desclen++] = src->buf->paddr;
+			desc_add_word(desc, FIFO_LD(CLASS_1, MSG, LAST_C1,
+					src->buf->length));
+			desc_add_ptr(desc, src->buf->paddr);
 		}
 		cache_operation(TEE_CACHECLEAN, src->buf->data,
 				src->buf->length);
@@ -307,20 +311,20 @@ enum CAAM_Status do_block(struct cipherdata *ctx,
 	if (dst) {
 		if (dst->sgt_type) {
 			/* Store the destination data */
-			desc[desclen++] = FIFO_ST_SGT(MSG_DATA,
+			desc_add_word(desc, FIFO_ST_SGT(MSG_DATA,
 					(dst->buf[0].length +
-					 dst->buf[1].length));
-			desc[desclen++] = virt_to_phys(dst->sgt);
+					 dst->buf[1].length)));
+			desc_add_ptr(desc, virt_to_phys(dst->sgt));
 			caam_cache_op_sgt(TEE_CACHEFLUSH, dst);
 		} else {
 			/* Store the destination data */
 			if (dst->buf->length > FIFO_STORE_MAX) {
-				desc[desclen++] = FIFO_ST_EXT(MSG_DATA);
-				desc[desclen++] = dst->buf->paddr;
-				desc[desclen++] = dst->buf->length;
+				desc_add_word(desc, FIFO_ST_EXT(MSG_DATA));
+				desc_add_ptr(desc, dst->buf->paddr);
+				desc_add_word(desc, dst->buf->length);
 			} else {
-				desc[desclen++] = FIFO_ST(MSG_DATA, dst->buf->length);
-				desc[desclen++] = dst->buf->paddr;
+				desc_add_word(desc, FIFO_ST(MSG_DATA, dst->buf->length));
+				desc_add_ptr(desc, dst->buf->paddr);
 			}
 
 			if (dst->buf->nocache == 0)
@@ -332,18 +336,16 @@ enum CAAM_Status do_block(struct cipherdata *ctx,
 	if ((ctx->ctx.length) && (ctx->alg->size_ctx)) {
 		if (savectx) {
 			/* Store the context */
-			desc[desclen++] = ST_NOIMM_OFF(CLASS_1, REG_CTX,
-					ctx->ctx.length, ctx->alg->ctx_offset);
-			desc[desclen++] = ctx->ctx.paddr;
+			desc_add_word(desc, ST_NOIMM_OFF(CLASS_1, REG_CTX,
+					ctx->ctx.length, ctx->alg->ctx_offset));
+			desc_add_ptr(desc, ctx->ctx.paddr);
 		}
 
 		/* Ensure Context register data are not in cache */
 		cache_operation(TEE_CACHEINVALIDATE, ctx->ctx.data,
 			ctx->ctx.length);
 	}
-
-	/* Set the descriptor Header with length */
-	desc[0] = DESC_HEADER(desclen);
+	desclen = desc_get_len(desc);
 	if (desclen > MAX_DESC_ENTRIES)	{
 		CIPHER_TRACE("Descriptor Size too short (%d vs %d)",
 					desclen, MAX_DESC_ENTRIES);
