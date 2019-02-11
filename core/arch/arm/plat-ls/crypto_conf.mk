@@ -46,7 +46,7 @@ $(call force, CFG_CRYPTO_PKCS_HW,n)
 $(call force, CFG_CRYPTO_RSA_HW,y)
 $(call force, CFG_CRYPTO_DSA_HW,n)
 $(call force, CFG_CRYPTO_DH_HW,n)
-$(call force, CFG_CRYPTO_ECC_HW,n)
+$(call force, CFG_CRYPTO_ECC_HW,y)
 
 $(call force, CFG_CRYPTO_CMAC_HW,n)
 
