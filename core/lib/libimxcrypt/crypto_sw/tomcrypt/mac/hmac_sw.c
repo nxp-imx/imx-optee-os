@@ -27,6 +27,8 @@
 #define LIB_TRACE(...)
 #endif
 
+#ifndef CFG_CRYPTO_HMAC_FULL_HW
+
 /**
  * @brief   Allocate the SW hmac data context
  *
@@ -234,3 +236,4 @@ int libsoft_hmac_sw_init(void)
 {
 	return imxcrypt_register(CRYPTO_HMAC_SW, (void *)&driver_hmac_sw);
 }
+#endif /* CFG_CRYPTO_HMAC_FULL_HW */
