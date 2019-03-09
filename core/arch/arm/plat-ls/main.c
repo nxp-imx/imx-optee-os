@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018 NXP
+ * Copyright 2018-2019 NXP
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * All rights reserved.
  *
