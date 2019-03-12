@@ -108,8 +108,10 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 		retstatus = CAAM_NO_ERROR;
 	}
 
+#ifdef CFG_IMXCRYPT
 	caam_pwr_add_backup(ctrl_base + (jr_idx * JRxMIDR_SIZE),
 			jrcfg_backup, ARRAY_SIZE(jrcfg_backup));
+#endif
 	return retstatus;
 }
 
