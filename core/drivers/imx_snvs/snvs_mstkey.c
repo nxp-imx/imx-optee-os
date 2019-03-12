@@ -109,7 +109,7 @@ static inline bool is_otpmk_valid(void)
 
 	uint32_t hp_status;
 
-	hp_status = io_read32(snvs_base + SNVS_HPLR);
+	hp_status = io_read32(snvs_base + SNVS_HPSTATUS);
 
 	hp_status &= (BM_SNVS_HPSTATUS_OTPMK_ZERO |
 			BM_SNVS_HPSTATUS_OTPMK_SYND);
