@@ -47,4 +47,11 @@ enum snvs_security_cfg snvs_get_security_cfg(void);
  *          set, continue anyway.
  */
 void snvs_set_master_otpmk(void);
+
+/**
+ * @brief   Set the NPSWA_EN bit.
+ *          Allow non-proviledge software to access all SNVS registers
+ *          If device is in closed mode, the HAB does not set this bit.
+ */
+void snvs_set_npswa_en(void);
 #endif /* __DRIVERS_IMX_SNVS_H */
