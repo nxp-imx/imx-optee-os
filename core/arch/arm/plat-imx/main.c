@@ -32,7 +32,7 @@
 #include <console.h>
 #include <drivers/gic.h>
 #include <drivers/imx_uart.h>
-#include <imx.h>
+#include <drivers/imx_snvs.h>
 #include <io.h>
 #include <kernel/boot.h>
 #include <imx_pm.h>
@@ -169,3 +169,12 @@ void plat_cpu_wakeup_late(void)
 }
 #endif
 
+static TEE_Result platform_security_config(void)
+{
+#ifdef CFG_IMX_SNVS
+	snvs_set_npswa_en();
+#endif
+	return TEE_SUCCESS;
+}
+
+service_init(platform_security_config);
