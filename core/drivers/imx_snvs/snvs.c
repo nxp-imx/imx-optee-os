@@ -47,3 +47,13 @@ bool imx_is_device_closed(void)
 {
 	return (snvs_get_security_cfg() == SNVS_SECURITY_CFG_CLOSED);
 }
+
+void snvs_set_npswa_en(void)
+{
+	if (imx_is_device_closed()) {
+		vaddr_t snvs_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC);
+
+		io_mask32(snvs_base + SNVS_HPCOMR, BM_SNVS_HPCOMR_NPSWA_EN,
+			BM_SNVS_HPCOMR_NPSWA_EN);
+	}
+}
