@@ -14,6 +14,7 @@
 #else
 #include <drivers/imx_uart.h>
 #endif
+#include <drivers/imx_snvs.h>
 #include <io.h>
 #include <imx.h>
 #include <kernel/cache_helpers.h>
@@ -234,3 +235,13 @@ void plat_cpu_wakeup_late(void)
 #endif
 }
 #endif
+
+static TEE_Result platform_security_config(void)
+{
+#ifdef CFG_IMX_SNVS
+	snvs_set_npswa_en();
+#endif
+	return TEE_SUCCESS;
+}
+
+service_init(platform_security_config);
