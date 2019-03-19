@@ -7,6 +7,8 @@
  * @brief   Cryptographic library using the i.MX CAAM driver.\n
  *          Hash crypto_* interface implementation.
  */
+/* Standard includes */
+#include <stdlib.h>
 
 /* Global includes */
 #include <crypto/crypto.h>
@@ -25,19 +27,29 @@
 #endif
 
 /**
+ * @brief  Format the HASH context to keep the reference to the
+ *         operation driver
+ */
+struct crypto_hash {
+	void                 *ctx; ///< Hash Context
+	struct imxcrypt_hash *op;  ///< Reference to the operation
+};
+
+/**
  * @brief   Checks and returns reference to the driver operations
  *
- * @param[in]  algo     Algorithm
- * @param[out] hash_id  Hash Algorithm internal ID
+ * @param[in]  algo  Algorithm
+ * @param[out] id    Hash Algorithm internal ID
  *
  * @retval  Reference to the driver operations
  */
 static struct imxcrypt_hash *do_check_algo(uint32_t algo,
-						enum imxcrypt_hash_id *hash_id)
+						enum imxcrypt_hash_id *id)
 {
 	struct imxcrypt_hash *hash = NULL;
 	uint8_t algo_op;
 	uint8_t algo_id;
+	enum imxcrypt_hash_id hash_id;
 
 	/* Extract the algorithms fields */
 	algo_op = TEE_ALG_GET_CLASS(algo);
@@ -47,17 +59,20 @@ static struct imxcrypt_hash *do_check_algo(uint32_t algo,
 		((algo_id >= TEE_MAIN_ALGO_MD5) &&
 		 (algo_id <= TEE_MAIN_ALGO_SHA512))) {
 
-		*hash_id = algo_id - 1;
+		hash_id = algo_id - 1;
 
 		hash = imxcrypt_getmod(CRYPTO_HASH);
 
 		/* Verify that the HASH HW implements this algorithm */
 		if (hash) {
-			if (hash->max_hash < *hash_id)
+			if (hash->max_hash < hash_id)
 				hash = imxcrypt_getmod(CRYPTO_HASH_SW);
 		} else {
 			hash = imxcrypt_getmod(CRYPTO_HASH_SW);
 		}
+
+		if (id)
+			*id = hash_id;
 	}
 
 	LIB_TRACE("Check Hash algo %d ret 0x%"PRIxPTR"",
@@ -80,18 +95,27 @@ static struct imxcrypt_hash *do_check_algo(uint32_t algo,
 TEE_Result crypto_hash_alloc_ctx(void **ctx, uint32_t algo)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
-	struct imxcrypt_hash  *hash;
+	struct crypto_hash   *hash = NULL;
 	enum imxcrypt_hash_id hash_id;
 
 	/* Check the parameters */
 	if (!ctx)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	hash = do_check_algo(algo, &hash_id);
-	if (hash) {
-		if (hash->alloc_ctx)
-			ret = hash->alloc_ctx(ctx, hash_id);
+	hash = calloc(1, sizeof(*hash));
+	if (!hash)
+		return TEE_ERROR_OUT_OF_MEMORY;
+
+	hash->op = do_check_algo(algo, &hash_id);
+	if (hash->op) {
+		if (hash->op->alloc_ctx)
+			ret = hash->op->alloc_ctx(&hash->ctx, hash_id);
+	} else {
+		free(hash);
+		hash = NULL;
 	}
+
+	*ctx = hash;
 
 	return ret;
 }
@@ -103,18 +127,17 @@ TEE_Result crypto_hash_alloc_ctx(void **ctx, uint32_t algo)
  * @param[in]     algo   Algorithm
  *
  */
-void crypto_hash_free_ctx(void *ctx, uint32_t algo)
+void crypto_hash_free_ctx(void *ctx, uint32_t algo __unused)
 {
-	struct imxcrypt_hash  *hash;
-	enum imxcrypt_hash_id hash_id;
+	struct crypto_hash *hash = ctx;
 
 	/* Check the parameters */
 	if (ctx) {
-		hash = do_check_algo(algo, &hash_id);
-		if (hash) {
-			if (hash->free_ctx)
-				hash->free_ctx(ctx);
+		if (hash->op) {
+			if (hash->op->free_ctx)
+				hash->op->free_ctx(hash->ctx);
 		}
+		free(hash);
 	}
 }
 
@@ -127,18 +150,18 @@ void crypto_hash_free_ctx(void *ctx, uint32_t algo)
  * @param[out] dst_ctx  Reference the context destination
  *
  */
-void crypto_hash_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
+void crypto_hash_copy_state(void *dst_ctx, void *src_ctx,
+		uint32_t algo __unused)
 {
-	struct imxcrypt_hash  *hash;
-	enum imxcrypt_hash_id hash_id;
+	struct crypto_hash *hash_src = src_ctx;
+	struct crypto_hash *hash_dst = dst_ctx;
 
 	if ((!dst_ctx) || (!src_ctx))
 		return;
 
-	hash = do_check_algo(algo, &hash_id);
-	if (hash) {
-		if (hash->cpy_state)
-			hash->cpy_state(dst_ctx, src_ctx);
+	if (hash_src->op) {
+		if (hash_src->op->cpy_state)
+			hash_src->op->cpy_state(hash_dst->ctx, hash_src->ctx);
 	}
 }
 
@@ -152,21 +175,19 @@ void crypto_hash_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_NOT_IMPLEMENTED Algorithm is not implemented
  */
-TEE_Result crypto_hash_init(void *ctx, uint32_t algo)
+TEE_Result crypto_hash_init(void *ctx, uint32_t algo __unused)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_hash *hash;
-	enum imxcrypt_hash_id hash_id;
+	struct crypto_hash *hash = ctx;
 
 	/* Check the parameters */
 	if (!ctx)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	hash = do_check_algo(algo, &hash_id);
-	if (hash) {
-		if (hash->init)
-			ret = hash->init(ctx, hash_id);
+	if (hash->op) {
+		if (hash->op->init)
+			ret = hash->op->init(hash->ctx);
 	}
 
 	return ret;
@@ -185,22 +206,20 @@ TEE_Result crypto_hash_init(void *ctx, uint32_t algo)
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_NOT_IMPLEMENTED Algorithm is not implemented
  */
-TEE_Result crypto_hash_update(void *ctx, uint32_t algo,
+TEE_Result crypto_hash_update(void *ctx, uint32_t algo __unused,
 					const uint8_t *data, size_t len)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_hash  *hash;
-	enum imxcrypt_hash_id hash_id;
+	struct crypto_hash *hash = ctx;
 
 	/* Check the parameters */
 	if ((!ctx) || ((!data) && (len != 0)))
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	hash = do_check_algo(algo, &hash_id);
-	if (hash) {
-		if (hash->update)
-			ret = hash->update(ctx, hash_id, data, len);
+	if (hash->op) {
+		if (hash->op->update)
+			ret = hash->op->update(hash->ctx, data, len);
 	}
 
 	return ret;
@@ -221,22 +240,20 @@ TEE_Result crypto_hash_update(void *ctx, uint32_t algo,
  * @retval TEE_ERROR_NOT_IMPLEMENTED Algorithm is not implemented
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-TEE_Result crypto_hash_final(void *ctx, uint32_t algo,
+TEE_Result crypto_hash_final(void *ctx, uint32_t algo __unused,
 					uint8_t *digest, size_t len)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_hash  *hash;
-	enum imxcrypt_hash_id hash_id;
+	struct crypto_hash *hash = ctx;
 
 	/* Check the parameters */
 	if ((!ctx) || (!digest) || (!len))
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	hash = do_check_algo(algo, &hash_id);
-	if (hash) {
-		if (hash->final)
-			ret = hash->final(ctx, hash_id, digest, len);
+	if (hash->op) {
+		if (hash->op->final)
+			ret = hash->op->final(hash->ctx, digest, len);
 	}
 
 	return ret;

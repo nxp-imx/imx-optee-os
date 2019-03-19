@@ -108,22 +108,21 @@ TEE_Result rsa_mgf1(struct imxcrypt_rsa_mgf *mgf_data)
 
 		swapcount = TEE_U32_TO_BIG_ENDIAN(counter);
 
-		ret = hash->init(ctx, hash_id);
+		ret = hash->init(ctx);
 		if (ret != TEE_SUCCESS)
 			goto exit_mgf;
 
-		ret = hash->update(ctx, hash_id, mgf_data->seed.data,
+		ret = hash->update(ctx, mgf_data->seed.data,
 			mgf_data->seed.length);
 		if (ret != TEE_SUCCESS)
 			goto exit_mgf;
 
-		ret = hash->update(ctx, hash_id, (uint8_t *)&swapcount,
+		ret = hash->update(ctx, (uint8_t *)&swapcount,
 				sizeof(swapcount));
 		if (ret != TEE_SUCCESS)
 			goto exit_mgf;
 
-		ret = hash->final(ctx, hash_id, cur_mask,
-			mgf_data->digest_size);
+		ret = hash->final(ctx, cur_mask, mgf_data->digest_size);
 		if (ret != TEE_SUCCESS)
 			goto exit_mgf;
 	}
@@ -133,22 +132,21 @@ TEE_Result rsa_mgf1(struct imxcrypt_rsa_mgf *mgf_data)
 
 		swapcount = TEE_U32_TO_BIG_ENDIAN(counter);
 
-		ret = hash->init(ctx, hash_id);
+		ret = hash->init(ctx);
 		if (ret != TEE_SUCCESS)
 			goto exit_mgf;
 
-		ret = hash->update(ctx, hash_id, mgf_data->seed.data,
+		ret = hash->update(ctx, mgf_data->seed.data,
 			mgf_data->seed.length);
 		if (ret != TEE_SUCCESS)
 			goto exit_mgf;
 
-		ret = hash->update(ctx, hash_id, (uint8_t *)&swapcount,
+		ret = hash->update(ctx, (uint8_t *)&swapcount,
 				sizeof(swapcount));
 		if (ret != TEE_SUCCESS)
 			goto exit_mgf;
 
-		ret = hash->final(ctx, hash_id, tmpdigest,
-			mgf_data->digest_size);
+		ret = hash->final(ctx, tmpdigest, mgf_data->digest_size);
 		if (ret != TEE_SUCCESS)
 			goto exit_mgf;
 

@@ -39,13 +39,11 @@ struct imxcrypt_hash {
 	///< Free of the Software context
 	void (*free_ctx)(void *ctx);
 	///< Initialize the hashing operation
-	TEE_Result (*init)(void *ctx, enum imxcrypt_hash_id algo);
+	TEE_Result (*init)(void *ctx);
 	///< Update the hashing operation
-	TEE_Result (*update)(void *ctx, enum imxcrypt_hash_id algo,
-					const uint8_t *data, size_t len);
+	TEE_Result (*update)(void *ctx, const uint8_t *data, size_t len);
 	///< Finalisze the hashing operation
-	TEE_Result (*final)(void *ctx, enum imxcrypt_hash_id algo,
-					uint8_t *digest, size_t len);
+	TEE_Result (*final)(void *ctx, uint8_t *digest, size_t len);
 
 	///< Copy Hash context
 	void (*cpy_state)(void *dst_ctx, void *src_ctx);

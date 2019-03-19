@@ -41,11 +41,13 @@
  */
 static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
 {
-	void *hmac_ctx;
+	hmac_state *hmac_ctx;
+	int index;
 
 	LIB_TRACE("HMAC_SW: Allocate Context (0x%"PRIxPTR")", (uintptr_t)ctx);
 
-	if (get_ltc_hashindex(algo) == (-1))
+	index = get_ltc_hashindex(algo);
+	if (index == (-1))
 		return TEE_ERROR_NOT_IMPLEMENTED;
 
 	hmac_ctx = calloc(1, sizeof(hmac_state));
@@ -54,7 +56,11 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
 
+	/* Set the HASH Id in the context for operation */
+	hmac_ctx->hash = index;
+
 	*ctx = hmac_ctx;
+
 	return TEE_SUCCESS;
 }
 
@@ -76,26 +82,14 @@ static void do_free(void *ctx)
  * @brief   Initialization of the HMAC operation.
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  *
  * @retval TEE_SUCCESS               Success
- * @retval TEE_ERROR_NOT_IMPLEMENTED Algorithm not implemented
  */
-static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
+static TEE_Result do_init(void *ctx __maybe_unused)
 {
-	int hash_idx;
-	hmac_state *hmac = ctx;
 
-	LIB_TRACE("HMAC_SW: Init Algo %d - Context @0x%08"PRIxPTR"",
-				algo, (uintptr_t)ctx);
-
-	hash_idx = get_ltc_hashindex(algo);
-
-	if (hash_idx == (-1))
-		return TEE_ERROR_NOT_IMPLEMENTED;
-
-	/* Set the Hash index into the HMAC context */
-	hmac->hash = hash_idx;
+	LIB_TRACE("HMAC_SW: Init - Context @0x%08"PRIxPTR"",
+				(uintptr_t)ctx);
 
 	return TEE_SUCCESS;
 }
@@ -128,7 +122,6 @@ static TEE_Result do_compute_key(void *ctx, const uint8_t *key, size_t len)
  * @brief   Update the HMAC operation
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  * @param[in] data  Data to hash
  * @param[in] len   Data length
  *
@@ -137,19 +130,12 @@ static TEE_Result do_compute_key(void *ctx, const uint8_t *key, size_t len)
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
-					const uint8_t *data, size_t len)
+static TEE_Result do_update(void *ctx, const uint8_t *data, size_t len)
 {
-	int hash_idx;
 	int ret;
 
-	LIB_TRACE("HMAC_SW: Update Algo %d - Input @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)data, len);
-
-	hash_idx = get_ltc_hashindex(algo);
-
-	if (hash_idx == (-1))
-		return TEE_ERROR_NOT_IMPLEMENTED;
+	LIB_TRACE("HMAC_SW: Update - Input @0x%08"PRIxPTR"-%d",
+				(uintptr_t)data, len);
 
 	if ((!data) || (!len))
 		return TEE_SUCCESS;
@@ -163,7 +149,6 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
  * @brief   Finalize the HMAC operation
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  * @param[in] len   Digest buffer length
  *
  * @param[out] digest  HMAC digest buffer
@@ -173,23 +158,17 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
  * @retval TEE_ERROR_SHORT_BUFFER    Digest buffer too short
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  */
-static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
-					uint8_t *digest, size_t len)
+static TEE_Result do_final(void *ctx, uint8_t *digest, size_t len)
 {
-	int hash_idx;
+	hmac_state *hmac = ctx;
 	int ret;
 	unsigned long dig_len = len;
 
-	LIB_TRACE("HMAC_SW: Final Algo %d - Digest @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)digest, len);
-
-	hash_idx = get_ltc_hashindex(algo);
-
-	if (hash_idx == (-1))
-		return TEE_ERROR_NOT_IMPLEMENTED;
+	LIB_TRACE("HMAC_SW: Final - Digest @0x%08"PRIxPTR"-%d",
+				(uintptr_t)digest, len);
 
 	/* Check the length of the digest */
-	if (hash_descriptor[hash_idx]->hashsize > len)
+	if (hash_descriptor[hmac->hash]->hashsize > len)
 		return TEE_ERROR_SHORT_BUFFER;
 
 	ret = hmac_done(ctx, digest, &dig_len);

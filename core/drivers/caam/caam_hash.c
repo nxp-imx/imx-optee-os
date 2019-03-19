@@ -464,37 +464,29 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
  * @brief   Initialization of the Hash operation
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  *
  * @retval TEE_SUCCESS               Success
- * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  */
-static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
+static TEE_Result do_init(void *ctx)
 {
 	struct hashdata *hashdata = ctx;
 
-	/* Check if the algorithm is equal to the context one's */
-	if (hashdata->algo_id == algo) {
-		/* Initialize the block buffer */
-		hashdata->blockbuf.filled = 0;
+	/* Initialize the block buffer */
+	hashdata->blockbuf.filled = 0;
 
-		/* Ensure Context length is 0 */
-		hashdata->ctx.length = 0;
+	/* Ensure Context length is 0 */
+	hashdata->ctx.length = 0;
 
-		hashdata->key.length = 0;
-		hashdata->key_type   = KEY_EMPTY;
+	hashdata->key.length = 0;
+	hashdata->key_type   = KEY_EMPTY;
 
-		return TEE_SUCCESS;
-	}
-
-	return TEE_ERROR_BAD_PARAMETERS;
+	return TEE_SUCCESS;
 }
 
 /**
  * @brief   Update the Hash operation
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  * @param[in] data  Data to hash
  * @param[in] len   Data length
  *
@@ -503,8 +495,7 @@ static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
-					const uint8_t *data, size_t len)
+static TEE_Result do_update(void *ctx, const uint8_t *data, size_t len)
 {
 	TEE_Result    ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
@@ -524,13 +515,6 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 	size_t  inLength   = 0;
 	paddr_t paddr_data = 0;
 
-	if (hashdata->algo_id != algo) {
-		HASH_TRACE("Context algo is %d and asked for %d",
-					hashdata->algo_id, algo);
-		ret = TEE_ERROR_BAD_PARAMETERS;
-		goto exit_update;
-	}
-
 	if (data) {
 		paddr_data = virt_to_phys((void *)data);
 		if (!paddr_data) {
@@ -549,8 +533,8 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
 		}
 	}
 
-	HASH_TRACE("Update Algo %d - Input @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)data, inLength);
+	HASH_TRACE("Update Type 0x%X - Input @0x%08"PRIxPTR"-%d",
+				alg->type, (uintptr_t)data, inLength);
 
 	/* Calculate the total data to be handled */
 	fullSize = hashdata->blockbuf.filled + inLength;
@@ -676,7 +660,6 @@ exit_update:
  * @brief   Finalize the Hash operation
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  * @param[in] len   Digest buffer length
  *
  * @param[out] digest  Hash digest buffer
@@ -686,8 +669,7 @@ exit_update:
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
-					uint8_t *digest, size_t len)
+static TEE_Result do_final(void *ctx, uint8_t *digest, size_t len)
 {
 	TEE_Result    ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
@@ -701,13 +683,6 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 
 	int realloc = 0;
 	struct caambuf digest_align = {0};
-
-	if (hashdata->algo_id != algo) {
-		HASH_TRACE("Context algo is %d and asked for %d",
-					hashdata->algo_id, algo);
-		ret = TEE_ERROR_BAD_PARAMETERS;
-		goto exit_final;
-	}
 
 	if (!hashdata->ctx.data) {
 		retstatus = do_allocate_intern(hashdata);
@@ -739,8 +714,8 @@ static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
 		}
 	}
 
-	HASH_TRACE("Final Algo %d - Digest @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)digest_align.data, len);
+	HASH_TRACE("Final Type 0x%X - Digest @0x%08"PRIxPTR"-%d",
+				alg->type, (uintptr_t)digest_align.data, len);
 
 	desc = hashdata->descriptor;
 

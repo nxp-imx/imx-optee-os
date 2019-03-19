@@ -86,15 +86,15 @@ static TEE_Result do_hash(enum imxcrypt_hash_id hash_id,
 	if (ret != TEE_SUCCESS)
 		goto exit_hash;
 
-	ret = hash->init(ctx, hash_id);
+	ret = hash->init(ctx);
 	if (ret != TEE_SUCCESS)
 		goto exit_hash;
 
-	ret = hash->update(ctx, hash_id, data->data, data->length);
+	ret = hash->update(ctx, data->data, data->length);
 	if (ret != TEE_SUCCESS)
 		goto exit_hash;
 
-	ret = hash->final(ctx, hash_id, digest->data, digest->length);
+	ret = hash->final(ctx, digest->data, digest->length);
 
 exit_hash:
 	hash->free_ctx(ctx);

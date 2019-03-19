@@ -27,6 +27,11 @@
 #define LIB_TRACE(...)
 #endif
 
+struct ltc_hash_ctx {
+	int index;      ///< Hash index register in LibTomCrypt
+	hash_state ctx;	///< Hash context
+};
+
 /**
  * @brief   Find SW hash index into the LibTomCrypt. If supported
  *          be HW, returns (-1)
@@ -96,18 +101,22 @@ static int get_sw_hashindex(enum imxcrypt_hash_id algo)
  */
 static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
 {
-	void *hash_ctx;
+	struct ltc_hash_ctx *hash_ctx;
+	int  index;
 
 	LIB_TRACE("HASH_SW: Allocate Context (0x%"PRIxPTR")", (uintptr_t)ctx);
 
-	if (get_sw_hashindex(algo) == (-1))
+	index = get_sw_hashindex(algo);
+	if (index == (-1))
 		return TEE_ERROR_NOT_IMPLEMENTED;
 
-	hash_ctx = calloc(1, sizeof(hash_state));
+	hash_ctx = calloc(1, sizeof(*hash_ctx));
 	if (!hash_ctx) {
 		LIB_TRACE("HASH_SW: Allocation Hash data error");
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
+
+	hash_ctx->index = index;
 
 	*ctx = hash_ctx;
 	return TEE_SUCCESS;
@@ -131,26 +140,20 @@ static void do_free(void *ctx)
  * @brief   Initialization of the Hash operation
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  *
  * @retval TEE_SUCCESS               Success
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  */
-static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
+static TEE_Result do_init(void *ctx)
 {
-	int hash_idx;
+	struct ltc_hash_ctx *hash_ctx = ctx;
 	int ret;
 
-	LIB_TRACE("HASH_SW: Init Algo %d - Context @0x%08"PRIxPTR"",
-				algo, (uintptr_t)ctx);
+	LIB_TRACE("HASH_SW: Init - Context @0x%08"PRIxPTR"",
+				(uintptr_t)ctx);
 
-	hash_idx = get_sw_hashindex(algo);
-
-	if (hash_idx == (-1))
-		return TEE_ERROR_NOT_IMPLEMENTED;
-
-	ret = hash_descriptor[hash_idx]->init(ctx);
+	ret = hash_descriptor[hash_ctx->index]->init(&hash_ctx->ctx);
 
 	return conv_CRYPT_to_TEE_Result(ret);
 }
@@ -159,7 +162,6 @@ static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
  * @brief   Update the Hash operation
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  * @param[in] data  Data to hash
  * @param[in] len   Data length
  *
@@ -168,21 +170,16 @@ static TEE_Result do_init(void *ctx, enum imxcrypt_hash_id algo)
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
-					const uint8_t *data, size_t len)
+static TEE_Result do_update(void *ctx, const uint8_t *data, size_t len)
 {
-	int hash_idx;
+	struct ltc_hash_ctx *hash_ctx = ctx;
 	int ret;
 
-	LIB_TRACE("HASH_SW: Update Algo %d - Input @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)data, len);
+	LIB_TRACE("HASH_SW: Update Input @0x%08"PRIxPTR"-%d",
+				(uintptr_t)data, len);
 
-	hash_idx = get_sw_hashindex(algo);
-
-	if (hash_idx == (-1))
-		return TEE_ERROR_NOT_IMPLEMENTED;
-
-	ret = hash_descriptor[hash_idx]->process(ctx, data, len);
+	ret = hash_descriptor[hash_ctx->index]->process(&hash_ctx->ctx,
+							data, len);
 
 	return conv_CRYPT_to_TEE_Result(ret);
 }
@@ -191,7 +188,6 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
  * @brief   Finalize the Hash operation
  *
  * @param[in] ctx   Operation Software context
- * @param[in] algo  Algorithm ID of the context
  * @param[in] len   Digest buffer length
  *
  * @param[out] digest  Hash digest buffer
@@ -201,33 +197,29 @@ static TEE_Result do_update(void *ctx, enum imxcrypt_hash_id algo,
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-static TEE_Result do_final(void *ctx, enum imxcrypt_hash_id algo,
-					uint8_t *digest, size_t len)
+static TEE_Result do_final(void *ctx, uint8_t *digest, size_t len)
 {
-	int hash_idx;
+	struct ltc_hash_ctx *hash_ctx = ctx;
 	int ret;
 	uint8_t *block_digest = NULL;
 	uint8_t *tmp_digest   = digest;
 
-	LIB_TRACE("HASH_SW: Final Algo %d - Digest @0x%08"PRIxPTR"-%d",
-				algo, (uintptr_t)tmp_digest, len);
-
-	hash_idx = get_sw_hashindex(algo);
-
-	if (hash_idx == (-1))
-		return TEE_ERROR_NOT_IMPLEMENTED;
+	LIB_TRACE("HASH_SW: Final - Digest @0x%08"PRIxPTR"-%d",
+				(uintptr_t)tmp_digest, len);
 
 	/* Check the length of the digest */
-	if (hash_descriptor[hash_idx]->hashsize > len) {
+	if (hash_descriptor[hash_ctx->index]->hashsize > len) {
 		/* Allocate a temporary block digest */
-		block_digest = malloc(hash_descriptor[hash_idx]->hashsize);
+		block_digest = malloc(
+				hash_descriptor[hash_ctx->index]->hashsize);
 		if (!block_digest)
 			return TEE_ERROR_OUT_OF_MEMORY;
 
 		tmp_digest = block_digest;
 	}
 
-	ret = hash_descriptor[hash_idx]->done(ctx, tmp_digest);
+	ret = hash_descriptor[hash_ctx->index]->done(&hash_ctx->ctx,
+			tmp_digest);
 
 	if (block_digest) {
 		if (ret == CRYPT_OK)
@@ -252,7 +244,7 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 	LIB_TRACE("HASH_SW: Copy State (0x%"PRIxPTR") to (0x%"PRIxPTR")",
 			 (uintptr_t)src_ctx, (uintptr_t)dst_ctx);
 
-	memcpy(dst_ctx, src_ctx, sizeof(hash_state));
+	memcpy(dst_ctx, src_ctx, sizeof(struct ltc_hash_ctx));
 }
 
 /**

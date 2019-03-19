@@ -36,6 +36,16 @@ struct cbc_ctx {
 };
 
 /**
+ * @brief  Format the MAC context to keep the reference to the
+ *         operation driver
+ */
+struct crypto_mac {
+	void                 *ctx; ///< Hash Context
+	struct imxcrypt_hash *op;  ///< Reference to the operation
+};
+
+
+/**
  * @brief   Checks and returns reference to the driver operations
  *
  * @param[in]  algo     Algorithm
@@ -154,8 +164,8 @@ TEE_Result crypto_mac_alloc_ctx(void **ctx, uint32_t algo)
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	/* HMAC Algorithm */
-	struct imxcrypt_hash    *hash;
-	enum imxcrypt_hash_id   hash_id;
+	struct crypto_mac    *mac = NULL;
+	enum imxcrypt_hash_id hash_id;
 
 	/* Cipher Mac Algorthm */
 	struct cbc_ctx          *cbc_ctx;
@@ -206,11 +216,20 @@ TEE_Result crypto_mac_alloc_ctx(void **ctx, uint32_t algo)
 		break;
 
 	default:
-		hash = do_check_algo(algo, &hash_id);
-		if (hash) {
-			if (hash->alloc_ctx)
-				ret = hash->alloc_ctx(ctx, hash_id);
+		mac = calloc(1, sizeof(*mac));
+		if (!mac)
+			return TEE_ERROR_OUT_OF_MEMORY;
+
+		mac->op = do_check_algo(algo, &hash_id);
+		if (mac->op) {
+			if (mac->op->alloc_ctx)
+				ret = mac->op->alloc_ctx(&mac->ctx, hash_id);
+		} else {
+			free(mac);
+			mac = NULL;
 		}
+		*ctx = mac;
+
 		break;
 	}
 
@@ -227,8 +246,7 @@ TEE_Result crypto_mac_alloc_ctx(void **ctx, uint32_t algo)
 void crypto_mac_free_ctx(void *ctx, uint32_t algo)
 {
 	/* HMAC Algorithm */
-	struct imxcrypt_hash    *hash;
-	enum imxcrypt_hash_id   hash_id;
+	struct crypto_mac *mac = ctx;
 
 	/* Cipher Mac Algorthm */
 	struct cbc_ctx          *cbc_ctx;
@@ -268,10 +286,11 @@ void crypto_mac_free_ctx(void *ctx, uint32_t algo)
 			break;
 
 		default:
-			hash = do_check_algo(algo, &hash_id);
-			if (hash) {
-				if (hash->free_ctx)
-					hash->free_ctx(ctx);
+			if (mac->op) {
+				if (mac->op->free_ctx)
+					mac->op->free_ctx(mac->ctx);
+
+				free(mac);
 			}
 			break;
 		}
@@ -290,8 +309,8 @@ void crypto_mac_free_ctx(void *ctx, uint32_t algo)
 void crypto_mac_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
 {
 	/* HMAC Algorithm */
-	struct imxcrypt_hash    *hash;
-	enum imxcrypt_hash_id   hash_id;
+	struct crypto_mac *mac_src = src_ctx;
+	struct crypto_mac *mac_dst = dst_ctx;
 
 	/* Cipher Mac Algorthm */
 	struct cbc_ctx          *cbc_dst_ctx;
@@ -335,10 +354,10 @@ void crypto_mac_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
 		break;
 
 	default:
-		hash = do_check_algo(algo, &hash_id);
-		if (hash) {
-			if (hash->cpy_state)
-				hash->cpy_state(dst_ctx, src_ctx);
+		if (mac_src->op) {
+			if (mac_src->op->cpy_state)
+				mac_src->op->cpy_state(mac_dst->ctx,
+					mac_src->ctx);
 		}
 		break;
 	}
@@ -363,8 +382,7 @@ TEE_Result crypto_mac_init(void *ctx, uint32_t algo,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	/* HMAC Algorithm */
-	struct imxcrypt_hash    *hash;
-	enum imxcrypt_hash_id   hash_id;
+	struct crypto_mac *mac = ctx;
 
 	/* Cipher Mac Algorthm */
 	struct cbc_ctx          *cbc_ctx;
@@ -444,16 +462,14 @@ TEE_Result crypto_mac_init(void *ctx, uint32_t algo,
 		break;
 
 	default:
-		hash = do_check_algo(algo, &hash_id);
-		if (hash) {
-			if ((hash->init) && (hash->compute_key)) {
-				ret = hash->init(ctx, hash_id);
+		if (mac->op) {
+			if ((mac->op->init) && (mac->op->compute_key)) {
+				ret = mac->op->init(mac->ctx);
 
-				if (ret == TEE_SUCCESS) {
-					if (hash->compute_key)
-						ret = hash->compute_key(ctx,
-							key, key_len);
-				}
+				if ((ret == TEE_SUCCESS) &&
+					(mac->op->compute_key))
+					ret = mac->op->compute_key(mac->ctx,
+						key, key_len);
 			}
 		}
 		break;
@@ -481,8 +497,7 @@ TEE_Result crypto_mac_update(void *ctx, uint32_t algo,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	/* HMAC Algorithm */
-	struct imxcrypt_hash    *hash;
-	enum imxcrypt_hash_id   hash_id;
+	struct crypto_mac *mac = ctx;
 
 	/* Cipher Mac Algorthm */
 	struct cbc_ctx          *cbc_ctx;
@@ -549,10 +564,9 @@ TEE_Result crypto_mac_update(void *ctx, uint32_t algo,
 		break;
 
 	default:
-		hash = do_check_algo(algo, &hash_id);
-		if (hash) {
-			if (hash->update)
-				ret = hash->update(ctx, hash_id, data, len);
+		if (mac->op) {
+			if (mac->op->update)
+				ret = mac->op->update(mac->ctx, data, len);
 		}
 		break;
 	}
@@ -582,8 +596,7 @@ TEE_Result crypto_mac_final(void *ctx, uint32_t algo,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	/* HMAC Algorithm */
-	struct imxcrypt_hash    *hash;
-	enum imxcrypt_hash_id   hash_id;
+	struct crypto_mac *mac = ctx;
 
 	/* Cipher Mac Algorthm */
 	struct cbc_ctx          *cbc_ctx;
@@ -672,10 +685,9 @@ TEE_Result crypto_mac_final(void *ctx, uint32_t algo,
 		break;
 
 	default:
-		hash = do_check_algo(algo, &hash_id);
-		if (hash) {
-			if (hash->final)
-				ret = hash->final(ctx, hash_id, digest, len);
+		if (mac->op) {
+			if (mac->op->final)
+				ret = mac->op->final(mac->ctx, digest, len);
 		}
 		break;
 	}
