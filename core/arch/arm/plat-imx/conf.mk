@@ -164,6 +164,7 @@ CFG_CSU ?= y
 CFG_IMX_CAAM ?= y
 CFG_IMX_SNVS ?= y
 CFG_WITH_HAB ?= y
+CFG_IMX_MP ?= y
 $(call force,CFG_BOOT_SYNC_CPU,n)
 $(call force,CFG_BOOT_SECONDARY_REQUEST,n)
 $(call force,CFG_IMX_LPUART,n)
@@ -186,6 +187,7 @@ CFG_ENABLE_SCTLR_RR ?= y
 CFG_IMX_CAAM ?= y
 CFG_IMX_SNVS ?= y
 CFG_WITH_HAB ?= y
+CFG_IMX_MP ?= y
 $(call force,CFG_IMX_LPUART,n)
 endif
 
@@ -200,6 +202,7 @@ CFG_CSU ?= y
 CFG_IMX_CAAM ?= y
 CFG_IMX_SNVS ?= y
 CFG_WITH_HAB ?= y
+CFG_IMX_MP ?= y
 $(call force,CFG_IMX_LPUART,n)
 endif
 
@@ -210,6 +213,7 @@ CFG_IMX_LPUART ?= y
 $(call force,CFG_BOOT_SECONDARY_REQUEST,n)
 CFG_IMX_CAAM ?= y
 CFG_WITH_HAB ?= y
+CFG_IMX_MP ?= y
 $(call force,CFG_IMX_UART,n)
 endif
 
@@ -478,4 +482,3 @@ else
 $(call force,CFG_IMXCRYPT,n)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
 endif
-

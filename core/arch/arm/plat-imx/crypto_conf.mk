@@ -49,17 +49,21 @@ endif
 $(call force, CFG_CRYPTO_CMAC_HW,y)
 
 #
+# Force CFG_IMX_MP to n for platform not supported it
+#
+ifneq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX7ULP)),y)
+$(call force, CFG_IMX_MP,n)
+endif
+
+#
 # Enable Manufacturing Protection if the platform support it
 # CFG_CRYPTO_MP_HW enables the manufacturing protection functionnalities
 # _CFG_CRYPTO_WITH_MP enables the generic crypto api
 # CFG_MANUFACT_PROTEC_PTA enables the MP PTA
-# CFG_MBEDTLS_MP enables the setting of the public key type
 #
-ifeq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)), y)
+ifeq ($(CFG_IMX_MP),y)
 CFG_CRYPTO_MP_HW ?= y
-_CFG_CRYPTO_WITH_MP ?= y
 CFG_MANUFACT_PROTEC_PTA ?= y
-CFG_MBEDTLS_MP ?= y
 endif
 
 # Definition of the HASH Algorithm supported by all i.MX
@@ -90,4 +94,6 @@ $(call force, CFG_CRYPTO_PK_HW, $(call cryp-one-hw-enabled, RSA ECC DH DSA))
 
 $(call force, _CFG_CRYPTO_WITH_HUK, $(call cryp-one-hw-enabled, BLOB))
 $(call force, _CFG_CRYPTO_WITH_BLOB, $(call cryp-one-hw-enabled, BLOB))
+
+$(call force, _CFG_CRYPTO_WITH_MP, $(call cryp-one-hw-enabled, MP))
 endif
