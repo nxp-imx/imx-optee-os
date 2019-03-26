@@ -77,6 +77,9 @@
 
 	ldr	r0, =0x10210100
 	str	r0, [r8, #MX7_DDRPHY_PHY_CON1]
+
+	ldr	r0, =0x00040046
+	str	r0, [r9, #MX7_DDRC_RFSHTMG]
 	.endm
 
 	.macro switch_to_533mhz_ddr3_end
@@ -465,7 +468,15 @@
 	ldr	r0, [r12, #BUSFREQ_INFO_FREQ]
 	ldr	r1, =FREQ_24MHZ
 	cmp	r0, r1
-	bne	205f
+	beq	25f
+
+	ldr	r0, =0x000B000D
+	str	r0, [r9, #MX7_DDRC_RFSHTMG]
+	b	205f
+
+25:
+	ldr	r0, =0x00030004
+	str	r0, [r9, #MX7_DDRC_RFSHTMG]
 
 	/* dram alt sel set to OSC */
 	ldr	r0, =0x10000000

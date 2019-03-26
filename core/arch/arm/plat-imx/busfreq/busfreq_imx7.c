@@ -41,7 +41,7 @@ static void info_setup(void)
 
 	/* Initialize the registers base address */
 	ddr_info->ccm_base   = core_mmu_get_va(CCM_BASE, MEM_AREA_IO_SEC);
-	ddr_info->iomux_base = core_mmu_get_va(IOMUXC_BASE, MEM_AREA_IO_SEC);
+	ddr_info->iomux_base = core_mmu_get_va(IOMUXC_GPR_BASE, MEM_AREA_IO_SEC);
 	ddr_info->ddrc_base  = core_mmu_get_va(MMDC_P0_BASE, MEM_AREA_IO_SEC);
 	ddr_info->ddrc_phy_base = core_mmu_get_va(DDRC_PHY_BASE,
 						MEM_AREA_IO_SEC);
@@ -148,7 +148,7 @@ TEE_Result imx7_busfreq_change(uint32_t freq, uint32_t dll_off __unused)
 	/* Save the I/F bits */
 	cpsr_if = cpsr & (CPSR_I | CPSR_F);
 
-	ddr_info->freq		= freq;
+	ddr_info->freq = freq;
 	dsb();
 
 	change_ddr_freq(ddr_info);
