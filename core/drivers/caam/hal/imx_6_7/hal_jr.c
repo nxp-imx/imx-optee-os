@@ -108,10 +108,21 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 		retstatus = CAAM_NO_ERROR;
 	}
 
-#ifdef CFG_IMXCRYPT
-	caam_pwr_add_backup(ctrl_base + (jr_idx * JRxMIDR_SIZE),
-			jrcfg_backup, ARRAY_SIZE(jrcfg_backup));
-#endif
 	return retstatus;
 }
 
+/**
+ * @brief   Let the JR prepare data that need backup
+ *
+ * @param[in] ctrl_base   CAAM JR Base Address
+ * @param[in] jr_offset   Job Ring offset to prepare backup for
+ *
+ * @retval index of the next entry in the queue
+ */
+void hal_jr_prepare_backup(vaddr_t ctrl_base, paddr_t jr_offset)
+{
+	uint8_t jr_idx = JRx_IDX(jr_offset);
+
+	caam_pwr_add_backup(ctrl_base + (jr_idx * JRxMIDR_SIZE),
+			jrcfg_backup, ARRAY_SIZE(jrcfg_backup));
+}

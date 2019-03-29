@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    hal_jr.h
  *
@@ -159,6 +159,16 @@ uint8_t hal_jr_input_index(vaddr_t baseaddr);
  * @retval index of the next entry in the queue
  */
 uint8_t hal_jr_output_index(vaddr_t baseaddr);
+
+/**
+ * @brief   Let the JR prepare data that need backup
+ *
+ * @param[in] ctrl_base   CAAM JR Base Address
+ * @param[in] jr_offset   Job Ring offset to prepare backup for
+ *
+ * @retval index of the next entry in the queue
+ */
+void hal_jr_prepare_backup(vaddr_t ctrl_base, paddr_t jr_offset);
 
 #endif /* __HAL_JR_H__ */
 
