@@ -11,6 +11,7 @@
 /* Local includes */
 #include "common.h"
 #include "caam_io.h"
+#include "caam_pwr.h"
 
 /* Hal includes */
 #include "hal_jr.h"
@@ -26,6 +27,13 @@
 #define HAL_TRACE(...)
 #endif
 
+/*
+ * List of JR configuration registers to save/restore
+ */
+const struct reglist jrcfg_backup[] = {
+	{JR0DID_MS, 1, 0, 0},
+	{JR0DID_LS, 1, 0, 0},
+};
 
 /**
  * @brief   Configures the Job Ring Owner and lock it.\n
@@ -100,3 +108,18 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 	return retstatus;
 }
 
+/**
+ * @brief   Let the JR prepare data that need backup
+ *
+ * @param[in] ctrl_base   CAAM JR Base Address
+ * @param[in] jr_offset   Job Ring offset to prepare backup for
+ *
+ * @retval index of the next entry in the queue
+ */
+void hal_jr_prepare_backup(vaddr_t ctrl_base, paddr_t jr_offset)
+{
+	uint8_t jr_idx = JRx_IDX(jr_offset);
+
+	caam_pwr_add_backup(ctrl_base + (jr_idx * JRxDID_SIZE),
+			jrcfg_backup, ARRAY_SIZE(jrcfg_backup));
+}

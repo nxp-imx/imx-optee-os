@@ -285,6 +285,8 @@ void hal_cfg_setup_nsjobring(vaddr_t ctrl_base)
 			status = hal_jr_setowner(ctrl_base, jr_offset,
 					JROWN_ARM_NS);
 			HAL_TRACE("JR setowner returned %x", status);
+			if (status == CAAM_NO_ERROR)
+				hal_jr_prepare_backup(ctrl_base, jr_offset);
 		}
 	} while (jr_offset != 0);
 
@@ -301,10 +303,14 @@ void hal_cfg_setup_nsjobring(vaddr_t ctrl_base)
 			jr_offset = jrnum * JRx_BLOCK_SIZE;
 			status = hal_jr_setowner(ctrl_base, jr_offset,
 				JROWN_ARM_NS);
+			if (status == CAAM_NO_ERROR)
+				hal_jr_prepare_backup(ctrl_base, jr_offset);
 		}
 #else
 		jr_offset = jrnum * JRx_BLOCK_SIZE;
 		status = hal_jr_setowner(ctrl_base, jr_offset, JROWN_ARM_NS);
+		if (status == CAAM_NO_ERROR)
+			hal_jr_prepare_backup(ctrl_base, jr_offset);
 #endif
 	} while (--jrnum);
 
