@@ -36,6 +36,7 @@ $(call force, CFG_CRYPTO_GCM_HW,n)
 $(call force, CFG_CRYPTO_PKCS_HW,n)
 
 $(call force, CFG_CRYPTO_BLOB_HW,y)
+$(call force, CFG_BLOB_PTA,y)
 
 ifeq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX8MM)$(CFG_MX8M)),y)
 # Definition of the Asymmetric Cipher supported by HW
