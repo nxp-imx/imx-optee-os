@@ -23,6 +23,7 @@
 
 /* Utils includes */
 #include "utils_mem.h"
+#include "utils_status.h"
 
 /*
  * Debug Macros
@@ -368,7 +369,7 @@ static TEE_Result do_gen_keypair(struct ecc_keypair *key, size_t key_size)
 		ret = TEE_SUCCESS;
 	} else {
 		ECC_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 
@@ -515,7 +516,7 @@ static TEE_Result do_sign(struct nxpcrypt_sign_data *sdata)
 		ret = TEE_SUCCESS;
 	} else {
 		ECC_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 
@@ -645,7 +646,7 @@ static TEE_Result do_verify(struct nxpcrypt_sign_data *sdata)
 		ret = TEE_ERROR_SIGNATURE_INVALID;
 	} else if (retstatus != CAAM_NO_ERROR) {
 		ECC_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	} else
 		ret = TEE_SUCCESS;
 
@@ -771,7 +772,7 @@ static TEE_Result do_shared_secret(struct nxpcrypt_secret_data *sdata)
 		ret = TEE_SUCCESS;
 	} else {
 		ECC_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_shared:

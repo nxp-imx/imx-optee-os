@@ -30,6 +30,7 @@
 
 /* Utils includes */
 #include "utils_mem.h"
+#include "utils_status.h"
 
 /*
  * Debug Macros
@@ -673,7 +674,7 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 		ret = TEE_SUCCESS;
 	} else {
 		RSA_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_gen_keypair:
@@ -955,7 +956,7 @@ static TEE_Result do_oaep_decoding(struct nxpcrypt_rsa_ed *rsa_data)
 	/* Check Hash values */
 	if (memcmp(DB.data, lHash.data, lHash.length) != 0) {
 		RSA_TRACE("Hash error");
-		ret = TEE_ERROR_GENERIC;
+		ret = TEE_ERROR_BAD_PARAMETERS;
 		goto exit_oaep_decrypt;
 	}
 
@@ -967,7 +968,7 @@ static TEE_Result do_oaep_decoding(struct nxpcrypt_rsa_ed *rsa_data)
 
 	if (b01_idx == db_size) {
 		RSA_TRACE("byte 0x01 not present");
-		ret = TEE_ERROR_GENERIC;
+		ret = TEE_ERROR_BAD_PARAMETERS;
 		goto exit_oaep_decrypt;
 	}
 
@@ -1310,7 +1311,7 @@ static TEE_Result do_caam_encrypt(struct nxpcrypt_rsa_ed *rsa_data,
 		ret = TEE_SUCCESS;
 	} else {
 		RSA_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_encrypt:
@@ -1560,7 +1561,7 @@ static TEE_Result do_caam_decrypt(struct nxpcrypt_rsa_ed *rsa_data,
 		ret = TEE_SUCCESS;
 	} else {
 		RSA_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_decrypt:

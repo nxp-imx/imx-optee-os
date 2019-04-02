@@ -30,6 +30,7 @@
 
 /* Utils includes */
 #include "utils_mem.h"
+#include "utils_status.h"
 
 /*
  * Debug Macros
@@ -152,7 +153,7 @@ static TEE_Result caam_master_key_verif(struct nxpcrypt_buf *outkey)
 		ret = TEE_SUCCESS;
 	} else {
 		BLOB_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_masterkey:

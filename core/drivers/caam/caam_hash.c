@@ -28,6 +28,7 @@
 
 /* Utils includes */
 #include "utils_mem.h"
+#include "utils_status.h"
 
 /* Hal includes */
 #include "hal_ctrl.h"
@@ -333,6 +334,7 @@ static TEE_Result do_split_key(void *ctx, const uint8_t *ikey, size_t ilen)
 		ret = TEE_SUCCESS;
 	} else {
 		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_split_key:
@@ -629,7 +631,7 @@ static TEE_Result do_update(void *ctx, const uint8_t *data, size_t len)
 				hashdata->ctx.length);
 		} else {
 			HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-			ret = TEE_ERROR_GENERIC;
+			ret = job_status_to_tee_result(jobctx.status);
 		}
 	} else {
 		ret = TEE_SUCCESS;
@@ -799,7 +801,7 @@ static TEE_Result do_final(void *ctx, uint8_t *digest, size_t len)
 		HASH_DUMPBUF("Digest", digest.data, alg->size_digest);
 	} else {
 		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
-		ret = TEE_ERROR_GENERIC;
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_final:

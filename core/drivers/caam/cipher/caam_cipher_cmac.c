@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    caam_cipher_cmac.c
  *
@@ -23,6 +23,7 @@
 
 /* Utils includes */
 #include "utils_mem.h"
+#include "utils_status.h"
 
 /**
  * @brief   Update of the cipher CMAC operation of complete block except
@@ -261,7 +262,7 @@ TEE_Result do_update_cmac(struct nxpcrypt_cipher_update *dupdate)
 		} else {
 			CIPHER_TRACE("CAAM Status 0x%08"PRIx32"",
 				jobctx.status);
-			ret = TEE_ERROR_GENERIC;
+			ret = job_status_to_tee_result(jobctx.status);
 		}
 
 	} else {

@@ -26,6 +26,7 @@
 
 /* Utils includes */
 #include "utils_mem.h"
+#include "utils_status.h"
 
 /*
  * Debug Macros
@@ -152,6 +153,7 @@ static TEE_Result do_xor_mod_n(struct nxpcrypt_mod_op *data)
 		ret = TEE_SUCCESS;
 	} else {
 		MATH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 end_xor_mod_n:

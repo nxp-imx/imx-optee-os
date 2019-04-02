@@ -21,6 +21,7 @@
 
 /* Utils includes */
 #include "utils_mem.h"
+#include "utils_status.h"
 
 /* Local includes */
 #include "common.h"
@@ -256,6 +257,7 @@ static TEE_Result do_mppub(struct nxpcrypt_buf *pubkey)
 		ret = TEE_SUCCESS;
 	} else {
 		MP_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_mppub:
@@ -383,6 +385,7 @@ static TEE_Result do_mpsign(struct nxpcrypt_mp_sign *sdata)
 		ret = TEE_SUCCESS;
 	} else {
 		MP_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+		ret = job_status_to_tee_result(jobctx.status);
 	}
 
 exit_mpsign:
