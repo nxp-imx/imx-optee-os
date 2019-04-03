@@ -34,7 +34,7 @@ else
 $(call force, CFG_WITH_SOFTWARE_PRNG,y)
 endif
 
-$(call force, CFG_CRYPTO_HASH_HW,n)
+$(call force, CFG_CRYPTO_HASH_HW,y)
 $(call force, CFG_CRYPTO_CIPHER_HW,n)
 
 $(call force, CFG_CRYPTO_CCM_HW,n)
