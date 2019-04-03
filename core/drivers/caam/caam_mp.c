@@ -88,12 +88,17 @@ static struct mp_privdata mp_privdata;
 static enum CAAM_Status do_mppriv_gen(const uint8_t *passphrase, size_t len,
 					uint32_t curve)
 {
+#ifdef CFG_PHYS_64BIT
+#define MP_PRIV_DESC_ENTRIES	7
+#else
 #define MP_PRIV_DESC_ENTRIES	6
+#endif
+
 	enum CAAM_Status ret = CAAM_FAILURE;
 	struct jr_jobctx jobctx = {0};
 	descPointer_t desc = NULL;
 	paddr_t paddr = 0;
-	uint8_t desclen = 1;
+	uint8_t desclen;
 
 	MP_TRACE("MPPriv generation function\n");
 
@@ -114,16 +119,20 @@ static enum CAAM_Status do_mppriv_gen(const uint8_t *passphrase, size_t len,
 		goto exit_mppriv;
 	}
 
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+
 	/* Load the input message */
-	desc[desclen++] = curve;
-	desc[desclen++] = paddr;
-	desc[desclen++] = len;
+	desc_add_word(desc, curve);
+	desc_add_ptr(desc, paddr);
+	desc_add_word(desc, len);
 
 	/* MPPrivK Operation */
-	desc[desclen++] = MPPRIVK;
+	desc_add_word(desc, MPPRIVK);
 
 	/* Set the descriptor Header with length and index */
-	desc[0] = DESC_HEADER_IDX(desclen, (desclen - 1));
+	desclen = desc_get_len(desc);
+	desc_update_hdr(desc, DESC_HEADER_IDX(desclen, (desclen - 1)));
 
 	MP_DUMPDESC(desc);
 
@@ -177,12 +186,17 @@ static TEE_Result do_mpmr(struct imxcrypt_buf *mpmr_reg)
  */
 static TEE_Result do_mppub(struct imxcrypt_buf *pubkey)
 {
+#ifdef CFG_PHYS_64BIT
+#define MP_PUB_DESC_ENTRIES	7
+#else
 #define MP_PUB_DESC_ENTRIES	6
+#endif
+
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 	struct jr_jobctx jobctx = {0};
 	descPointer_t desc = NULL;
-	uint8_t desclen = 1;
+	uint8_t desclen;
 	int retP = 0;
 	struct caambuf key = {0};
 
@@ -205,18 +219,22 @@ static TEE_Result do_mppub(struct imxcrypt_buf *pubkey)
 		goto exit_mppub;
 	}
 
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+
 	/* Load the input message */
-	desc[desclen++] = SHIFT_U32((mp_privdata.curve_sel & 0xFF), 17);
+	desc_add_word(desc, SHIFT_U32((mp_privdata.curve_sel & 0xFF), 17));
 
 	/* Output message */
-	desc[desclen++] = key.paddr;
-	desc[desclen++] = pubkey->length;
+	desc_add_ptr(desc, key.paddr);
+	desc_add_word(desc, pubkey->length);
 
 	/* MPPrivK Operation */
-	desc[desclen++] = MPPUBK;
+	desc_add_word(desc, MPPUBK);
 
 	/* Set the descriptor Header with length and index */
-	desc[0] = DESC_HEADER_IDX(desclen, (desclen - 1));
+	desclen = desc_get_len(desc);
+	desc_update_hdr(desc, DESC_HEADER_IDX(desclen, (desclen - 1)));
 
 	MP_DUMPDESC(desc);
 
@@ -262,7 +280,12 @@ exit_mppub:
  */
 static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
 {
+#ifdef CFG_PHYS_64BIT
+#define MP_SIGN_DESC_ENTRIES	13
+#else
 #define MP_SIGN_DESC_ENTRIES	9
+#endif
+
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 	struct jr_jobctx jobctx = {0};
@@ -273,7 +296,7 @@ static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
 	struct caambuf h   = {0};
 	size_t len_hash = TEE_MAX_HASH_SIZE;
 	int retS = 0;
-	uint8_t desclen = 1;
+	uint8_t desclen;
 
 	/* check the signature size in function of the curve */
 	if (sdata->signature.length < 2*mp_privdata.sec_key_size)
@@ -312,24 +335,28 @@ static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
 		goto exit_mpsign;
 	}
 
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+
 	/* Load the input message */
-	desc[desclen++] = SHIFT_U32((mp_privdata.curve_sel & 0xFF), 17);
-	desc[desclen++] = paddr_m;
+	desc_add_word(desc, SHIFT_U32((mp_privdata.curve_sel & 0xFF), 17));
+	desc_add_ptr(desc, paddr_m);
 
 	/* Hash of message + MPMR result - Not used */
-	desc[desclen++] = h.paddr;
+	desc_add_ptr(desc, h.paddr);
 	/* Signature in the format (c, d) */
-	desc[desclen++] = sig.paddr;
-	desc[desclen++] = sig.paddr +
-		(mp_privdata.sec_key_size * sizeof(uint8_t));
+	desc_add_ptr(desc, sig.paddr);
+	desc_add_ptr(desc, sig.paddr +
+			(mp_privdata.sec_key_size * sizeof(uint8_t)));
 	/* Message Length */
-	desc[desclen++] = sdata->message.length;
+	desc_add_word(desc, sdata->message.length);
 
 	/* MPPrivK Operation */
-	desc[desclen++] = MPSIGN_OP;
+	desc_add_word(desc, MPSIGN_OP);
 
 	/* Set the descriptor Header with length and index */
-	desc[0] = DESC_HEADER_IDX(desclen, (desclen - 1));
+	desclen = desc_get_len(desc);
+	desc_update_hdr(desc, DESC_HEADER_IDX(desclen, (desclen - 1)));
 
 	MP_DUMPDESC(desc);
 

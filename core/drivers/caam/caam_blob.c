@@ -117,7 +117,8 @@ static TEE_Result caam_master_key_verif(struct imxcrypt_buf *outkey)
 	/*
 	 * Create the Master Key Verification descriptor
 	 */
-	desc_update_hdr(desc, DESC_HEADER(0));
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
 
 	/* Load the key modifier */
 	desc_add_word(desc, LD_NOIMM(CLASS_2, REG_KEY, BLOB_KEY_MODIFIER_SIZE));
@@ -306,7 +307,8 @@ static TEE_Result do_operate(struct imxcrypt_blob_data *blob_data)
 	/*
 	 * Create the Blob encapsulation/decapsulation descriptor
 	 */
-	desc_update_hdr(desc, DESC_HEADER(0));
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
 
 	/* Load the key modifier */
 	desc_add_word(desc, LD_NOIMM(CLASS_2, REG_KEY, blob_data->key.length));
