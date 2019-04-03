@@ -1,6 +1,12 @@
 #
 # Define the cryptographic algorithm to be built
 #
+$(call force, CFG_JR_BLOCK_SIZE,0x1000)
+
+#Job Ring 1
+$(call force,CFG_JR_IDX,0x0)
+#Job Ring IRQ Num(105 + 32) = 137
+$(call force,CFG_JR_IRQ_ID,137)
 
 ifeq ($(CFG_IMXCRYPT), y)
 $(call force, CFG_CRYPTO_WITH_HW_ACC,y)

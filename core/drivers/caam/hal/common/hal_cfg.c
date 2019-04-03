@@ -24,8 +24,10 @@
 
 #endif // CFG_DT
 
+#ifndef	CFG_LS
 /* Platform includes */
 #include <imx.h>
+#endif
 
 /* Local includes */
 #include "common.h"
@@ -51,8 +53,8 @@
 /**
  * @brief   Define the TEE Job Ring to be used
  */
-#define CFG_JR_INDEX		0
-#define CFG_JR_IRQ			105
+#define CFG_JR_INDEX		CFG_JR_IDX
+#define CFG_JR_IRQ		CFG_JR_IRQ_ID
 
 #ifdef CFG_WITH_HAB
 #define CFG_JR_INDEX_HAB	1
@@ -229,7 +231,7 @@ enum CAAM_Status hal_cfg_get_conf(struct jr_cfg *jr_cfg)
 	jr_cfg->offset  = (CFG_JR_INDEX + 1) * JRx_BLOCK_SIZE;
 	jr_cfg->nb_jobs = NB_JOBS_QUEUE;
 	// Add index of the first SPI interrupt
-	jr_cfg->it_num  = CFG_JR_IRQ + 32;
+	jr_cfg->it_num  = CFG_JR_IRQ;
 
 #ifdef CFG_WITH_HAB
 	if (imx_is_device_closed()) {

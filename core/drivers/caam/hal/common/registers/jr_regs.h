@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    jr_regs.h
  *
@@ -13,7 +13,7 @@
 #include <util.h>
 
 /* Job Ring Block Register Size */
-#define JRx_BLOCK_SIZE		0x1000
+#define JRx_BLOCK_SIZE		CFG_JR_BLOCK_SIZE
 #define JRx_IDX(offset)		((offset - JRx_BLOCK_SIZE) / JRx_BLOCK_SIZE)
 
 /*
