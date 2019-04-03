@@ -57,7 +57,7 @@ $(call force, CFG_CRYPTO_CMAC_HW,y)
 #
 # Force CFG_IMX_MP to n for platform not supported it
 #
-ifneq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX7ULP)),y)
+ifneq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX7ULP)$(CFG_MX8M)$(CFG_MX8MM)),y)
 $(call force, CFG_IMX_MP,n)
 endif
 
