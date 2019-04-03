@@ -56,9 +56,6 @@
 #define BLOB_DUMPBUF(...)
 #endif
 
-/* Number of entries in descriptor */
-#define BLOB_MASTER_KEY_VERIF	7
-
 /**
  * @brief   Verify Master Key (derives a BKEK from the secret master key).
  *          This BKEK is not the same used during normal blob encapsulation.
@@ -72,6 +69,12 @@
  */
 static TEE_Result caam_master_key_verif(struct imxcrypt_buf *outkey)
 {
+#ifdef CFG_PHYS_64BIT
+#define BLOB_MASTER_KEY_VERIF	9
+#else
+#define BLOB_MASTER_KEY_VERIF	7
+#endif
+
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;
 
@@ -83,7 +86,6 @@ static TEE_Result caam_master_key_verif(struct imxcrypt_buf *outkey)
 
 	struct jr_jobctx jobctx = {0};
 	descPointer_t    desc;
-	uint8_t          desclen = 1;
 
 	/* Check if parameters are correct */
 	if (!outkey)
@@ -115,19 +117,18 @@ static TEE_Result caam_master_key_verif(struct imxcrypt_buf *outkey)
 	/*
 	 * Create the Master Key Verification descriptor
 	 */
+	desc_update_hdr(desc, DESC_HEADER(0));
+
 	/* Load the key modifier */
-	desc[desclen++] = LD_NOIMM(CLASS_2, REG_KEY, BLOB_KEY_MODIFIER_SIZE);
-	desc[desclen++] = paddr_keymod;
+	desc_add_word(desc, LD_NOIMM(CLASS_2, REG_KEY, BLOB_KEY_MODIFIER_SIZE));
+	desc_add_ptr(desc, paddr_keymod);
 
 	/* Output key storage */
-	desc[desclen++] = SEQ_OUT_PTR(BLOB_BKEK_SIZE);
-	desc[desclen++] = outkey_align.paddr;
+	desc_add_word(desc, SEQ_OUT_PTR(BLOB_BKEK_SIZE));
+	desc_add_ptr(desc, outkey_align.paddr);
 
 	/* Blob Master key verification operation */
-	desc[desclen++] = BLOB_MSTR_KEY;
-
-	/* Descriptor Header */
-	desc[0] = DESC_HEADER(desclen);
+	desc_add_word(desc, BLOB_MSTR_KEY);
 
 	BLOB_DUMPDESC(desc);
 
@@ -189,7 +190,11 @@ struct imxcrypt_huk driver_huk = {
  */
 static TEE_Result do_operate(struct imxcrypt_blob_data *blob_data)
 {
+#ifdef CFG_PHYS_64BIT
+#define BLOB_OPERATE_DESC_ENTRIES	12
+#else
 #define BLOB_OPERATE_DESC_ENTRIES	9
+#endif
 
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus = CAAM_FAILURE;
@@ -206,7 +211,6 @@ static TEE_Result do_operate(struct imxcrypt_blob_data *blob_data)
 
 	uint32_t opflag   = 0;
 	int retS = 0;
-	uint8_t desclen = 1;
 
 	BLOB_TRACE("Blob %s - Type %d - Payload %d bytes - Blob %d bytes",
 			(blob_data->encaps) ? "Encaps" : "Decaps",
@@ -302,28 +306,27 @@ static TEE_Result do_operate(struct imxcrypt_blob_data *blob_data)
 	/*
 	 * Create the Blob encapsulation/decapsulation descriptor
 	 */
+	desc_update_hdr(desc, DESC_HEADER(0));
+
 	/* Load the key modifier */
-	desc[desclen++] = LD_NOIMM(CLASS_2, REG_KEY, blob_data->key.length);
-	desc[desclen++] = paddr_key;
+	desc_add_word(desc, LD_NOIMM(CLASS_2, REG_KEY, blob_data->key.length));
+	desc_add_ptr(desc, paddr_key);
 
 	/* Define the Input data sequence */
-	desc[desclen++] = SEQ_IN_PTR(insize);
-	desc[desclen++] = paddr_input;
+	desc_add_word(desc, SEQ_IN_PTR(insize));
+	desc_add_ptr(desc, paddr_input);
 
 	/* Define the Output data sequence */
-	desc[desclen++] = SEQ_OUT_PTR(outsize);
-	desc[desclen++] = out_buf.paddr;
+	desc_add_word(desc, SEQ_OUT_PTR(outsize));
+	desc_add_ptr(desc, out_buf.paddr);
 
 	if (blob_data->encaps) {
 		/* Define the encapsulation operation */
-		desc[desclen++] = BLOB_ENCAPS | opflag;
+		desc_add_word(desc, BLOB_ENCAPS | opflag);
 	} else {
 		/* Define the decapsulation operation */
-		desc[desclen++] = BLOB_DECAPS | opflag;
+		desc_add_word(desc, BLOB_DECAPS | opflag);
 	}
-
-	/* Set the descriptor Header with length and index */
-	desc[0] = DESC_HEADER(desclen);
 
 	BLOB_DUMPDESC(desc);
 
