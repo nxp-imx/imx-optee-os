@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP\n
+ * @copyright 2018-2019 NXP\n
  *
  * @file    authenc.c
  *
@@ -31,6 +31,7 @@
  * @brief  AES CCM SW Context using the LibTomCrypt context
  */
 struct authenc_data {
+	enum imxcrypt_authenc_id algo;
 	union {
 #ifdef LTC_CCM_MODE
 		ccm_state ccm_ctx;  ///< CCM State defined by LTC
@@ -82,18 +83,26 @@ static bool algo_isvalid(enum imxcrypt_authenc_id algo)
  *
  * @retval TEE_SUCCESS                 Success
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
+ * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  */
 static TEE_Result do_allocate(void **ctx, enum imxcrypt_authenc_id algo)
 {
-	if (algo_isvalid(algo))
-		*ctx = calloc(1, sizeof(struct authenc_data));
-	else
-		*ctx = NULL;
+	TEE_Result ret = TEE_ERROR_OUT_OF_MEMORY;
+	struct authenc_data *auth_ctx = NULL;
 
-	if (!*ctx)
-		return TEE_ERROR_OUT_OF_MEMORY;
+	if (algo_isvalid(algo)) {
+		auth_ctx = calloc(1, sizeof(struct authenc_data));
+		ret = TEE_ERROR_NOT_IMPLEMENTED;
+	}
 
-	return TEE_SUCCESS;
+	if (auth_ctx) {
+		/* Set the algorithm in the context */
+		auth_ctx->algo = algo;
+		ret = TEE_SUCCESS;
+	}
+
+	*ctx = auth_ctx;
+	return ret;
 }
 
 /**
@@ -138,7 +147,7 @@ static TEE_Result do_init(struct imxcrypt_authenc_init *dinit)
 	int cipher_idx;
 	int ltc_res;
 
-	LIB_TRACE("SW Init aglo %d", dinit->algo);
+	LIB_TRACE("SW Init aglo %d", ctx->algo);
 
 	cipher_idx = get_ltc_cipherindex(AES_ECB_NOPAD);
 	if (cipher_idx == (-1))
@@ -147,7 +156,7 @@ static TEE_Result do_init(struct imxcrypt_authenc_init *dinit)
 	memset(ctx, 0, sizeof(struct authenc_data));
 	ctx->tag_len = dinit->tag_len;
 
-	switch (dinit->algo) {
+	switch (ctx->algo) {
 #ifdef LTC_CCM_MODE
 	case AES_CCM:
 		/* Check Nonce Length */
@@ -214,9 +223,9 @@ static TEE_Result do_update(struct imxcrypt_authenc_data *dupdate)
 	struct authenc_data *ctx = dupdate->ctx;
 	int ltc_res;
 
-	LIB_TRACE("SW Update algo %d", dupdate->algo);
+	LIB_TRACE("SW Update algo %d", ctx->algo);
 
-	switch (dupdate->algo) {
+	switch (ctx->algo) {
 #ifdef LTC_CCM_MODE
 	case AES_CCM:
 		if (dupdate->encrypt) {
@@ -291,9 +300,9 @@ static TEE_Result do_update_final(struct imxcrypt_authenc_data *dfinal)
 	uint8_t       tag[TAG_MAX_LENGTH];
 	unsigned long tag_len;
 
-	LIB_TRACE("SW Update final algo %d", dfinal->algo);
+	LIB_TRACE("SW Update final algo %d", ctx->algo);
 
-	switch (dfinal->algo) {
+	switch (ctx->algo) {
 #ifdef LTC_CCM_MODE
 	case AES_CCM:
 		if (dfinal->encrypt) {
@@ -429,9 +438,9 @@ static TEE_Result do_update_aad(struct imxcrypt_authenc_aad *daad)
 	struct authenc_data *ctx = daad->ctx;
 	int ltc_res;
 
-	LIB_TRACE("SW Update aad algo %d", daad->algo);
+	LIB_TRACE("SW Update aad algo %d", ctx->algo);
 
-	switch (daad->algo) {
+	switch (ctx->algo) {
 #ifdef LTC_CCM_MODE
 	case AES_CCM:
 		ltc_res = ccm_add_aad(&ctx->ltc_ctx.ccm_ctx,
@@ -459,22 +468,23 @@ static TEE_Result do_update_aad(struct imxcrypt_authenc_aad *daad)
  * @brief  Finalize the Authentication operation
  *
  * @param[in] ctx   Reference the context pointer
- * @param[in] algo  Algorithm
  */
-static void do_final(void *ctx, enum imxcrypt_authenc_id algo)
+static void do_final(void *ctx)
 {
-	LIB_TRACE("SW Final algo %d", algo);
+	struct authenc_data *auth_ctx = ctx;
 
-	switch (algo) {
+	LIB_TRACE("SW Final algo %d", auth_ctx->algo);
+
+	switch (auth_ctx->algo) {
 #ifdef LTC_CCM_MODE
 	case AES_CCM:
-		ccm_reset(&((struct authenc_data *)ctx)->ltc_ctx.ccm_ctx);
+		ccm_reset(&auth_ctx->ltc_ctx.ccm_ctx);
 		break;
 #endif
 
 #ifdef LTC_GCM_MODE
 	case AES_GCM:
-		gcm_reset(&((struct authenc_data *)ctx)->ltc_ctx.gcm_ctx);
+		gcm_reset(&auth_ctx->ltc_ctx.gcm_ctx);
 		break;
 #endif
 	default:

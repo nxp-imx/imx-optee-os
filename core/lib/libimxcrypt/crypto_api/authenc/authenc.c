@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP\n
+ * @copyright 2018-2019 NXP\n
  *
  * @file    authenc.c
  *
@@ -10,6 +10,7 @@
 
 /* Global includes */
 #include <crypto/crypto.h>
+#include <malloc.h>
 #include <trace.h>
 
 /* Library i.MX includes */
@@ -25,6 +26,16 @@
 #else
 #define LIB_TRACE(...)
 #endif
+
+/**
+ * @brief  Format the Authentication Encryption context to keep
+ *         the reference to the operation driver
+ */
+struct crypto_authenc {
+	void                    *ctx; ///< Context
+	struct imxcrypt_authenc *op;  ///< Reference to the operation
+};
+
 
 /**
  * @brief   Checks and returns reference to the driver operations
@@ -86,18 +97,27 @@ TEE_Result authenc_alloc_ctx(void **ctx, uint32_t algo)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_authenc  *authenc   = NULL;
+	struct crypto_authenc    *authenc   = NULL;
 	enum imxcrypt_authenc_id authenc_id = 0;
 
 	/* Check the parameters */
 	if (!ctx)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	authenc = do_check_algo(algo, &authenc_id);
-	if (authenc) {
-		if (authenc->alloc_ctx)
-			ret = authenc->alloc_ctx(ctx, authenc_id);
+	authenc = calloc(1, sizeof(*authenc));
+	if (!authenc)
+		return TEE_ERROR_OUT_OF_MEMORY;
+
+	authenc->op = do_check_algo(algo, &authenc_id);
+	if (authenc->op) {
+		if (authenc->op->alloc_ctx)
+			ret = authenc->op->alloc_ctx(&authenc->ctx, authenc_id);
+	} else {
+		free(authenc);
+		authenc = NULL;
 	}
+
+	*ctx = authenc;
 
 	return ret;
 }
@@ -109,18 +129,17 @@ TEE_Result authenc_alloc_ctx(void **ctx, uint32_t algo)
  * @param[in/out] ctx    Reference the context pointer
  * @param[in]     algo   Algorithm
  */
-void authenc_free_ctx(void *ctx, uint32_t algo)
+void authenc_free_ctx(void *ctx, uint32_t algo __unused)
 {
-	struct imxcrypt_authenc *authenc    = NULL;
-	enum imxcrypt_authenc_id authenc_id = 0;
+	struct crypto_authenc *authenc = ctx;
 
 	/* Check the parameters */
 	if (ctx) {
-		authenc = do_check_algo(algo, &authenc_id);
-		if (authenc) {
-			if (authenc->free_ctx)
-				authenc->free_ctx(ctx);
+		if (authenc->op) {
+			if (authenc->op->free_ctx)
+				authenc->op->free_ctx(authenc->ctx);
 		}
+		free(authenc);
 	}
 }
 
@@ -131,19 +150,19 @@ void authenc_free_ctx(void *ctx, uint32_t algo)
  * @param[in]  algo     Algorithm
  * @param[out] dst_ctx  Reference the context destination
  */
-void authenc_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
+void authenc_copy_state(void *dst_ctx, void *src_ctx,
+		uint32_t algo __unused)
 {
-	struct imxcrypt_authenc  *authenc   = NULL;
-	enum imxcrypt_authenc_id authenc_id = 0;
+	struct crypto_authenc *authenc_src = src_ctx;
+	struct crypto_authenc *authenc_dst = dst_ctx;
 
 	if ((!dst_ctx) || (!src_ctx))
 		return;
 
-	/* Check the parameters */
-	authenc = do_check_algo(algo, &authenc_id);
-	if (authenc) {
-		if (authenc->cpy_state)
-			authenc->cpy_state(dst_ctx, src_ctx);
+	if (authenc_src->op) {
+		if (authenc_src->op->cpy_state)
+			authenc_src->op->cpy_state(authenc_dst->ctx,
+				authenc_src->ctx);
 	}
 }
 
@@ -166,7 +185,7 @@ void authenc_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result authenc_init(void *ctx, uint32_t algo,
+TEE_Result authenc_init(void *ctx, uint32_t algo __unused,
 			TEE_OperationMode mode,
 			const uint8_t *key, size_t key_len,
 			const uint8_t *nonce, size_t nonce_len,
@@ -174,8 +193,7 @@ TEE_Result authenc_init(void *ctx, uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_authenc    *authenc   = NULL;
-	enum imxcrypt_authenc_id   authenc_id = 0;
+	struct crypto_authenc *authenc = ctx;
 	struct imxcrypt_authenc_init dinit;
 
 	/* Check the parameters */
@@ -199,12 +217,10 @@ TEE_Result authenc_init(void *ctx, uint32_t algo,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	authenc = do_check_algo(algo, &authenc_id);
-	if (authenc) {
-		if (authenc->init) {
+	if (authenc->op) {
+		if (authenc->op->init) {
 			/* Prepare the initialization data */
-			dinit.ctx          = ctx;
-			dinit.algo         = authenc_id;
+			dinit.ctx          = authenc->ctx;
 			dinit.encrypt      = ((mode == TEE_MODE_ENCRYPT) ?
 				true : false);
 			dinit.key.data     = (uint8_t *)key;
@@ -214,7 +230,7 @@ TEE_Result authenc_init(void *ctx, uint32_t algo,
 			dinit.tag_len      = tag_len;
 			dinit.aad_len      = aad_len;
 			dinit.payload_len  = payload_len;
-			ret = authenc->init(&dinit);
+			ret = authenc->op->init(&dinit);
 		}
 	}
 
@@ -234,13 +250,12 @@ TEE_Result authenc_init(void *ctx, uint32_t algo,
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_GENERIC           Generic Error
  */
-TEE_Result authenc_update_aad(void *ctx, uint32_t algo,
+TEE_Result authenc_update_aad(void *ctx, uint32_t algo __unused,
 				const uint8_t *data, size_t len)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_authenc   *authenc   = NULL;
-	enum imxcrypt_authenc_id  authenc_id = 0;
+	struct crypto_authenc *authenc = ctx;
 	struct imxcrypt_authenc_aad daad;
 
 	/* Check the parameters */
@@ -254,15 +269,13 @@ TEE_Result authenc_update_aad(void *ctx, uint32_t algo,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	authenc = do_check_algo(algo, &authenc_id);
-	if (authenc) {
-		if (authenc->update_aad) {
+	if (authenc->op) {
+		if (authenc->op->update_aad) {
 			/* Prepare the aad data */
-			daad.ctx        = ctx;
-			daad.algo       = authenc_id;
+			daad.ctx        = authenc->ctx;
 			daad.aad.data   = (uint8_t *)data;
 			daad.aad.length = len;
-			ret = authenc->update_aad(&daad);
+			ret = authenc->op->update_aad(&daad);
 		}
 	}
 
@@ -285,15 +298,14 @@ TEE_Result authenc_update_aad(void *ctx, uint32_t algo,
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_GENERIC           Other Error
  */
-TEE_Result authenc_update_payload(void *ctx, uint32_t algo,
+TEE_Result authenc_update_payload(void *ctx, uint32_t algo __unused,
 				TEE_OperationMode mode,
 				const uint8_t *src_data, size_t src_len,
 				uint8_t *dst_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_authenc    *authenc   = NULL;
-	enum imxcrypt_authenc_id   authenc_id = 0;
+	struct crypto_authenc *authenc = ctx;
 	struct imxcrypt_authenc_data dpayload;
 
 	/* Check the parameters */
@@ -317,19 +329,17 @@ TEE_Result authenc_update_payload(void *ctx, uint32_t algo,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	authenc = do_check_algo(algo, &authenc_id);
-	if (authenc) {
-		if (authenc->update) {
+	if (authenc->op) {
+		if (authenc->op->update) {
 			/* Prepare the update data */
-			dpayload.ctx        = ctx;
-			dpayload.algo       = authenc_id;
+			dpayload.ctx        = authenc->ctx;
 			dpayload.encrypt    = ((mode == TEE_MODE_ENCRYPT) ?
 				true : false);
 			dpayload.src.data   = (uint8_t *)src_data;
 			dpayload.src.length = src_len;
 			dpayload.dst.data   = (uint8_t *)dst_data;
 			dpayload.dst.length = src_len;
-			ret = authenc->update(&dpayload);
+			ret = authenc->op->update(&dpayload);
 		}
 	}
 
@@ -355,7 +365,7 @@ TEE_Result authenc_update_payload(void *ctx, uint32_t algo,
  * @retval TEE_ERROR_SHORT_BUFFER      Tag Length is too short
  * @retval TEE_ERROR_MAC_INVALID       MAC is invalid
  */
-TEE_Result authenc_update_final(void *ctx, uint32_t algo,
+TEE_Result authenc_update_final(void *ctx, uint32_t algo __unused,
 				TEE_OperationMode mode,
 				const uint8_t *src_data, size_t src_len,
 				uint8_t *dst_data,
@@ -363,8 +373,7 @@ TEE_Result authenc_update_final(void *ctx, uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_authenc    *authenc   = NULL;
-	enum imxcrypt_authenc_id   authenc_id = 0;
+	struct crypto_authenc *authenc = ctx;
 	struct imxcrypt_authenc_data dfinal;
 
 	/* Check the parameters */
@@ -385,12 +394,10 @@ TEE_Result authenc_update_final(void *ctx, uint32_t algo,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	authenc = do_check_algo(algo, &authenc_id);
-	if (authenc) {
-		if (authenc->update_final) {
+	if (authenc->op) {
+		if (authenc->op->update_final) {
 			/* Prepare the final data */
-			dfinal.ctx        = ctx;
-			dfinal.algo       = authenc_id;
+			dfinal.ctx        = authenc->ctx;
 			dfinal.encrypt    = ((mode == TEE_MODE_ENCRYPT) ?
 				true : false);
 			dfinal.src.data   = (uint8_t *)src_data;
@@ -399,7 +406,7 @@ TEE_Result authenc_update_final(void *ctx, uint32_t algo,
 			dfinal.dst.length = src_len;
 			dfinal.tag.data   = (uint8_t *)tag_data;
 			dfinal.tag.length = *tag_len;
-			ret = authenc->update_final(&dfinal);
+			ret = authenc->op->update_final(&dfinal);
 
 			if (ret == TEE_SUCCESS) {
 				if (dfinal.encrypt)
@@ -417,17 +424,15 @@ TEE_Result authenc_update_final(void *ctx, uint32_t algo,
  * @param[in] ctx   Reference the context pointer
  * @param[in] algo  Algorithm
  */
-void authenc_final(void *ctx, uint32_t algo)
+void authenc_final(void *ctx, uint32_t algo __unused)
 {
-	struct imxcrypt_authenc  *authenc   = NULL;
-	enum imxcrypt_authenc_id authenc_id = 0;
+	struct crypto_authenc *authenc = ctx;
 
 	if (!ctx)
 		return;
 
-	authenc = do_check_algo(algo, &authenc_id);
-	if (authenc) {
-		if (authenc->final)
-			authenc->final(ctx, authenc_id);
+	if (authenc->op) {
+		if (authenc->op->final)
+			authenc->op->final(authenc->ctx);
 	}
 }

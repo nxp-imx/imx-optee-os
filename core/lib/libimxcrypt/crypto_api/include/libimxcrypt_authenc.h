@@ -25,35 +25,32 @@ enum imxcrypt_authenc_id {
  * @brief   Authentication Algorithm initialization data
  */
 struct imxcrypt_authenc_init {
-	void                     *ctx;        ///< Software Context
-	enum imxcrypt_authenc_id algo;        ///< Authentication Algorithm id
-	bool                     encrypt;     ///< Encrypt or decrypt direction
-	struct imxcrypt_buf      key;         ///< Key
-	struct imxcrypt_buf      nonce;       ///< Nonce
-	size_t                   tag_len;     ///< Tag length
-	size_t                   aad_len;     ///< Additional Data length
-	size_t                   payload_len; ///< Payload length
+	void                *ctx;        ///< Software Context
+	bool                encrypt;     ///< Encrypt or decrypt direction
+	struct imxcrypt_buf key;         ///< Key
+	struct imxcrypt_buf nonce;       ///< Nonce
+	size_t              tag_len;     ///< Tag length
+	size_t              aad_len;     ///< Additional Data length
+	size_t              payload_len; ///< Payload length
 };
 
 /**
  * @brief   Authentication Algorithm update Additional Data
  */
 struct imxcrypt_authenc_aad {
-	void                     *ctx;    ///< Software Context
-	enum imxcrypt_authenc_id algo;    ///< Authentication Algorithm id
-	struct imxcrypt_buf      aad;     ///< Additonal Data
+	void                *ctx;    ///< Software Context
+	struct imxcrypt_buf aad;     ///< Additonal Data
 };
 
 /**
  * @brief   Authentication Algorithm update Payload data
  */
 struct imxcrypt_authenc_data {
-	void                     *ctx;    ///< Software Context
-	enum imxcrypt_authenc_id algo;    ///< Authentication Algorithm id
-	bool                     encrypt; ///< Encrypt or decrypt direction
-	struct imxcrypt_buf      src;     ///< Data Source
-	struct imxcrypt_buf      dst;     ///< Data Destination
-	struct imxcrypt_buf      tag;     ///< Tag data
+	void                *ctx;    ///< Software Context
+	bool                encrypt; ///< Encrypt or decrypt direction
+	struct imxcrypt_buf src;     ///< Data Source
+	struct imxcrypt_buf dst;     ///< Data Destination
+	struct imxcrypt_buf tag;     ///< Tag data
 };
 
 /**
@@ -76,7 +73,7 @@ struct imxcrypt_authenc {
 	///< Update the authentication additional data
 	TEE_Result (*update_aad)(struct imxcrypt_authenc_aad *daad);
 	///< Final the authentication
-	void (*final)(void *ctx, enum imxcrypt_authenc_id algo);
+	void (*final)(void *ctx);
 
 	///< Copy authentication context
 	void (*cpy_state)(void *dst_ctx, void *src_ctx);
