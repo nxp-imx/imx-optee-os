@@ -142,7 +142,7 @@ bool hal_ctrl_is_mpcurve(vaddr_t ctrl_addr __maybe_unused)
 	uint32_t val_scfgr;
 
 	/* get the SCFGR content */
-	val_scfgr = read32(ctrl_addr + SCFGR);
+	val_scfgr = get32(ctrl_addr + SCFGR);
 	DMSG("val_scfgr = 0x%x", val_scfgr);
 
 	/**
@@ -176,7 +176,7 @@ void hal_ctrl_get_mpmr(vaddr_t ctrl_addr, uint8_t *val_scfgr)
      * Note that the MPMR endianess is reverted between write and read
      */
 	for (i = 0; i < MPMR_NB_REG; i += 4) {
-		val = read32(ctrl_addr + MPMR + i);
+		val = get32(ctrl_addr + MPMR + i);
 		val_scfgr[i]     = (uint8_t)((val >> 24) & 0xFF);
 		val_scfgr[i + 1] = (uint8_t)((val >> 16) & 0xFF);
 		val_scfgr[i + 2] = (uint8_t)((val >> 8) & 0xFF);
@@ -201,7 +201,7 @@ void hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct imxcrypt_buf *msg_mpmr)
 	uint16_t min, remain;
 
 	/* check if the MPMR is filled */
-	if (read32(ctrl_addr + SCFGR) & BM_SCFGR_MPMRL)
+	if (get32(ctrl_addr + SCFGR) & BM_SCFGR_MPMRL)
 		is_filled = true;
 
 	DMSG("is_filled = %s", is_filled?"true":"false");
@@ -221,7 +221,7 @@ void hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct imxcrypt_buf *msg_mpmr)
 					(msg_mpmr->data[i + 1] << 8) |
 					(msg_mpmr->data[i + 2] << 16) |
 					(msg_mpmr->data[i + 3] << 24));
-			write32(val, reg);
+			put32(reg, val);
 		}
 
 		if (remain) {
@@ -232,23 +232,23 @@ void hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct imxcrypt_buf *msg_mpmr)
 			 */
 			for (i = 0; i < remain; i++)
 				val |= (msg_mpmr->data[i] << (i*8));
-			write32(val, reg);
+			put32(reg, val);
 			reg += 4;
 		}
 		/* fill the remain of the MPMR with 0 */
 		remain = MPMR_NB_REG - ROUNDUP(msg_mpmr->length, 4);
 		for (i = 0; i < (remain / 4); i++, reg += 4)
-			write32(0x0, reg);
+			put32(reg, 0x0);
 
 		/*
 		 * locks the MPMR for writing
 		 * remains locked until the next power-on session
 		 * set the MPMRL bit of SCFRG to 1
 		 */
-		write32((read32(ctrl_addr + SCFGR) | BM_SCFGR_MPMRL),
-			ctrl_addr + SCFGR);
+		put32(ctrl_addr + SCFGR,
+			(get32(ctrl_addr + SCFGR) | BM_SCFGR_MPMRL));
 
-		DMSG("val_scfgr = 0x%x", read32(ctrl_addr + SCFGR));
+		DMSG("val_scfgr = 0x%x", get32(ctrl_addr + SCFGR));
 	}
 }
 #endif // CFG_CRYPTO_MP_HW
