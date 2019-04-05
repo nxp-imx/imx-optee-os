@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    mac.c
  *
@@ -27,21 +27,27 @@
 #endif
 
 /**
- * @brief   CBC-MAC mode context
- */
-struct cbc_ctx {
-	void   *ctx;      ///< Cipher context allocated by the driver
-	size_t countdata; ///< Number of input data done
-	size_t sizeblock; ///< Cipher Block size
-};
-
-/**
  * @brief  Format the MAC context to keep the reference to the
  *         operation driver
  */
 struct crypto_mac {
-	void                 *ctx; ///< Hash Context
-	struct imxcrypt_hash *op;  ///< Reference to the operation
+	void *ctx; ///< Context of the operation
+
+	enum mac_type {
+		TYPE_HMAC = 0,      ///< Hash MAC operation
+		TYPE_CMAC,          ///< Cipher MAC operation
+		TYPE_CBCMAC_NOPAD,  ///< Cipher CBC MAC NOPAD operation
+		TYPE_CBCMAC_PKCS5,  ///< Cipher CBC MAC PKCS5 operation
+	} type; ///< Define the type of MAC
+
+	/* CBC Mac specific context */
+	size_t countdata; ///< Number of input data done
+	size_t sizeblock; ///< Cipher Block size
+
+	union {
+		struct imxcrypt_hash   *hash;   ///< Hash operations
+		struct imxcrypt_cipher *cipher; ///< Cipher operations
+	} op;
 };
 
 
@@ -163,18 +169,19 @@ TEE_Result crypto_mac_alloc_ctx(void **ctx, uint32_t algo)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	/* HMAC Algorithm */
-	struct crypto_mac    *mac = NULL;
-	enum imxcrypt_hash_id hash_id;
-
-	/* Cipher Mac Algorthm */
-	struct cbc_ctx          *cbc_ctx;
-	struct imxcrypt_cipher  *cipher;
-	enum imxcrypt_cipher_id cipher_id;
+	struct crypto_mac       *mac = NULL;
+	enum imxcrypt_hash_id   hash_id = 0;
+	enum imxcrypt_cipher_id cipher_id = 0;
 
 	/* Check the parameters */
 	if (!ctx)
 		return TEE_ERROR_BAD_PARAMETERS;
+
+	LIB_TRACE("mac allocate 0x%"PRIx32"", algo);
+
+	mac = calloc(1, sizeof(*mac));
+	if (!mac)
+		return TEE_ERROR_OUT_OF_MEMORY;
 
 	switch (algo) {
 	case TEE_ALG_AES_CBC_MAC_NOPAD:
@@ -183,55 +190,49 @@ TEE_Result crypto_mac_alloc_ctx(void **ctx, uint32_t algo)
 	case TEE_ALG_AES_CBC_MAC_PKCS5:
 	case TEE_ALG_DES_CBC_MAC_PKCS5:
 	case TEE_ALG_DES3_CBC_MAC_PKCS5:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
-			return ret;
+		if (TEE_ALG_GET_CHAIN_MODE(algo) == TEE_CHAIN_MODE_CBC_NOPAD)
+			mac->type = TYPE_CBCMAC_NOPAD;
+		else
+			mac->type = TYPE_CBCMAC_PKCS5;
 
-		/* Allocate specific context for the CBC-MAC */
-		*ctx = malloc(sizeof(struct cbc_ctx));
+		mac->op.cipher = do_check_algo_cipher(algo, &cipher_id);
 
-		if (*ctx) {
-			cbc_ctx = *ctx;
-			if (cipher->alloc_ctx) {
-				ret = cipher->alloc_ctx(&cbc_ctx->ctx,
+		if (mac->op.cipher) {
+			if (mac->op.cipher->alloc_ctx)
+				ret = mac->op.cipher->alloc_ctx(&mac->ctx,
 					cipher_id);
-
-				if (ret != TEE_SUCCESS) {
-					/* Free the CBC-MAC context */
-					free(*ctx);
-					*ctx = NULL;
-					return ret;
-				}
-			}
 		}
 		break;
 
 	case TEE_ALG_AES_CMAC:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
-			return ret;
+		mac->type = TYPE_CMAC;
+		mac->op.cipher = do_check_algo_cipher(algo, &cipher_id);
 
-		if (cipher->alloc_ctx)
-			ret = cipher->alloc_ctx(ctx, cipher_id);
+		if (mac->op.cipher) {
+			if (mac->op.cipher->alloc_ctx)
+				ret = mac->op.cipher->alloc_ctx(&mac->ctx,
+					cipher_id);
+		}
 		break;
 
 	default:
-		mac = calloc(1, sizeof(*mac));
-		if (!mac)
-			return TEE_ERROR_OUT_OF_MEMORY;
+		mac->type = TYPE_HMAC;
+		mac->op.hash = do_check_algo(algo, &hash_id);
 
-		mac->op = do_check_algo(algo, &hash_id);
-		if (mac->op) {
-			if (mac->op->alloc_ctx)
-				ret = mac->op->alloc_ctx(&mac->ctx, hash_id);
-		} else {
-			free(mac);
-			mac = NULL;
+		if (mac->op.hash) {
+			if (mac->op.hash->alloc_ctx)
+				ret = mac->op.hash->alloc_ctx(&mac->ctx,
+					hash_id);
 		}
-		*ctx = mac;
-
 		break;
 	}
+
+	if (ret != TEE_SUCCESS) {
+		free(mac);
+		mac = NULL;
+	}
+
+	*ctx = mac;
 
 	return ret;
 }
@@ -243,58 +244,37 @@ TEE_Result crypto_mac_alloc_ctx(void **ctx, uint32_t algo)
  * @param[in]     algo   Algorithm
  *
  */
-void crypto_mac_free_ctx(void *ctx, uint32_t algo)
+void crypto_mac_free_ctx(void *ctx, uint32_t algo __unused)
 {
-	/* HMAC Algorithm */
 	struct crypto_mac *mac = ctx;
 
-	/* Cipher Mac Algorthm */
-	struct cbc_ctx          *cbc_ctx;
-	struct imxcrypt_cipher  *cipher;
-	enum imxcrypt_cipher_id cipher_id;
-
 	/* Check the parameters */
-	if (ctx) {
-		switch (algo) {
-		case TEE_ALG_AES_CBC_MAC_NOPAD:
-		case TEE_ALG_DES_CBC_MAC_NOPAD:
-		case TEE_ALG_DES3_CBC_MAC_NOPAD:
-		case TEE_ALG_AES_CBC_MAC_PKCS5:
-		case TEE_ALG_DES_CBC_MAC_PKCS5:
-		case TEE_ALG_DES3_CBC_MAC_PKCS5:
-			cipher = do_check_algo_cipher(algo, &cipher_id);
-			if (!cipher)
-				return;
+	if (!ctx)
+		return;
 
-			cbc_ctx = ctx;
+	switch (mac->type) {
+	case TYPE_CBCMAC_NOPAD:
+	case TYPE_CBCMAC_PKCS5:
+	case TYPE_CMAC:
+		/* Free the Cipher Algorithm context */
+		if (mac->op.cipher) {
+			if (mac->op.cipher->free_ctx)
+				mac->op.cipher->free_ctx(mac->ctx);
 
-			/* Free the Cipher Algorithm context */
-			if (cipher->free_ctx)
-				cipher->free_ctx(cbc_ctx->ctx);
-
-			free(ctx);
-			break;
-
-		case TEE_ALG_AES_CMAC:
-			cipher = do_check_algo_cipher(algo, &cipher_id);
-			if (!cipher)
-				return;
-
-			/* Free the Cipher Algorithm context */
-			if (cipher->free_ctx)
-				cipher->free_ctx(ctx);
-			break;
-
-		default:
-			if (mac->op) {
-				if (mac->op->free_ctx)
-					mac->op->free_ctx(mac->ctx);
-
-				free(mac);
-			}
-			break;
+			free(mac);
 		}
+		break;
+
+	default:
+		if (mac->op.hash) {
+			if (mac->op.hash->free_ctx)
+				mac->op.hash->free_ctx(mac->ctx);
+
+			free(mac);
+		}
+		break;
 	}
+
 }
 
 /**
@@ -306,57 +286,37 @@ void crypto_mac_free_ctx(void *ctx, uint32_t algo)
  * @param[out] dst_ctx  Reference the context destination
  *
  */
-void crypto_mac_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
+void crypto_mac_copy_state(void *dst_ctx, void *src_ctx,
+		uint32_t algo __unused)
 {
-	/* HMAC Algorithm */
 	struct crypto_mac *mac_src = src_ctx;
 	struct crypto_mac *mac_dst = dst_ctx;
-
-	/* Cipher Mac Algorthm */
-	struct cbc_ctx          *cbc_dst_ctx;
-	struct cbc_ctx          *cbc_src_ctx;
-	struct imxcrypt_cipher  *cipher;
-	enum imxcrypt_cipher_id cipher_id;
 
 	if ((!dst_ctx) || (!src_ctx))
 		return;
 
-	switch (algo) {
-	case TEE_ALG_AES_CBC_MAC_NOPAD:
-	case TEE_ALG_DES_CBC_MAC_NOPAD:
-	case TEE_ALG_DES3_CBC_MAC_NOPAD:
-	case TEE_ALG_AES_CBC_MAC_PKCS5:
-	case TEE_ALG_DES_CBC_MAC_PKCS5:
-	case TEE_ALG_DES3_CBC_MAC_PKCS5:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
-			return;
-
-		cbc_dst_ctx = dst_ctx;
-		cbc_src_ctx = src_ctx;
-
+	switch (mac_src->type) {
+	case TYPE_CBCMAC_NOPAD:
+	case TYPE_CBCMAC_PKCS5:
+	case TYPE_CMAC:
 		/* Copy just the Cipher context no the intermediate cipher */
-		if (cipher->cpy_state)
-			cipher->cpy_state(cbc_dst_ctx->ctx, cbc_src_ctx->ctx);
+		if (mac_src->op.cipher) {
+			if (mac_src->op.cipher->cpy_state) {
+				mac_src->op.cipher->cpy_state(mac_dst->ctx,
+					mac_src->ctx);
 
-		cbc_dst_ctx->countdata = cbc_src_ctx->countdata;
-		cbc_dst_ctx->sizeblock = cbc_src_ctx->sizeblock;
-		break;
-
-	case TEE_ALG_AES_CMAC:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
-			return;
-
-		/* Free the Cipher Algorithm context */
-		if (cipher->cpy_state)
-			cipher->cpy_state(dst_ctx, src_ctx);
+				if (mac_src->type != TYPE_CMAC) {
+					mac_dst->countdata = mac_src->countdata;
+					mac_dst->sizeblock = mac_src->sizeblock;
+				}
+			}
+		}
 		break;
 
 	default:
-		if (mac_src->op) {
-			if (mac_src->op->cpy_state)
-				mac_src->op->cpy_state(mac_dst->ctx,
+		if (mac_src->op.hash) {
+			if (mac_src->op.hash->cpy_state)
+				mac_src->op.hash->cpy_state(mac_dst->ctx,
 					mac_src->ctx);
 		}
 		break;
@@ -381,97 +341,83 @@ TEE_Result crypto_mac_init(void *ctx, uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	/* HMAC Algorithm */
 	struct crypto_mac *mac = ctx;
 
-	/* Cipher Mac Algorthm */
-	struct cbc_ctx          *cbc_ctx;
 	uint8_t                 *iv_tmp;
-	struct imxcrypt_cipher  *cipher;
-	enum imxcrypt_cipher_id cipher_id;
 	struct imxcrypt_cipher_init dinit;
 
+	enum imxcrypt_cipher_id cipher_id;
 	LIB_TRACE("mac init keylen %d", key_len);
 
 	/* Check the parameters */
 	if ((!ctx) || (!key) || (key_len == 0))
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	switch (algo) {
-	case TEE_ALG_AES_CBC_MAC_NOPAD:
-	case TEE_ALG_DES_CBC_MAC_NOPAD:
-	case TEE_ALG_DES3_CBC_MAC_NOPAD:
-	case TEE_ALG_AES_CBC_MAC_PKCS5:
-	case TEE_ALG_DES_CBC_MAC_PKCS5:
-	case TEE_ALG_DES3_CBC_MAC_PKCS5:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
+	switch (mac->type) {
+	case TYPE_CBCMAC_NOPAD:
+	case TYPE_CBCMAC_PKCS5:
+		if (!mac->op.cipher)
+			return ret;
+		if ((!mac->op.cipher->init) || (!mac->op.cipher->block_size))
 			return ret;
 
-		cbc_ctx = ctx;
-
-		if ((!cipher->init) || (!cipher->block_size))
-			return ret;
-
-		ret = cipher->block_size(cipher_id, &cbc_ctx->sizeblock);
+		do_check_algo_cipher(algo, &cipher_id);
+		ret = mac->op.cipher->block_size(cipher_id, &mac->sizeblock);
 
 		if (ret != TEE_SUCCESS)
 			return ret;
 
 		/* Allocate temporary IV initialize with 0's */
-		iv_tmp = malloc(cbc_ctx->sizeblock);
+		iv_tmp = malloc(mac->sizeblock);
 		if (!iv_tmp)
 			return TEE_ERROR_OUT_OF_MEMORY;
 
-		memset(iv_tmp, 0, cbc_ctx->sizeblock);
-		cbc_ctx->countdata = 0;
+		memset(iv_tmp, 0, mac->sizeblock);
+		mac->countdata = 0;
 
 		/* Prepare the initialization data */
-		dinit.ctx         = cbc_ctx->ctx;
-		dinit.algo        = cipher_id;
+		dinit.ctx         = mac->ctx;
 		dinit.encrypt     = true;
 		dinit.key1.data   = (uint8_t *)key;
 		dinit.key1.length = key_len;
 		dinit.key2.data   = NULL;
 		dinit.key2.length = 0;
 		dinit.iv.data     = iv_tmp;
-		dinit.iv.length   = cbc_ctx->sizeblock;
-		ret = cipher->init(&dinit);
+		dinit.iv.length   = mac->sizeblock;
+		ret = mac->op.cipher->init(&dinit);
 
 		free(iv_tmp);
 		break;
 
-	case TEE_ALG_AES_CMAC:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
+	case TYPE_CMAC:
+		if (!mac->op.cipher)
+			return ret;
+		if (!mac->op.cipher->init)
 			return ret;
 
-		if (cipher->init) {
-			/* Prepare the initialization data */
-			dinit.ctx         = ctx;
-			dinit.algo        = cipher_id;
-			dinit.encrypt     = true;
-			dinit.key1.data   = (uint8_t *)key;
-			dinit.key1.length = key_len;
-			dinit.key2.data   = NULL;
-			dinit.key2.length = 0;
-			dinit.iv.data     = NULL;
-			dinit.iv.length   = 0;
-			ret = cipher->init(&dinit);
-		}
+		/* Prepare the initialization data */
+		dinit.ctx         = mac->ctx;
+		dinit.encrypt     = true;
+		dinit.key1.data   = (uint8_t *)key;
+		dinit.key1.length = key_len;
+		dinit.key2.data   = NULL;
+		dinit.key2.length = 0;
+		dinit.iv.data     = NULL;
+		dinit.iv.length   = 0;
+
+		ret = mac->op.cipher->init(&dinit);
 		break;
 
 	default:
-		if (mac->op) {
-			if ((mac->op->init) && (mac->op->compute_key)) {
-				ret = mac->op->init(mac->ctx);
+		if (!mac->op.hash)
+			return ret;
+		if (!mac->op.hash->init)
+			return ret;
 
-				if ((ret == TEE_SUCCESS) &&
-					(mac->op->compute_key))
-					ret = mac->op->compute_key(mac->ctx,
-						key, key_len);
-			}
-		}
+		ret = mac->op.hash->init(mac->ctx);
+
+		if ((ret == TEE_SUCCESS) &&	(mac->op.hash->compute_key))
+			ret = mac->op.hash->compute_key(mac->ctx, key, key_len);
 		break;
 	}
 
@@ -491,18 +437,13 @@ TEE_Result crypto_mac_init(void *ctx, uint32_t algo,
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_NOT_IMPLEMENTED Algorithm is not implemented
  */
-TEE_Result crypto_mac_update(void *ctx, uint32_t algo,
+TEE_Result crypto_mac_update(void *ctx, uint32_t algo __unused,
 					const uint8_t *data, size_t len)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	/* HMAC Algorithm */
 	struct crypto_mac *mac = ctx;
 
-	/* Cipher Mac Algorthm */
-	struct cbc_ctx          *cbc_ctx;
-	struct imxcrypt_cipher  *cipher;
-	enum imxcrypt_cipher_id cipher_id;
 	struct imxcrypt_cipher_update dupdate;
 
 	LIB_TRACE("mac update len %d", len);
@@ -511,62 +452,33 @@ TEE_Result crypto_mac_update(void *ctx, uint32_t algo,
 	if ((!ctx) || ((!data) && (len != 0)))
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	switch (algo) {
-	case TEE_ALG_AES_CBC_MAC_NOPAD:
-	case TEE_ALG_DES_CBC_MAC_NOPAD:
-	case TEE_ALG_DES3_CBC_MAC_NOPAD:
-	case TEE_ALG_AES_CBC_MAC_PKCS5:
-	case TEE_ALG_DES_CBC_MAC_PKCS5:
-	case TEE_ALG_DES3_CBC_MAC_PKCS5:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
-			return ret;
+	switch (mac->type) {
+	case TYPE_CBCMAC_NOPAD:
+	case TYPE_CBCMAC_PKCS5:
+	case TYPE_CMAC:
+		if (mac->op.cipher) {
+			if (mac->op.cipher->update) {
+				/* Prepare the update data */
+				dupdate.ctx         = mac->ctx;
+				dupdate.encrypt     = true;
+				dupdate.last        = false;
+				dupdate.src.data    = (uint8_t *)data;
+				dupdate.src.length  = len;
+				dupdate.dst.data    = NULL;
+				dupdate.dst.length  = 0;
 
-		cbc_ctx = ctx;
+				ret = mac->op.cipher->update(&dupdate);
+			}
 
-		if (cipher->update) {
-			/* Prepare the update data */
-			dupdate.ctx         = cbc_ctx->ctx;
-			dupdate.algo        = cipher_id;
-			dupdate.encrypt     = true;
-			dupdate.last        = false;
-			dupdate.src.data    = (uint8_t *)data;
-			dupdate.src.length  = len;
-			dupdate.dst.data    = NULL;
-			dupdate.dst.length  = 0;
-
-			ret = cipher->update(&dupdate);
-		}
-
-		if (ret == TEE_SUCCESS)
-			cbc_ctx->countdata += len;
-
-		break;
-
-	case TEE_ALG_AES_CMAC:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
-			return ret;
-
-		if (cipher->update) {
-			/* Prepare the update data */
-			dupdate.ctx         = ctx;
-			dupdate.algo        = cipher_id;
-			dupdate.encrypt     = true;
-			dupdate.last        = false;
-			dupdate.src.data    = (uint8_t *)data;
-			dupdate.src.length  = len;
-			dupdate.dst.data    = NULL;
-			dupdate.dst.length  = 0;
-
-			ret = cipher->update(&dupdate);
+			if ((ret == TEE_SUCCESS) && (mac->type != TYPE_CMAC))
+				mac->countdata += len;
 		}
 		break;
 
 	default:
-		if (mac->op) {
-			if (mac->op->update)
-				ret = mac->op->update(mac->ctx, data, len);
+		if (mac->op.hash) {
+			if (mac->op.hash->update)
+				ret = mac->op.hash->update(mac->ctx, data, len);
 		}
 		break;
 	}
@@ -590,18 +502,13 @@ TEE_Result crypto_mac_update(void *ctx, uint32_t algo,
  * @retval TEE_ERROR_NOT_IMPLEMENTED Algorithm is not implemented
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-TEE_Result crypto_mac_final(void *ctx, uint32_t algo,
+TEE_Result crypto_mac_final(void *ctx, uint32_t algo __unused,
 					uint8_t *digest, size_t len)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	/* HMAC Algorithm */
 	struct crypto_mac *mac = ctx;
 
-	/* Cipher Mac Algorthm */
-	struct cbc_ctx          *cbc_ctx;
-	struct imxcrypt_cipher  *cipher;
-	enum imxcrypt_cipher_id cipher_id;
 	struct imxcrypt_cipher_update dupdate;
 	uint8_t *pad_src = NULL;
 	size_t  pad_size = 0;
@@ -612,29 +519,22 @@ TEE_Result crypto_mac_final(void *ctx, uint32_t algo,
 	if ((!ctx) || (!digest) || (!len))
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	switch (algo) {
-	case TEE_ALG_AES_CBC_MAC_PKCS5:
-	case TEE_ALG_DES_CBC_MAC_PKCS5:
-	case TEE_ALG_DES3_CBC_MAC_PKCS5:
-		cbc_ctx = ctx;
+	switch (mac->type) {
+	case TYPE_CBCMAC_PKCS5:
 		/* Calculate the last block PAD Size */
-		pad_size  = cbc_ctx->sizeblock;
-		pad_size -= (cbc_ctx->countdata % cbc_ctx->sizeblock);
+		pad_size  = mac->sizeblock;
+		pad_size -= (mac->countdata % mac->sizeblock);
 		LIB_TRACE("Pad size = %d", pad_size);
 
 		/* fallthrough */
 
-	case TEE_ALG_AES_CBC_MAC_NOPAD:
-	case TEE_ALG_DES_CBC_MAC_NOPAD:
-	case TEE_ALG_DES3_CBC_MAC_NOPAD:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
+	case TYPE_CBCMAC_NOPAD:
+	case TYPE_CMAC:
+		if (!mac->op.cipher)
 			return ret;
 
-		if ((!cipher->update) || (!cipher->final))
+		if ((!mac->op.cipher->update) || (!mac->op.cipher->final))
 			return ret;
-
-		cbc_ctx = ctx;
 
 		if (pad_size) {
 			/* Need to pad the last block */
@@ -649,8 +549,7 @@ TEE_Result crypto_mac_final(void *ctx, uint32_t algo,
 		}
 
 		/* Prepare the update data */
-		dupdate.ctx         = cbc_ctx->ctx;
-		dupdate.algo        = cipher_id;
+		dupdate.ctx         = mac->ctx;
 		dupdate.encrypt     = true;
 		dupdate.last        = true;
 		dupdate.src.data    = pad_src;
@@ -658,36 +557,16 @@ TEE_Result crypto_mac_final(void *ctx, uint32_t algo,
 		dupdate.dst.data    = digest;
 		dupdate.dst.length  = len;
 
-		ret = cipher->update(&dupdate);
+		ret = mac->op.cipher->update(&dupdate);
 
-		cipher->final(ctx, cipher_id);
-		break;
-
-	case TEE_ALG_AES_CMAC:
-		cipher = do_check_algo_cipher(algo, &cipher_id);
-		if (!cipher)
-			return ret;
-
-		if (cipher->update) {
-			/* Prepare the update data */
-			dupdate.ctx         = ctx;
-			dupdate.algo        = cipher_id;
-			dupdate.encrypt     = true;
-			dupdate.last        = true;
-			dupdate.src.data    = NULL;
-			dupdate.src.length  = 0;
-			dupdate.dst.data    = digest;
-			dupdate.dst.length  = len;
-
-			ret = cipher->update(&dupdate);
-		}
-		cipher->final(ctx, cipher_id);
+		mac->op.cipher->final(ctx);
 		break;
 
 	default:
-		if (mac->op) {
-			if (mac->op->final)
-				ret = mac->op->final(mac->ctx, digest, len);
+		if (mac->op.hash) {
+			if (mac->op.hash->final)
+				ret = mac->op.hash->final(mac->ctx, digest,
+					len);
 		}
 		break;
 	}

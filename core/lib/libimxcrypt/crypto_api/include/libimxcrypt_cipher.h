@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    libimxcrypt_cipher.h
  *
@@ -55,11 +55,19 @@ enum imxcrypt_cipher_id {
 #define MAX_DES3_SUPPORTED	(MAX_DES3_ID - IMX_DES3_ID)
 
 /**
+ * @brief  Format the CIPHER context to keep the reference to the
+ *         operation driver
+ */
+struct crypto_cipher {
+	void                   *ctx; ///< Cipher Context
+	struct imxcrypt_cipher *op;  ///< Reference to the operation
+};
+
+/**
  * @brief   Cipher Algorithm initialization data
  */
 struct imxcrypt_cipher_init {
 	void                 *ctx;     ///< Software Context
-	enum imxcrypt_cipher_id algo;  ///< Cipher Algorithm id
 	bool                 encrypt;  ///< Encrypt or decrypt direction
 	struct imxcrypt_buf  key1;     ///< First Key
 	struct imxcrypt_buf  key2;     ///< Second Key
@@ -70,12 +78,11 @@ struct imxcrypt_cipher_init {
  * @brief   Cipher Algorithm update data
  */
 struct imxcrypt_cipher_update {
-	void                    *ctx;     ///< Software Context
-	enum imxcrypt_cipher_id algo;     ///< Cipher Algorithm id
-	bool                    encrypt;  ///< Encrypt or decrypt direction
-	bool                    last;     ///< Last block to handle
-	struct imxcrypt_buf     src;      ///< Buffer source (Message or Cipher)
-	struct imxcrypt_buf     dst;      ///< Buffer dest (Message or Cipher)
+	void                *ctx;     ///< Software Context
+	bool                encrypt;  ///< Encrypt or decrypt direction
+	bool                last;     ///< Last block to handle
+	struct imxcrypt_buf src;      ///< Buffer source (Message or Cipher)
+	struct imxcrypt_buf dst;      ///< Buffer dest (Message or Cipher)
 };
 
 /**
@@ -92,7 +99,7 @@ struct imxcrypt_cipher {
 	///< Update the cipher operation
 	TEE_Result (*update)(struct imxcrypt_cipher_update *dupdate);
 	///< Finalize the cipher operation
-	void (*final)(void *ctx, enum imxcrypt_cipher_id algo);
+	void (*final)(void *ctx);
 	///< Get Cipher block size
 	TEE_Result (*block_size)(enum imxcrypt_cipher_id algo, size_t *size);
 

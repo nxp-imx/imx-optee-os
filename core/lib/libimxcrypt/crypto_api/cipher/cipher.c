@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    cipher.c
  *
@@ -106,18 +106,27 @@ TEE_Result crypto_cipher_alloc_ctx(void **ctx, uint32_t algo)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_cipher  *cipher   = NULL;
+	struct crypto_cipher    *cipher   = NULL;
 	enum imxcrypt_cipher_id cipher_id = 0;
 
 	/* Check the parameters */
 	if (!ctx)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	cipher = do_check_algo(algo, &cipher_id);
-	if (cipher) {
-		if (cipher->alloc_ctx)
-			ret = cipher->alloc_ctx(ctx, cipher_id);
+	cipher = calloc(1, sizeof(*cipher));
+	if (!cipher)
+		return TEE_ERROR_OUT_OF_MEMORY;
+
+	cipher->op = do_check_algo(algo, &cipher_id);
+	if (cipher->op) {
+		if (cipher->op->alloc_ctx)
+			ret = cipher->op->alloc_ctx(&cipher->ctx, cipher_id);
+	} else {
+		free(cipher);
+		cipher = NULL;
 	}
+
+	*ctx = cipher;
 
 	return ret;
 }
@@ -129,18 +138,18 @@ TEE_Result crypto_cipher_alloc_ctx(void **ctx, uint32_t algo)
  * @param[in]     algo   Algorithm
  *
  */
-void crypto_cipher_free_ctx(void *ctx, uint32_t algo)
+void crypto_cipher_free_ctx(void *ctx, uint32_t algo __unused)
 {
-	struct imxcrypt_cipher  *cipher   = NULL;
-	enum imxcrypt_cipher_id cipher_id = 0;
+	struct crypto_cipher *cipher = ctx;
 
 	/* Check the parameters */
 	if (ctx) {
-		cipher = do_check_algo(algo, &cipher_id);
-		if (cipher) {
-			if (cipher->free_ctx)
-				cipher->free_ctx(ctx);
+		if (cipher->op) {
+			if (cipher->op->free_ctx)
+				cipher->op->free_ctx(cipher->ctx);
 		}
+
+		free(cipher);
 	}
 }
 
@@ -153,19 +162,19 @@ void crypto_cipher_free_ctx(void *ctx, uint32_t algo)
  * @param[out] dst_ctx  Reference the context destination
  *
  */
-void crypto_cipher_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
+void crypto_cipher_copy_state(void *dst_ctx, void *src_ctx,
+		uint32_t algo __unused)
 {
-	struct imxcrypt_cipher  *cipher   = NULL;
-	enum imxcrypt_cipher_id cipher_id = 0;
+	struct crypto_cipher *cipher_src = src_ctx;
+	struct crypto_cipher *cipher_dst = dst_ctx;
 
 	if ((!dst_ctx) || (!src_ctx))
 		return;
 
-	/* Check the parameters */
-	cipher = do_check_algo(algo, &cipher_id);
-	if (cipher) {
-		if (cipher->cpy_state)
-			cipher->cpy_state(dst_ctx, src_ctx);
+	if (cipher_src->op) {
+		if (cipher_src->op->cpy_state)
+			cipher_src->op->cpy_state(cipher_dst->ctx,
+				cipher_src->ctx);
 	}
 }
 
@@ -187,15 +196,15 @@ void crypto_cipher_copy_state(void *dst_ctx, void *src_ctx, uint32_t algo)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result crypto_cipher_init(void *ctx, uint32_t algo,
+TEE_Result crypto_cipher_init(void *ctx, uint32_t algo __unused,
 					TEE_OperationMode mode,
 					const uint8_t *key1, size_t key1_len,
 					const uint8_t *key2, size_t key2_len,
 					const uint8_t *iv, size_t iv_len)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
-	struct imxcrypt_cipher   *cipher   = NULL;
-	enum imxcrypt_cipher_id  cipher_id = 0;
+
+	struct crypto_cipher        *cipher = ctx;
 	struct imxcrypt_cipher_init dinit;
 
 	/* Check the parameters */
@@ -222,12 +231,10 @@ TEE_Result crypto_cipher_init(void *ctx, uint32_t algo,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	cipher = do_check_algo(algo, &cipher_id);
-	if (cipher) {
-		if (cipher->init) {
+	if (cipher->op) {
+		if (cipher->op->init) {
 			/* Prepare the initialization data */
-			dinit.ctx         = ctx;
-			dinit.algo        = cipher_id;
+			dinit.ctx         = cipher->ctx;
 			dinit.encrypt     = ((mode == TEE_MODE_ENCRYPT) ?
 						true : false);
 			dinit.key1.data   = (uint8_t *)key1;
@@ -236,7 +243,7 @@ TEE_Result crypto_cipher_init(void *ctx, uint32_t algo,
 			dinit.key2.length = key2_len;
 			dinit.iv.data     = (uint8_t *)iv;
 			dinit.iv.length   = iv_len;
-			ret = cipher->init(&dinit);
+			ret = cipher->op->init(&dinit);
 		}
 	}
 
@@ -260,14 +267,14 @@ TEE_Result crypto_cipher_init(void *ctx, uint32_t algo,
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result crypto_cipher_update(void *ctx, uint32_t algo,
+TEE_Result crypto_cipher_update(void *ctx, uint32_t algo __unused,
 				TEE_OperationMode mode,	bool last_block,
 				const uint8_t *data, size_t len,
 				uint8_t *dst)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
-	struct imxcrypt_cipher   *cipher   = NULL;
-	enum imxcrypt_cipher_id  cipher_id = 0;
+
+	struct crypto_cipher          *cipher = ctx;
 	struct imxcrypt_cipher_update dupdate;
 
 	/* Check the parameters */
@@ -290,12 +297,10 @@ TEE_Result crypto_cipher_update(void *ctx, uint32_t algo,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	cipher = do_check_algo(algo, &cipher_id);
-	if (cipher) {
-		if (cipher->update) {
+	if (cipher->op) {
+		if (cipher->op->update) {
 			/* Prepare the update data */
-			dupdate.ctx         = ctx;
-			dupdate.algo        = cipher_id;
+			dupdate.ctx         = cipher->ctx;
 			dupdate.last        = last_block;
 			dupdate.src.data    = (uint8_t *)data;
 			dupdate.src.length  = len;
@@ -307,7 +312,7 @@ TEE_Result crypto_cipher_update(void *ctx, uint32_t algo,
 			else
 				dupdate.encrypt = false;
 
-			ret = cipher->update(&dupdate);
+			ret = cipher->op->update(&dupdate);
 		}
 	}
 
@@ -321,17 +326,15 @@ TEE_Result crypto_cipher_update(void *ctx, uint32_t algo,
  * @param[in]  algo       Algorithm
  *
  */
-void crypto_cipher_final(void *ctx, uint32_t algo)
+void crypto_cipher_final(void *ctx, uint32_t algo __unused)
 {
-	struct imxcrypt_cipher  *cipher   = NULL;
-	enum imxcrypt_cipher_id cipher_id = 0;
+	struct crypto_cipher *cipher = ctx;
 
 	/* Check the parameters */
 	if (ctx) {
-		cipher = do_check_algo(algo, &cipher_id);
-		if (cipher) {
-			if (cipher->final)
-				cipher->final(ctx, cipher_id);
+		if (cipher->op) {
+			if (cipher->op->final)
+				cipher->op->final(cipher->ctx);
 		}
 	}
 }

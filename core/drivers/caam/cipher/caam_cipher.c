@@ -601,9 +601,6 @@ static TEE_Result do_init(struct imxcrypt_cipher_init *dinit)
 	struct cipherdata      *cipherdata = dinit->ctx;
 	const struct cipheralg *alg;
 
-	if (cipherdata->algo_id != dinit->algo)
-		return ret;
-
 	CIPHER_TRACE("Algo %d - %s", cipherdata->algo_id,
 				(dinit->encrypt ? "Encrypt" : " Decrypt"));
 
@@ -1367,14 +1364,66 @@ end_mac:
  */
 static TEE_Result do_update_cts(struct imxcrypt_cipher_update *dupdate)
 {
+	TEE_Result ret;
+	void *new_ctx = NULL;
+	struct crypto_cipher *cipher_cbc = NULL;
+	struct crypto_cipher *cipher_ecb = NULL;
+	struct cipherdata *in_ctx = dupdate->ctx;
+	struct cipherdata *ctx_cbc;
+	struct cipherdata *ctx_ecb;
+
 	CIPHER_TRACE("Algo AES CTS length=%d - %s",
 				dupdate->src.length,
 				(dupdate->encrypt ? "Encrypt" : " Decrypt"));
 
-	return tee_aes_cbc_cts_update(dupdate->ctx, dupdate->ctx,
+	ret = crypto_cipher_alloc_ctx(&new_ctx, TEE_ALG_AES_CBC_NOPAD);
+	if (ret != TEE_SUCCESS)
+		goto end_update_cts;
+	cipher_cbc = new_ctx;
+	ctx_cbc = cipher_cbc->ctx;
+
+	new_ctx = NULL;
+	ret = crypto_cipher_alloc_ctx(&new_ctx, TEE_ALG_AES_ECB_NOPAD);
+	if (ret != TEE_SUCCESS)
+		goto end_update_cts;
+	cipher_ecb = new_ctx;
+	ctx_ecb = cipher_ecb->ctx;
+
+	ctx_cbc->key1.data    = in_ctx->key1.data;
+	ctx_cbc->key1.length  = in_ctx->key1.length;
+	ctx_cbc->key1.paddr   = in_ctx->key1.paddr;
+	ctx_cbc->key1.nocache = in_ctx->key1.nocache;
+
+	ctx_cbc->ctx.data    = in_ctx->ctx.data;
+	ctx_cbc->ctx.length  = in_ctx->ctx.length;
+	ctx_cbc->ctx.paddr   = in_ctx->ctx.paddr;
+	ctx_cbc->ctx.nocache = in_ctx->ctx.nocache;
+
+	ctx_ecb->key1.data    = in_ctx->key1.data;
+	ctx_ecb->key1.length  = in_ctx->key1.length;
+	ctx_ecb->key1.paddr   = in_ctx->key1.paddr;
+	ctx_ecb->key1.nocache = in_ctx->key1.nocache;
+
+	ctx_cbc->blockbuf.filled = 0;
+	ctx_ecb->blockbuf.filled = 0;
+
+	ret = tee_aes_cbc_cts_update(cipher_cbc, cipher_ecb,
 		(dupdate->encrypt ? TEE_MODE_ENCRYPT : TEE_MODE_DECRYPT),
 		dupdate->last, dupdate->src.data, dupdate->src.length,
 		dupdate->dst.data);
+
+	ctx_cbc->key1.data   = NULL;
+	ctx_cbc->key1.length = 0;
+	ctx_cbc->ctx.data    = NULL;
+	ctx_cbc->ctx.length  = 0;
+	ctx_ecb->key1.data   = NULL;
+	ctx_ecb->key1.length = 0;
+
+end_update_cts:
+	crypto_cipher_free_ctx(cipher_cbc, TEE_ALG_AES_CBC_NOPAD);
+	crypto_cipher_free_ctx(cipher_ecb, TEE_ALG_AES_ECB_NOPAD);
+
+	return ret;
 }
 
 /**
@@ -1390,39 +1439,9 @@ static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
 {
 	TEE_Result  ret;
 
-	struct cipherdata      *cipherdata = dupdate->ctx;
-	const struct cipheralg *orialg;
-
-	enum imxcrypt_cipher_id orialgo_id;
-
-	orialgo_id = cipherdata->algo_id;
-	orialg     = cipherdata->alg;
-
-	switch (cipherdata->algo_id) {
-	case AES_CTS:
-		/* For this case, check if input algo is AES ECB/CBC */
-		if ((dupdate->algo != AES_ECB_NOPAD) &&
-			(dupdate->algo != AES_CBC_NOPAD) &&
-			(dupdate->algo != AES_CTS))
-			return TEE_ERROR_BAD_PARAMETERS;
-
-		/* Change context algo to be able update operation */
-		cipherdata->algo_id = dupdate->algo;
-		cipherdata->alg = &aes_alg[dupdate->algo - IMX_AES_ID];
-
-	break;
-
-	default:
-		if (cipherdata->algo_id != dupdate->algo)
-			return TEE_ERROR_BAD_PARAMETERS;
-		break;
-	}
+	struct cipherdata *cipherdata = dupdate->ctx;
 
 	ret = cipherdata->alg->update(dupdate);
-
-	/* Restore the original algorithm in the context */
-	cipherdata->algo_id = orialgo_id;
-	cipherdata->alg     = orialg;
 
 	return ret;
 }
@@ -1431,9 +1450,8 @@ static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
  * @brief   Finalize of the cipher operation
  *
  * @param[in] ctx    Caller context variable
- * @param[in] algo   Algorithm ID of the context
  */
-static void do_final(void *ctx __unused, enum imxcrypt_cipher_id algo __unused)
+static void do_final(void *ctx __unused)
 {
 }
 
