@@ -1,4 +1,4 @@
-subdirs-$(CFG_IMX_CAAM) += caam
+subdirs-$(CFG_NXP_CAAM) += caam
 subdirs-$(CFG_IMX_SNVS) += snvs
 
 srcs-$(CFG_CDNS_UART) += cdns_uart.c

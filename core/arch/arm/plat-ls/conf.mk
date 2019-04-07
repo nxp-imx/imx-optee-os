@@ -138,7 +138,7 @@ endif
 CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 CFG_WITH_STACK_CANARIES ?= y
 
-ifeq ($(CFG_IMX_CAAM),y)
+ifeq ($(CFG_NXP_CAAM),y)
 # currently disable the use of CAAM in OP-TEE
 CFG_IMXCRYPT ?= n
 else
