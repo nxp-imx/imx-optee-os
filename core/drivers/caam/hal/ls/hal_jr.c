@@ -59,3 +59,14 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 	return CAAM_NO_ERROR;
 }
 
+/**
+ * @brief   Let the JR prepare data that need backup
+ *
+ * @param[in] ctrl_base   CAAM JR Base Address
+ * @param[in] jr_offset   Job Ring offset to prepare backup for
+ */
+void hal_jr_prepare_backup(__unused vaddr_t ctrl_base,
+			__unused paddr_t jr_offset)
+{
+}
+
