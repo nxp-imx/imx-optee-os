@@ -1,4 +1,4 @@
 
 # LibTomCrypt as Software algorithm
-subdirs-$(CFG_IMXCRYPT_TOMCRYPT) += tomcrypt
+subdirs-$(CFG_NXPCRYPT_TOMCRYPT) += tomcrypt
 

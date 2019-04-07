@@ -11,7 +11,7 @@
 #include <initcall.h>
 #include <tee_api_types.h>
 
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 /* Library i.MX includes */
 #include <libimxcrypt.h>
 #endif
@@ -60,7 +60,7 @@
  * @retval  TEE_ERROR_GENERIC        Generic Error (driver init failure)
  * @retval  TEE_ERROR_NOT_SUPPORTED  Driver not supported
  */
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 TEE_Result crypto_driver_init(void)
 #else
 static TEE_Result crypto_driver_init(void)
@@ -176,7 +176,7 @@ static TEE_Result crypto_driver_init(void)
 exit_init:
 	/*
 	 * Configure Job Rings to NS World
-	 * If the Crypto IMX Library is not used (CFG_IMXCRYPT = n)
+	 * If the Crypto NXP Library is not used (CFG_NXPCRYPT = n)
 	 * JR0 is freed to be Non-Secure
 	 */
 	if (jr_cfg.base)
@@ -186,7 +186,7 @@ exit_init:
 	return retresult;
 }
 
-#ifndef CFG_IMXCRYPT
+#ifndef CFG_NXPCRYPT
 driver_init(crypto_driver_init);
 #endif
 

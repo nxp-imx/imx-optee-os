@@ -474,9 +474,9 @@ endif
 
 ifeq ($(CFG_NXP_CAAM),y)
 # currently disable the use of CAAM in OP-TEE
-CFG_IMXCRYPT ?= n
+CFG_NXPCRYPT ?= n
 else
-$(call force,CFG_IMXCRYPT,n)
+$(call force,CFG_NXPCRYPT,n)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
 endif
 

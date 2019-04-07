@@ -136,7 +136,7 @@ void hal_jr_config(vaddr_t baseaddr, uint8_t nbJobs,
 	value |= JRx_JRCFGR_LS_IMSK;
 	put32(baseaddr + JRx_JRCFGR_LS, (uint32_t)value);
 
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 	caam_pwr_add_backup(baseaddr, jr_backup, ARRAY_SIZE(jr_backup));
 #endif
 }

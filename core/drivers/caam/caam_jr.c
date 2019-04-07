@@ -49,7 +49,7 @@
 /**
  * @brief  Enable the interrupt mode or not
  */
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 //#define IT_MODE
 #endif
 
@@ -683,7 +683,7 @@ enum CAAM_Status caam_jr_init(struct jr_cfg *jr_cfg)
 	jr_privdata->it_handler.handler = caam_jr_irqhandler;
 	jr_privdata->it_handler.data    = jr_privdata;
 
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 	itr_add(&jr_privdata->it_handler);
 #endif
 	hal_jr_enableIT(jr_privdata->baseaddr);
@@ -733,7 +733,7 @@ void caam_jr_resume(uint32_t pm_hint)
 	if (pm_hint == PM_HINT_CONTEXT_STATE) {
 #if !(defined(CFG_MX6DL) || defined(CFG_MX6D) || \
 		defined(CFG_MX6Q) || defined (CFG_MX6QP))
-#ifndef CFG_IMXCRYPT
+#ifndef CFG_NXPCRYPT
 		/*
 		 * In case the CAAM is not used the JR used to
 		 * instantiate the RNG has been released to Non-Secure
@@ -758,7 +758,7 @@ void caam_jr_resume(uint32_t pm_hint)
 		retstatus = caam_rng_instantiation();
 		if (retstatus != CAAM_NO_ERROR)
 			panic();
-#ifndef CFG_IMXCRYPT
+#ifndef CFG_NXPCRYPT
 		hal_jr_setowner(jr_privdata->ctrladdr,
 						jr_privdata->jroffset,
 						JROWN_ARM_NS);

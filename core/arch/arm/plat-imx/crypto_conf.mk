@@ -8,15 +8,15 @@ $(call force,CFG_JR_IDX,0x0)
 #Job Ring IRQ Num(105 + 32) = 137
 $(call force,CFG_JR_IRQ_ID,137)
 
-ifeq ($(CFG_IMXCRYPT), y)
+ifeq ($(CFG_NXPCRYPT), y)
 $(call force, CFG_CRYPTO_WITH_HW_ACC,y)
 #
 # Define the TomCrypt as the Software library used to do
 # algorithm not done by the HW
 #
-$(call force, CFG_IMXCRYPT_TOMCRYPT,y)
+$(call force, CFG_NXPCRYPT_TOMCRYPT,y)
 
-ifeq ($(CFG_IMXCRYPT_TOMCRYPT), y)
+ifeq ($(CFG_NXPCRYPT_TOMCRYPT), y)
 # Don't enable LTC GCM mode which seems to be slower than
 # Core/Crypto ones
 $(call force, CFG_CRYPTO_AES_GCM_FROM_CRYPTOLIB,n)

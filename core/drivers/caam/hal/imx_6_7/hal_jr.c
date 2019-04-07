@@ -68,7 +68,7 @@ enum CAAM_Status hal_jr_setowner(vaddr_t ctrl_base, paddr_t jr_offset,
 		/* Configuration only lock for the Secure JR */
 		cfg_ms  = JRxMIDR_MS_JROWN_MID((owner & ~JROWNER_SECURE));
 		cfg_ms |= JRxMIDR_MS_AMTD;
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 		cfg_ms |= JRxMIDR_MS_LAMTD;
 		cfg_ms |= JRxMIDR_MS_LMID;
 #endif

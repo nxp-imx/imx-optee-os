@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    utils_mem.c
  *
@@ -339,7 +339,7 @@ int caam_realloc_align(void *orig, struct caambuf *dst, size_t size)
 	return 0;
 }
 
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 /**
  * @brief   Copy source data into the block buffer
  *

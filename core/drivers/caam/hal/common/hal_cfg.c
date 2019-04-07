@@ -195,7 +195,7 @@ enum CAAM_Status hal_cfg_get_conf(struct jr_cfg *jr_cfg)
 		goto exit_get_conf;
 	}
 
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 	/* We took one job ring, make it unavailable for Normal World */
 	if (dt_disable_status(fdt, node)) {
 		EMSG("Not able to disable JR DTB entry\n");
@@ -298,7 +298,7 @@ void hal_cfg_setup_nsjobring(vaddr_t ctrl_base)
 
 	/* Configure the other Job ring to be Non-Secure */
 	do {
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 		if (jrnum != (CFG_JR_INDEX + 1)) {
 			jr_offset = jrnum * JRx_BLOCK_SIZE;
 			status = hal_jr_setowner(ctrl_base, jr_offset,

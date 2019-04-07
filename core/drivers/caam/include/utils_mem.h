@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    utils_mem.h
  *
@@ -11,7 +11,7 @@
 #ifndef __UTILS_MEM_H__
 #define __UTILS_MEM_H__
 
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 /* Library i.MX includes */
 #include <libimxcrypt.h>
 #endif
@@ -141,7 +141,7 @@ enum CAAM_Status caam_sgtbuf_alloc(struct sgtbuf *data);
  */
 int caam_realloc_align(void *orig, struct caambuf *dst, size_t size);
 
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 /**
  * @brief   Copy source data into the block buffer
  *

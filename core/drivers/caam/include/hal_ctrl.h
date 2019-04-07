@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    hal_ctrl.h
  *
@@ -9,7 +9,7 @@
 #ifndef __HAL_CTRL_H__
 #define __HAL_CTRL_H__
 
-#ifdef CFG_IMXCRYPT
+#ifdef CFG_NXPCRYPT
 /* Library i.MX includes */
 #include <libimxcrypt.h>
 #endif
