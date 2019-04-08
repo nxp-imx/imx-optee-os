@@ -17,7 +17,7 @@
 /* Global includes */
 #include <stdint.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt_hash.h>
 
 /*

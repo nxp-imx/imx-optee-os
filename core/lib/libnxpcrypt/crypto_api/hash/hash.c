@@ -4,7 +4,7 @@
  *
  * @file    hash.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Hash crypto_* interface implementation.
  */
 /* Standard includes */
@@ -15,7 +15,7 @@
 #include <trace.h>
 #include <utee_defines.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_hash.h>
 

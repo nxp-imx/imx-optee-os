@@ -12,7 +12,7 @@
 #include "caam_io.h"
 
 #ifdef CFG_CRYPTO_HASH_HW
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt_hash.h>
 #endif
 

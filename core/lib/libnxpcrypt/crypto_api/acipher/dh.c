@@ -4,7 +4,7 @@
  *
  * @file    dh.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          DH crypto_* interface implementation.
  */
 /* Global includes */
@@ -13,7 +13,7 @@
 #include <tee/tee_cryp_utl.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_acipher.h>
 

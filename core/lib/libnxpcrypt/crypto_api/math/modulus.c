@@ -4,7 +4,7 @@
  *
  * @file    modulus.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Mathematical Modulus operation implementation.
  */
 /* Global includes */
@@ -12,7 +12,7 @@
 #include <utee_defines.h>
 #include <util.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_math.h>
 

@@ -9,7 +9,7 @@
 #ifndef __CAAM_CIPHER_H__
 #define __CAAM_CIPHER_H__
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 
 /**

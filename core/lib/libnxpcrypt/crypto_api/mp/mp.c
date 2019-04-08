@@ -4,7 +4,7 @@
  *
  * @file    mp.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Manufacturing Protection (MP) crypto_* interface implementation.
  */
 
@@ -12,7 +12,7 @@
 #include <crypto/crypto.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt_mp.h>
 #include <crypto_extension.h>
 

@@ -9,7 +9,7 @@
 #ifndef __LOCAL_H__
 #define __LOCAL_H__
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_cipher.h>
 

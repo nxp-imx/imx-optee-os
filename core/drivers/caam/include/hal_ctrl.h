@@ -10,7 +10,7 @@
 #define __HAL_CTRL_H__
 
 #ifdef CFG_NXPCRYPT
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #endif
 

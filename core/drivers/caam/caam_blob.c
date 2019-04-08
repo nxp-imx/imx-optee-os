@@ -18,7 +18,7 @@
 /* Platform includes */
 #include <imx.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_huk.h>
 #include <libnxpcrypt_blob.h>

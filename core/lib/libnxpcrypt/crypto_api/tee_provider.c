@@ -4,7 +4,7 @@
  *
  * @file    tee_provider.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          This library interfaces TEE Internal API by implementing
  *          all crypto_* functions. If an algorithm is not supported,
  *          the default NULL implementations are built and return
@@ -17,7 +17,7 @@
 #include <mpalib.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 
 //#define LIB_DEBUG
@@ -28,7 +28,7 @@
 #endif
 
 /**
- * @brief   Pointers array to i.MX Cryptographic modules operation
+ * @brief   Pointers array to NXP Cryptographic modules operation
  */
 static void *nxpcrypt_algo[CRYPTO_MAX_ALGO] = {0};
 
@@ -91,7 +91,7 @@ TEE_Result crypto_init(void)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
-	LIB_TRACE("Initialization of the i.MX Crypto Lib");
+	LIB_TRACE("Initialization of the NXP Crypto Lib");
 
 	ret = crypto_driver_init();
 

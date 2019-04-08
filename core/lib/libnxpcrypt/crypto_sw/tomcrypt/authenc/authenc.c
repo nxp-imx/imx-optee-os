@@ -5,7 +5,7 @@
  * @file    authenc.c
  *
  * @brief   Implementation of the Authentication pseudo-driver compatible with
- *          the i.MX cryptographic library. LibTomCrypt's descriptor wrapper
+ *          the NXP cryptographic library. LibTomCrypt's descriptor wrapper
  *          to use the HW module.
  */
 
@@ -13,7 +13,7 @@
 #include <crypto/crypto.h>
 #include <utee_defines.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_authenc.h>
 

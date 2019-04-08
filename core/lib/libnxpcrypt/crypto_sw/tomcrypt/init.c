@@ -4,14 +4,14 @@
  *
  * @file    init.c
  *
- * @brief   i.MX Cryptographic software library initialization.
+ * @brief   NXP Cryptographic software library initialization.
  */
 
 /* Global includes */
 #include <tee_api_types.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 
 /* Local includes */
@@ -36,7 +36,7 @@ TEE_Result nxpcrypt_libsoft_init(void)
 	int ret = 0;
 	int status = 0;
 
-	LIB_TRACE("Initialization of the Software part of i.MX Crypto Lib");
+	LIB_TRACE("Initialization of the Software part of NXP Crypto Lib");
 
 	status = libsoft_rng_init();
 	LIB_TRACE("libsoft_rng_init ret %d", status);
@@ -88,7 +88,7 @@ TEE_Result nxpcrypt_libsoft_init(void)
 	LIB_TRACE("libsoft_authenc_init ret %d", status);
 	ret |= status;
 
-	LIB_TRACE("Software part of i.MX Crypto Lib ret 0x%"PRIx32"", ret);
+	LIB_TRACE("Software part of NXP Crypto Lib ret 0x%"PRIx32"", ret);
 	if (ret)
 		return TEE_ERROR_GENERIC;
 

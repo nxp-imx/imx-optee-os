@@ -19,7 +19,7 @@
 #include <utee_defines.h>
 #include <util.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <asn1_oid.h>
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_acipher.h>

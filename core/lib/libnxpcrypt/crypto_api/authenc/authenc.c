@@ -4,7 +4,7 @@
  *
  * @file    authenc.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Authentication common function implementation.
  */
 
@@ -13,7 +13,7 @@
 #include <malloc.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_authenc.h>
 

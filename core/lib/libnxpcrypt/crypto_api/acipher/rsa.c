@@ -4,7 +4,7 @@
  *
  * @file    rsa.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          RSA crypto_* interface implementation.
  */
 /* Global includes */
@@ -13,7 +13,7 @@
 #include <trace.h>
 #include <utee_defines.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_acipher.h>
 

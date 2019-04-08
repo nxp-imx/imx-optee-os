@@ -12,7 +12,7 @@
 #include <kernel/pm.h>
 #include <kernel/panic.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #ifdef CFG_CRYPTO_MP_HW
 #include <libnxpcrypt.h>
 #endif

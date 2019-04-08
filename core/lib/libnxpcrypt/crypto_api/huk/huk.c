@@ -4,7 +4,7 @@
  *
  * @file    huk.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Hardware Unique Key crypto_* interface implementation.
  */
 
@@ -12,7 +12,7 @@
 #include <crypto/crypto.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <crypto_extension.h>
 #include <libnxpcrypt_huk.h>
 

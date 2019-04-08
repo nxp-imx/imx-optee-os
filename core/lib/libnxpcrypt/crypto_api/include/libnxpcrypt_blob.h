@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt_blob.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Blob data encapsulation interface library vs CAAM driver.
  */
 #ifndef __LIBNXPCRYPT_BLOB_H__
@@ -24,7 +24,7 @@ struct nxpcrypt_blob_data {
 };
 
 /**
- * @brief   i.MX Crypto Library BLOB driver operations
+ * @brief   NXP Crypto Library BLOB driver operations
  */
 struct nxpcrypt_blob {
 	///< Encapsulate/Decapsulate data

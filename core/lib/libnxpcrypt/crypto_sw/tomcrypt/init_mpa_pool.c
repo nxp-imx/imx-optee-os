@@ -4,7 +4,7 @@
  *
  * @file    init_map_pool.c
  *
- * @brief   i.MX Cryptographic software library initialisation of the
+ * @brief   NXP Cryptographic software library initialisation of the
  *          mpa memory pool used by LibTomCrypt to allocate big numbers.
  */
 

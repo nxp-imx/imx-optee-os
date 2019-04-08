@@ -5,7 +5,7 @@
  * @file    rsa.c
  *
  * @brief   Implementation of the RSA pseudo-driver compatible with the
- *          i.MX cryptographic library and using the TomCrypt software
+ *          NXP cryptographic library and using the TomCrypt software
  *          driver
  */
 
@@ -13,7 +13,7 @@
 #include <mpalib.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_acipher.h>
 

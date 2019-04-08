@@ -19,7 +19,7 @@
 #include <tee/cache.h>
 
 #ifdef CFG_CRYPTO_RNG_HW
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_rng.h>
 #endif // CFG_CRYPTO_RNG_HW

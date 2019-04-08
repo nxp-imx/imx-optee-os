@@ -12,7 +12,7 @@
 #include <tee_api_types.h>
 
 #ifdef CFG_NXPCRYPT
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #endif
 

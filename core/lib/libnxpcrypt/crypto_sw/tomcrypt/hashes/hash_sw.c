@@ -5,7 +5,7 @@
  * @file    hash_sw.c
  *
  * @brief   Implementation of the hash pseudo-driver compatible with the
- *          i.MX cryptographic library. Call LibTomCrypt's algorithm instead
+ *          NXP cryptographic library. Call LibTomCrypt's algorithm instead
  *          of using the HW module.
  */
 
@@ -13,7 +13,7 @@
 #include <trace.h>
 #include <utee_defines.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_hash.h>
 

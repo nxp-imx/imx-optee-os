@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt_cipher.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Cipher interface library vs CAAM driver.
  */
 #ifndef __LIBNXPCRYPT_CIPHER_H__
@@ -86,7 +86,7 @@ struct nxpcrypt_cipher_update {
 };
 
 /**
- * @brief   i.MX Crypto Library Cipher driver operations
+ * @brief   NXP Crypto Library Cipher driver operations
  *
  */
 struct nxpcrypt_cipher {

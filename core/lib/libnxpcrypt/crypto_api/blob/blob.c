@@ -4,7 +4,7 @@
  *
  * @file    blob.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Blob crypto_* interface implementation.
  */
 
@@ -12,7 +12,7 @@
 #include <crypto/crypto.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <crypto_extension.h>
 #include <libnxpcrypt_blob.h>
 

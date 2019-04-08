@@ -7,7 +7,7 @@
  * @brief   Definition of the Hash's OID
  */
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <asn1_oid.h>
 
 /**

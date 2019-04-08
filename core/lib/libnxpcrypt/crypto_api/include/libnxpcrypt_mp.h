@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt_mp.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Manufacturing Protection (MP) interface library vs CAAM driver.
  */
 #ifndef __LIBNXPCRYPT_MP_H__
@@ -14,7 +14,7 @@
 #include <crypto_extension.h>
 
 /**
- * @brief   i.MX Crypto Library MP driver operations
+ * @brief   NXP Crypto Library MP driver operations
  *
  */
 struct nxpcrypt_mp {

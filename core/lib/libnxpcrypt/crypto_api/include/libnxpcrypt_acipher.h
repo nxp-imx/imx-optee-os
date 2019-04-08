@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt_acipher.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Cipher interface library vs CAAM driver.
  */
 #ifndef __LIBIMXCRYPT_ACIPHER_H__
@@ -14,7 +14,7 @@
 #include <crypto/crypto.h>
 #include <tee_api_types.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt_hash.h>
 
 /**
@@ -80,7 +80,7 @@ struct nxpcrypt_rsa_ed {
 };
 
 /**
- * @brief   i.MX Crypto Library RSA driver operations
+ * @brief   NXP Crypto Library RSA driver operations
  *
  */
 struct nxpcrypt_rsa {
@@ -128,7 +128,7 @@ struct nxpcrypt_secret_data {
 };
 
 /**
- * @brief   i.MX Crypto Library DSA driver operations
+ * @brief   NXP Crypto Library DSA driver operations
  *
  */
 struct nxpcrypt_dsa {
@@ -146,7 +146,7 @@ struct nxpcrypt_dsa {
 };
 
 /**
- * @brief   i.MX Crypto Library ECC driver operations
+ * @brief   NXP Crypto Library ECC driver operations
  *
  */
 struct nxpcrypt_ecc {
@@ -168,7 +168,7 @@ struct nxpcrypt_ecc {
 };
 
 /**
- * @brief   i.MX Crypto Library DH driver operations
+ * @brief   NXP Crypto Library DH driver operations
  *
  */
 struct nxpcrypt_dh {

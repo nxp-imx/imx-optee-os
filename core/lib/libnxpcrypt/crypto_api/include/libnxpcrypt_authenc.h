@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt_authenc.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Authenticate Encryption interface library vs CAAM driver.
  */
 #ifndef __LIBNXPCRYPT_AUTHENC_H__
@@ -54,7 +54,7 @@ struct nxpcrypt_authenc_data {
 };
 
 /**
- * @brief   i.MX Crypto Library Authentication driver operations
+ * @brief   NXP Crypto Library Authentication driver operations
  *
  */
 struct nxpcrypt_authenc {

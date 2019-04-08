@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Library exported constants and interfaces.
  */
 #ifndef __LIBNXPCRYPT_H__
@@ -14,7 +14,7 @@
 #include <tee_api_types.h>
 
 /**
- * @brief   i.MX Crypto Library Algorithm enumeration
+ * @brief   NXP Crypto Library Algorithm enumeration
  */
 enum nxpcrypt_algo_id {
 	CRYPTO_HASH = 0,      ///< HASH driver
@@ -36,7 +36,7 @@ enum nxpcrypt_algo_id {
 };
 
 /**
- * @brief   i.MX Cryptographic buffer type
+ * @brief   NXP Cryptographic buffer type
  */
 struct nxpcrypt_buf {
 	uint8_t *data;   ///< Pointer to the data buffer

@@ -12,7 +12,7 @@
 #include <mm/core_memprot.h>
 #include <tee/cache.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_acipher.h>
 

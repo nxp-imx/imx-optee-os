@@ -15,7 +15,7 @@
 #include <tee/cache.h>
 #include <tee/tee_cryp_utl.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_math.h>
 

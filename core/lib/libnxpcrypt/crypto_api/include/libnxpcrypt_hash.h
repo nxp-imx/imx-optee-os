@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt_hash.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Hash interface library vs CAAM driver.
  */
 #ifndef __LIBNXPCRYPT_HASH_H__
@@ -27,7 +27,7 @@ enum nxpcrypt_hash_id {
 };
 
 /**
- * @brief   i.MX Crypto Library Hash driver operations
+ * @brief   NXP Crypto Library Hash driver operations
  *
  */
 struct nxpcrypt_hash {

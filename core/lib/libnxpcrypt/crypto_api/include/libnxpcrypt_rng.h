@@ -4,14 +4,14 @@
  *
  * @file    libnxpcrypt_rng.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          RNG interface library vs CAAM driver.
  */
 #ifndef __LIBNXPCRYPT_RNG_H__
 #define __LIBNXPCRYPT_RNG_H__
 
 /**
- * @brief   i.MX Crypto Library Random Data driver operations
+ * @brief   NXP Crypto Library Random Data driver operations
  *
  */
 struct nxpcrypt_rng {

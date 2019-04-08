@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt_huk.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Hardware Unique Key interface library vs CAAM driver.
  */
 #ifndef __LIBNXPCRYPT_HUK_H__
@@ -13,7 +13,7 @@
 #include <tee_api_types.h>
 
 /**
- * @brief   i.MX Crypto Library HUK driver operations
+ * @brief   NXP Crypto Library HUK driver operations
  *
  */
 struct nxpcrypt_huk {

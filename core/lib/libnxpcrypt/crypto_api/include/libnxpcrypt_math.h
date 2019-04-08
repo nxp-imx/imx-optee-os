@@ -4,7 +4,7 @@
  *
  * @file    libnxpcrypt_math.h
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          Mathematical operation using CAAM driver if available.
  */
 #ifndef __LIBNXPCRYPT_MATH_H__
@@ -32,7 +32,7 @@ struct nxpcrypt_mod_op {
 TEE_Result libnxpcrypt_xor_mod_n(struct nxpcrypt_mod_op *data);
 
 /**
- * @brief   i.MX Crypto Library Binaries Modular driver operations
+ * @brief   NXP Crypto Library Binaries Modular driver operations
  *
  */
 struct nxpcrypt_math {

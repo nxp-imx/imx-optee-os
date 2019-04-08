@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP\n
+ * @copyright 2018-2019 NXP\n
  *
  * @file    aes_gcm.c
  *
- * @brief   Cryptographic library using the i.MX CAAM driver.\n
+ * @brief   Cryptographic library using the NXP CAAM driver.\n
  *          AES GCM crypto_* interface implementation.
  */
 

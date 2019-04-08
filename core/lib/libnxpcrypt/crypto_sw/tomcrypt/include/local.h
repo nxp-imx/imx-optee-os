@@ -4,7 +4,7 @@
  *
  * @file    local.h
  *
- * @brief   Software implementation of the i.MX cryptographic library.
+ * @brief   Software implementation of the NXP cryptographic library.
  *          Software connection with LibTomCrypt. Local include file.
  */
 #ifndef __LOCAL_H__
@@ -13,7 +13,7 @@
 /* Global includes */
 #include <tee_api_types.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 #include <libnxpcrypt_hash.h>
 #include <libnxpcrypt_cipher.h>

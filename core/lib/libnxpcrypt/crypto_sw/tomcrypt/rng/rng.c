@@ -5,14 +5,14 @@
  * @file    rng.c
  *
  * @brief   Implementation of the PRNG pseudo-driver compatible with the
- *          i.MX cryptographic library and using the TomCrypt software
+ *          NXP cryptographic library and using the TomCrypt software
  *          driver
  */
 /* Global includes */
 #include <crypto/crypto.h>
 #include <trace.h>
 
-/* Library i.MX includes */
+/* Library NXP includes */
 #include <libnxpcrypt.h>
 
 /* Local includes */
