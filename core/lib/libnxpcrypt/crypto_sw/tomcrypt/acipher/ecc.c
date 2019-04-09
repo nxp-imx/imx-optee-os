@@ -210,7 +210,7 @@ exit_ecc_gen:
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_sign(struct imxcrypt_sign_data *sdata)
+static TEE_Result do_sign(struct nxpcrypt_sign_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
@@ -275,7 +275,7 @@ end_sign:
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature is not valid
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-static TEE_Result do_verify(struct imxcrypt_sign_data *sdata)
+static TEE_Result do_verify(struct nxpcrypt_sign_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
@@ -344,7 +344,7 @@ end_verif:
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_SHORT_BUFFER      Result buffer too short
  */
-static TEE_Result do_shared_secret(struct imxcrypt_secret_data *sdata)
+static TEE_Result do_shared_secret(struct nxpcrypt_secret_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
@@ -401,7 +401,7 @@ end_secret:
 /**
  * @brief   Registration of the ECC Driver
  */
-struct imxcrypt_ecc driver_ecc = {
+struct nxpcrypt_ecc driver_ecc = {
 	.alloc_keypair   = &do_allocate_keypair,
 	.alloc_publickey = &do_allocate_publickey,
 	.free_publickey  = &do_free_publickey,
@@ -421,7 +421,7 @@ int libsoft_ecc_init(void)
 {
 	int ret;
 
-	ret = imxcrypt_register(CRYPTO_ECC, &driver_ecc);
+	ret = nxpcrypt_register(CRYPTO_ECC, &driver_ecc);
 
 	return ret;
 }

@@ -15,7 +15,7 @@
 /**
  * @brief   Authenticate Encryption Algorithm enumerate
  */
-enum imxcrypt_authenc_id {
+enum nxpcrypt_authenc_id {
 	AES_CCM = 0,           ///< AES Algo mode CCM
 	AES_GCM,               ///< AES Algo mode GCM
 	MAX_AUTHENC_SUPPORTED, ///< Maximum Authentication Encryption supported
@@ -24,11 +24,11 @@ enum imxcrypt_authenc_id {
 /**
  * @brief   Authentication Algorithm initialization data
  */
-struct imxcrypt_authenc_init {
+struct nxpcrypt_authenc_init {
 	void                *ctx;        ///< Software Context
 	bool                encrypt;     ///< Encrypt or decrypt direction
-	struct imxcrypt_buf key;         ///< Key
-	struct imxcrypt_buf nonce;       ///< Nonce
+	struct nxpcrypt_buf key;         ///< Key
+	struct nxpcrypt_buf nonce;       ///< Nonce
 	size_t              tag_len;     ///< Tag length
 	size_t              aad_len;     ///< Additional Data length
 	size_t              payload_len; ///< Payload length
@@ -37,41 +37,41 @@ struct imxcrypt_authenc_init {
 /**
  * @brief   Authentication Algorithm update Additional Data
  */
-struct imxcrypt_authenc_aad {
+struct nxpcrypt_authenc_aad {
 	void                *ctx;    ///< Software Context
-	struct imxcrypt_buf aad;     ///< Additonal Data
+	struct nxpcrypt_buf aad;     ///< Additonal Data
 };
 
 /**
  * @brief   Authentication Algorithm update Payload data
  */
-struct imxcrypt_authenc_data {
+struct nxpcrypt_authenc_data {
 	void                *ctx;    ///< Software Context
 	bool                encrypt; ///< Encrypt or decrypt direction
-	struct imxcrypt_buf src;     ///< Data Source
-	struct imxcrypt_buf dst;     ///< Data Destination
-	struct imxcrypt_buf tag;     ///< Tag data
+	struct nxpcrypt_buf src;     ///< Data Source
+	struct nxpcrypt_buf dst;     ///< Data Destination
+	struct nxpcrypt_buf tag;     ///< Tag data
 };
 
 /**
  * @brief   i.MX Crypto Library Authentication driver operations
  *
  */
-struct imxcrypt_authenc {
+struct nxpcrypt_authenc {
 	///< =True if AES GCM mode supported
 	bool aes_gcm;
 	///< Allocates of the Software context
-	TEE_Result (*alloc_ctx)(void **ctx, enum imxcrypt_authenc_id algo);
+	TEE_Result (*alloc_ctx)(void **ctx, enum nxpcrypt_authenc_id algo);
 	///< Free of the Software context
 	void (*free_ctx)(void *ctx);
 	///< Initialize the authentication operation
-	TEE_Result (*init)(struct imxcrypt_authenc_init *dinit);
+	TEE_Result (*init)(struct nxpcrypt_authenc_init *dinit);
 	///< Update the authentication operation
-	TEE_Result (*update)(struct imxcrypt_authenc_data *dupdate);
+	TEE_Result (*update)(struct nxpcrypt_authenc_data *dupdate);
 	///< Finalize the update authentication operation
-	TEE_Result (*update_final)(struct imxcrypt_authenc_data *dfinal);
+	TEE_Result (*update_final)(struct nxpcrypt_authenc_data *dfinal);
 	///< Update the authentication additional data
-	TEE_Result (*update_aad)(struct imxcrypt_authenc_aad *daad);
+	TEE_Result (*update_aad)(struct nxpcrypt_authenc_aad *daad);
 	///< Final the authentication
 	void (*final)(void *ctx);
 

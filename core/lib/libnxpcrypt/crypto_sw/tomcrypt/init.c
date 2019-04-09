@@ -31,7 +31,7 @@
  * @retval TEE_SUCCESS          Success
  * @retval TEE_ERROR_GENERIC    General failure
  */
-TEE_Result imxcrypt_libsoft_init(void)
+TEE_Result nxpcrypt_libsoft_init(void)
 {
 	int ret = 0;
 	int status = 0;

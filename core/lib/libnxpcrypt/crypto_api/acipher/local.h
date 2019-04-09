@@ -25,7 +25,7 @@
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-TEE_Result rsassa_sign(struct imxcrypt_rsa_ssa *ssa_data);
+TEE_Result rsassa_sign(struct nxpcrypt_rsa_ssa *ssa_data);
 
 /**
  * @brief   PKCS#1 - Verification the encoded signature of RSA message.
@@ -37,7 +37,7 @@ TEE_Result rsassa_sign(struct imxcrypt_rsa_ssa *ssa_data);
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature invalid
  */
-TEE_Result rsassa_verify(struct imxcrypt_rsa_ssa *ssa_data);
+TEE_Result rsassa_verify(struct nxpcrypt_rsa_ssa *ssa_data);
 
 /**
  * @brief   Mask Generation function. Use a Hash operation
@@ -50,7 +50,7 @@ TEE_Result rsassa_verify(struct imxcrypt_rsa_ssa *ssa_data);
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-TEE_Result rsa_mgf1(struct imxcrypt_rsa_mgf *mgf_data);
+TEE_Result rsa_mgf1(struct nxpcrypt_rsa_mgf *mgf_data);
 
 #endif /* __LOCAL_H__ */
 

@@ -95,7 +95,7 @@ static enum CAAM_Status do_tweak_block(struct cipherdata *ctx,
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad Parameters
  */
-TEE_Result do_update_xts(struct imxcrypt_cipher_update *dupdate)
+TEE_Result do_update_xts(struct nxpcrypt_cipher_update *dupdate)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum CAAM_Status retstatus;

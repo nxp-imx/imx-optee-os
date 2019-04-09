@@ -182,7 +182,7 @@ static TEE_Result pm_resume(uint32_t pm_hint)
 		 * and can not be regenerated. Hence driver must be
 		 * unregistered
 		 */
-		imxcrypt_register_change(CRYPTO_MP, NULL);
+		nxpcrypt_register_change(CRYPTO_MP, NULL);
 #endif
 	} else
 		caam_jr_resume(pm_hint);

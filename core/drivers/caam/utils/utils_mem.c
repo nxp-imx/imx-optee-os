@@ -351,7 +351,7 @@ int caam_realloc_align(void *orig, struct caambuf *dst, size_t size)
  * @retval CAAM_OUT_MEMORY     Out of memory
  */
 enum CAAM_Status caam_cpy_block_src(struct caamblock *block,
-				struct imxcrypt_buf *src,
+				struct nxpcrypt_buf *src,
 				size_t offset)
 {
 	enum CAAM_Status ret;
@@ -393,7 +393,7 @@ end_cpy:
  * @param[in/out] dst    Destination buffer
  * @param[in]     src    Source to copy
  */
-void caam_cpy_ltrim_buf(struct imxcrypt_buf *dst,
+void caam_cpy_ltrim_buf(struct nxpcrypt_buf *dst,
 				struct caambuf *src)
 {
 	size_t offset = 0;

@@ -13,11 +13,11 @@
 /**
  * @brief   Binary Modular operation data
  */
-struct imxcrypt_mod_op {
-	struct imxcrypt_buf N;      ///< Modulus N
-	struct imxcrypt_buf A;      ///< Operand A
-	struct imxcrypt_buf B;      ///< Operand B
-	struct imxcrypt_buf result; ///< Result of operation
+struct nxpcrypt_mod_op {
+	struct nxpcrypt_buf N;      ///< Modulus N
+	struct nxpcrypt_buf A;      ///< Operand A
+	struct nxpcrypt_buf B;      ///< Operand B
+	struct nxpcrypt_buf result; ///< Result of operation
 };
 
 /**
@@ -29,15 +29,15 @@ struct imxcrypt_mod_op {
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_GENERIC         Operation failed
  */
-TEE_Result libnxpcrypt_xor_mod_n(struct imxcrypt_mod_op *data);
+TEE_Result libnxpcrypt_xor_mod_n(struct nxpcrypt_mod_op *data);
 
 /**
  * @brief   i.MX Crypto Library Binaries Modular driver operations
  *
  */
-struct imxcrypt_math {
+struct nxpcrypt_math {
 	///< (A xor B) mod N
-	TEE_Result (*xor_mod_n)(struct imxcrypt_mod_op *op_data);
+	TEE_Result (*xor_mod_n)(struct nxpcrypt_mod_op *op_data);
 };
 
 #endif /* __LIBNXPCRYPT_MATH_H__ */

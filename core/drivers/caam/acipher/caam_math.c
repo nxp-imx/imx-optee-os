@@ -61,7 +61,7 @@
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_xor_mod_n(struct imxcrypt_mod_op *data)
+static TEE_Result do_xor_mod_n(struct nxpcrypt_mod_op *data)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
@@ -166,7 +166,7 @@ end_xor_mod_n:
 /**
  * @brief   Registration of the MATH Driver
  */
-struct imxcrypt_math driver_math = {
+struct nxpcrypt_math driver_math = {
 	.xor_mod_n = &do_xor_mod_n,
 };
 
@@ -183,7 +183,7 @@ enum CAAM_Status caam_math_init(vaddr_t ctrl_addr __unused)
 {
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 
-	if (imxcrypt_register(CRYPTO_MATH_HW, &driver_math) == 0)
+	if (nxpcrypt_register(CRYPTO_MATH_HW, &driver_math) == 0)
 		retstatus = CAAM_NO_ERROR;
 
 	return retstatus;

@@ -32,7 +32,7 @@
  */
 struct crypto_hash {
 	void                 *ctx; ///< Hash Context
-	struct imxcrypt_hash *op;  ///< Reference to the operation
+	struct nxpcrypt_hash *op;  ///< Reference to the operation
 };
 
 /**
@@ -43,13 +43,13 @@ struct crypto_hash {
  *
  * @retval  Reference to the driver operations
  */
-static struct imxcrypt_hash *do_check_algo(uint32_t algo,
-						enum imxcrypt_hash_id *id)
+static struct nxpcrypt_hash *do_check_algo(uint32_t algo,
+						enum nxpcrypt_hash_id *id)
 {
-	struct imxcrypt_hash *hash = NULL;
+	struct nxpcrypt_hash *hash = NULL;
 	uint8_t algo_op;
 	uint8_t algo_id;
-	enum imxcrypt_hash_id hash_id;
+	enum nxpcrypt_hash_id hash_id;
 
 	/* Extract the algorithms fields */
 	algo_op = TEE_ALG_GET_CLASS(algo);
@@ -61,14 +61,14 @@ static struct imxcrypt_hash *do_check_algo(uint32_t algo,
 
 		hash_id = algo_id - 1;
 
-		hash = imxcrypt_getmod(CRYPTO_HASH);
+		hash = nxpcrypt_getmod(CRYPTO_HASH);
 
 		/* Verify that the HASH HW implements this algorithm */
 		if (hash) {
 			if (hash->max_hash < hash_id)
-				hash = imxcrypt_getmod(CRYPTO_HASH_SW);
+				hash = nxpcrypt_getmod(CRYPTO_HASH_SW);
 		} else {
-			hash = imxcrypt_getmod(CRYPTO_HASH_SW);
+			hash = nxpcrypt_getmod(CRYPTO_HASH_SW);
 		}
 
 		if (id)
@@ -96,7 +96,7 @@ TEE_Result crypto_hash_alloc_ctx(void **ctx, uint32_t algo)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 	struct crypto_hash   *hash = NULL;
-	enum imxcrypt_hash_id hash_id;
+	enum nxpcrypt_hash_id hash_id;
 
 	/* Check the parameters */
 	if (!ctx)

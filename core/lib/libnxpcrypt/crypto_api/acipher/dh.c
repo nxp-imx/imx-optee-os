@@ -40,7 +40,7 @@ TEE_Result crypto_acipher_alloc_dh_keypair(struct dh_keypair *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_dh *dh = NULL;
+	struct nxpcrypt_dh *dh = NULL;
 
 	if ((!key) || (size_bits == 0)) {
 		LIB_TRACE("Parameters error (key @0x%"PRIxPTR") (size %d bits)",
@@ -48,7 +48,7 @@ TEE_Result crypto_acipher_alloc_dh_keypair(struct dh_keypair *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	dh = imxcrypt_getmod(CRYPTO_DH);
+	dh = nxpcrypt_getmod(CRYPTO_DH);
 	if (dh)
 		ret = dh->alloc_keypair(key, size_bits);
 
@@ -75,7 +75,7 @@ TEE_Result crypto_acipher_gen_dh_key(struct dh_keypair *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_dh *dh = NULL;
+	struct nxpcrypt_dh *dh = NULL;
 
 	/* Check input parameters */
 	if (!key) {
@@ -83,7 +83,7 @@ TEE_Result crypto_acipher_gen_dh_key(struct dh_keypair *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	dh = imxcrypt_getmod(CRYPTO_DH);
+	dh = nxpcrypt_getmod(CRYPTO_DH);
 	if (dh)
 		ret = dh->gen_keypair(key, q, key_size);
 
@@ -114,8 +114,8 @@ TEE_Result crypto_acipher_dh_shared_secret(
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
-	struct imxcrypt_dh          *dh = NULL;
-	struct imxcrypt_secret_data sdata;
+	struct nxpcrypt_dh          *dh = NULL;
+	struct nxpcrypt_secret_data sdata;
 
 	/* Verify first if the input parameters */
 	if ((!private_key) || (!public_key) || (!secret)) {
@@ -123,7 +123,7 @@ TEE_Result crypto_acipher_dh_shared_secret(
 		return ret;
 	}
 
-	dh = imxcrypt_getmod(CRYPTO_DH);
+	dh = nxpcrypt_getmod(CRYPTO_DH);
 	if (dh) {
 		/*
 		 * Prepare the Secret structure data

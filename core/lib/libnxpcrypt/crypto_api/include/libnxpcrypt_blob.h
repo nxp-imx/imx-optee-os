@@ -15,20 +15,20 @@
 /**
  * @brief Blob data structure
  */
-struct imxcrypt_blob_data {
+struct nxpcrypt_blob_data {
 	enum blob_type      type;    ///< Blob encryption type
 	bool                encaps;  ///< Encryption/Decryption direction
-	struct imxcrypt_buf key;     ///< Blob Key modifier
-	struct imxcrypt_buf payload; ///< Decrypted Blob data payload
-	struct imxcrypt_buf blob;    ///< Encrypted Blob of payload
+	struct nxpcrypt_buf key;     ///< Blob Key modifier
+	struct nxpcrypt_buf payload; ///< Decrypted Blob data payload
+	struct nxpcrypt_buf blob;    ///< Encrypted Blob of payload
 };
 
 /**
  * @brief   i.MX Crypto Library BLOB driver operations
  */
-struct imxcrypt_blob {
+struct nxpcrypt_blob {
 	///< Encapsulate/Decapsulate data
-	TEE_Result (*operate)(struct imxcrypt_blob_data *blob_data);
+	TEE_Result (*operate)(struct nxpcrypt_blob_data *blob_data);
 };
 
 #endif /* __LIBNXPCRYPT_BLOB_H__ */

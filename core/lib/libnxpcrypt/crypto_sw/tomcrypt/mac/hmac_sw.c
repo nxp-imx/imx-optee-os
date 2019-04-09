@@ -39,7 +39,7 @@
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  */
-static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
+static TEE_Result do_allocate(void **ctx, enum nxpcrypt_hash_id algo)
 {
 	hmac_state *hmac_ctx;
 	int index;
@@ -195,7 +195,7 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 /**
  * @brief   Registration of the HMAC SW Driver
  */
-const struct imxcrypt_hash driver_hmac_sw = {
+const struct nxpcrypt_hash driver_hmac_sw = {
 	.alloc_ctx   = &do_allocate,
 	.free_ctx    = &do_free,
 	.init        = &do_init,
@@ -213,6 +213,6 @@ const struct imxcrypt_hash driver_hmac_sw = {
  */
 int libsoft_hmac_sw_init(void)
 {
-	return imxcrypt_register(CRYPTO_HMAC_SW, (void *)&driver_hmac_sw);
+	return nxpcrypt_register(CRYPTO_HMAC_SW, (void *)&driver_hmac_sw);
 }
 #endif /* CFG_CRYPTO_HMAC_FULL_HW */

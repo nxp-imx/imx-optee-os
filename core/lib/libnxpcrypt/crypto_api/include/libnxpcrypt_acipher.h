@@ -20,7 +20,7 @@
 /**
  * @brief   Assymetric Cipher RSA Algorithm enumerate
  */
-enum imxcrypt_rsa_id {
+enum nxpcrypt_rsa_id {
 	RSA_NOPAD = 0,   ///< RSA Algo mode NO PAD
 	RSA_OAEP,        ///< RSA Algo mode OAEP
 	RSA_PKCS_V1_5,   ///< RSA Algo mode PKCSv1.5
@@ -39,51 +39,51 @@ struct rsakey {
 /**
  * @brief   RSA Mask Generation data
  */
-struct imxcrypt_rsa_mgf {
-	enum imxcrypt_hash_id hash_id;     ///< HASH Algorithm Id
+struct nxpcrypt_rsa_mgf {
+	enum nxpcrypt_hash_id hash_id;     ///< HASH Algorithm Id
 	size_t                digest_size; ///< Hash Digest Size
-	struct imxcrypt_buf   seed;        ///< Seed to generate mask
-	struct imxcrypt_buf   mask;        ///< Mask generated
+	struct nxpcrypt_buf   seed;        ///< Seed to generate mask
+	struct nxpcrypt_buf   mask;        ///< Mask generated
 
 };
 
 /**
  * @brief   RSA Encoded Signature data
  */
-struct imxcrypt_rsa_ssa {
+struct nxpcrypt_rsa_ssa {
 	uint32_t              algo;        ///< Operation algorithm
-	enum imxcrypt_hash_id hash_id;     ///< HASH Algorithm Id
+	enum nxpcrypt_hash_id hash_id;     ///< HASH Algorithm Id
 	size_t                digest_size; ///< Hash Digest Size
 	struct rsakey         key;         ///< Public or Private Key
-	struct imxcrypt_buf   message;     ///< Message to sign or signed
-	struct imxcrypt_buf   signature;   ///< Signature of the message
+	struct nxpcrypt_buf   message;     ///< Message to sign or signed
+	struct nxpcrypt_buf   signature;   ///< Signature of the message
 	size_t                salt_len;    ///< Signature Salt length
 
 	///< RSA Mask Generation function
-	TEE_Result (*mgf)(struct imxcrypt_rsa_mgf *mgf_data);
+	TEE_Result (*mgf)(struct nxpcrypt_rsa_mgf *mgf_data);
 };
 
 /**
  * @brief   RSA Encrypt/Decript data
  */
-struct imxcrypt_rsa_ed {
-	enum imxcrypt_rsa_id  rsa_id;      ///< RSA Algorithm Id
-	enum imxcrypt_hash_id hash_id;     ///< HASH Algorithm Id
+struct nxpcrypt_rsa_ed {
+	enum nxpcrypt_rsa_id  rsa_id;      ///< RSA Algorithm Id
+	enum nxpcrypt_hash_id hash_id;     ///< HASH Algorithm Id
 	size_t                digest_size; ///< Hash Digest Size
 	struct rsakey         key;         ///< Public or Private key
-	struct imxcrypt_buf   message;     ///< Message to encrypt or decrypted
-	struct imxcrypt_buf   cipher;      ///< Cipher encrypted or to decrypt
-	struct imxcrypt_buf   label;       ///< Additional Label (RSAES)
+	struct nxpcrypt_buf   message;     ///< Message to encrypt or decrypted
+	struct nxpcrypt_buf   cipher;      ///< Cipher encrypted or to decrypt
+	struct nxpcrypt_buf   label;       ///< Additional Label (RSAES)
 
 	///< RSA Mask Generation function
-	TEE_Result (*mgf)(struct imxcrypt_rsa_mgf *mgf_data);
+	TEE_Result (*mgf)(struct nxpcrypt_rsa_mgf *mgf_data);
 };
 
 /**
  * @brief   i.MX Crypto Library RSA driver operations
  *
  */
-struct imxcrypt_rsa {
+struct nxpcrypt_rsa {
 	///< Allocates the RSA keypair
 	TEE_Result (*alloc_keypair)(struct rsa_keypair *key, size_t size_bits);
 	///< Allocates the RSA public key
@@ -95,43 +95,43 @@ struct imxcrypt_rsa {
 	TEE_Result (*gen_keypair)(struct rsa_keypair *key, size_t size_bits);
 
 	///< RSA Encryption
-	TEE_Result (*encrypt)(struct imxcrypt_rsa_ed *rsa_data);
+	TEE_Result (*encrypt)(struct nxpcrypt_rsa_ed *rsa_data);
 	///< RSA Decryption
-	TEE_Result (*decrypt)(struct imxcrypt_rsa_ed *rsa_data);
+	TEE_Result (*decrypt)(struct nxpcrypt_rsa_ed *rsa_data);
 
 	///< RSA Sign a message and encode the signature
-	TEE_Result (*ssa_sign)(struct imxcrypt_rsa_ssa *ssa_data);
+	TEE_Result (*ssa_sign)(struct nxpcrypt_rsa_ssa *ssa_data);
 	///< RSA Encoded Signature Verification
-	TEE_Result (*ssa_verify)(struct imxcrypt_rsa_ssa *ssa_data);
+	TEE_Result (*ssa_verify)(struct nxpcrypt_rsa_ssa *ssa_data);
 
 };
 
 /**
  * @brief   Signature data
  */
-struct imxcrypt_sign_data {
+struct nxpcrypt_sign_data {
 	uint32_t              algo;       ///< Operation algorithm
 	void                  *key;       ///< Public or Private Key
 	size_t                size_sec;   ///< Security size in bytes
-	struct imxcrypt_buf   message;    ///< Message to sign or signed
-	struct imxcrypt_buf   signature;  ///< Signature of the message
+	struct nxpcrypt_buf   message;    ///< Message to sign or signed
+	struct nxpcrypt_buf   signature;  ///< Signature of the message
 };
 
 /**
  * @brief   Shared Secret data
  */
-struct imxcrypt_secret_data {
+struct nxpcrypt_secret_data {
 	void                  *key_priv;  ///< Private Key
 	void                  *key_pub;   ///< Public Key
 	size_t                size_sec;   ///< Security size in bytes
-	struct imxcrypt_buf   secret;     ///< Share secret
+	struct nxpcrypt_buf   secret;     ///< Share secret
 };
 
 /**
  * @brief   i.MX Crypto Library DSA driver operations
  *
  */
-struct imxcrypt_dsa {
+struct nxpcrypt_dsa {
 	///< Allocates the DSA keypair
 	TEE_Result (*alloc_keypair)(struct dsa_keypair *key, size_t size_bits);
 	///< Allocates the DSA public key
@@ -140,16 +140,16 @@ struct imxcrypt_dsa {
 	///< Generates the DSA keypair
 	TEE_Result (*gen_keypair)(struct dsa_keypair *key, size_t size_bits);
 	///< DSA Sign a message and returns the signature
-	TEE_Result (*sign)(struct imxcrypt_sign_data *sdata);
+	TEE_Result (*sign)(struct nxpcrypt_sign_data *sdata);
 	///< DSA Verify a message's signature
-	TEE_Result (*verify)(struct imxcrypt_sign_data *sdata);
+	TEE_Result (*verify)(struct nxpcrypt_sign_data *sdata);
 };
 
 /**
  * @brief   i.MX Crypto Library ECC driver operations
  *
  */
-struct imxcrypt_ecc {
+struct nxpcrypt_ecc {
 	///< Allocates the ECC keypair
 	TEE_Result (*alloc_keypair)(struct ecc_keypair *key, size_t size_bits);
 	///< Allocates the ECC public key
@@ -160,25 +160,25 @@ struct imxcrypt_ecc {
 	///< Generates the ECC keypair
 	TEE_Result (*gen_keypair)(struct ecc_keypair *key, size_t size_bits);
 	///< ECC Sign a message and returns the signature
-	TEE_Result (*sign)(struct imxcrypt_sign_data *sdata);
+	TEE_Result (*sign)(struct nxpcrypt_sign_data *sdata);
 	///< ECC Verify a message's signature
-	TEE_Result (*verify)(struct imxcrypt_sign_data *sdata);
+	TEE_Result (*verify)(struct nxpcrypt_sign_data *sdata);
 	///< ECC Shared Secret
-	TEE_Result (*shared_secret)(struct imxcrypt_secret_data *sdata);
+	TEE_Result (*shared_secret)(struct nxpcrypt_secret_data *sdata);
 };
 
 /**
  * @brief   i.MX Crypto Library DH driver operations
  *
  */
-struct imxcrypt_dh {
+struct nxpcrypt_dh {
 	///< Allocates the DH keypair
 	TEE_Result (*alloc_keypair)(struct dh_keypair *key, size_t size_bits);
 	///< Generates the DH keypair
 	TEE_Result (*gen_keypair)(struct dh_keypair *key, struct bignum *q,
 			size_t size_bits);
 	///< DH Shared Secret
-	TEE_Result (*shared_secret)(struct imxcrypt_secret_data *sdata);
+	TEE_Result (*shared_secret)(struct nxpcrypt_secret_data *sdata);
 };
 
 #endif /* __LIBIMXCRYPT_ACIPHER_H__ */

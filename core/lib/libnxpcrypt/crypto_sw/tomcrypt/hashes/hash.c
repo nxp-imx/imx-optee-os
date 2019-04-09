@@ -320,7 +320,7 @@ static const struct ltc_hash_descriptor sha512_desc = {
  * @retval  >=0 if found
  * @retval  (-1) if not found
  */
-int get_ltc_hashindex(enum imxcrypt_hash_id algo)
+int get_ltc_hashindex(enum nxpcrypt_hash_id algo)
 {
 	int index = (-1);
 

@@ -409,7 +409,7 @@ static TEE_Result do_add_entropy(const uint8_t *inbuf __unused,
 /**
  * @brief   Registration of the RNG Driver
  */
-struct imxcrypt_rng driver_rng = {
+struct nxpcrypt_rng driver_rng = {
 	.read        = &do_rng_read,
 	.add_entropy = &do_add_entropy,
 };

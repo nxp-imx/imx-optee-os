@@ -14,7 +14,7 @@
  * @brief   i.MX Crypto Library Random Data driver operations
  *
  */
-struct imxcrypt_rng {
+struct nxpcrypt_rng {
 	///< Read a Random Data Buffer
 	TEE_Result (*read)(uint8_t *buf, size_t len);
 	///< Add entropy to next Random Data Generation

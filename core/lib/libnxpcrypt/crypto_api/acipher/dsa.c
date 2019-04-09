@@ -40,7 +40,7 @@ TEE_Result crypto_acipher_alloc_dsa_keypair(struct dsa_keypair *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_dsa *dsa = NULL;
+	struct nxpcrypt_dsa *dsa = NULL;
 
 	if ((!key) || (size_bits == 0)) {
 		LIB_TRACE("Parameters error (key @0x%"PRIxPTR") (size %d bits)",
@@ -48,7 +48,7 @@ TEE_Result crypto_acipher_alloc_dsa_keypair(struct dsa_keypair *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	dsa = imxcrypt_getmod(CRYPTO_DSA);
+	dsa = nxpcrypt_getmod(CRYPTO_DSA);
 	if (dsa)
 		ret = dsa->alloc_keypair(key, size_bits);
 
@@ -73,7 +73,7 @@ TEE_Result crypto_acipher_alloc_dsa_public_key(struct dsa_public_key *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_dsa *dsa = NULL;
+	struct nxpcrypt_dsa *dsa = NULL;
 
 	if ((!key) || (size_bits == 0)) {
 		LIB_TRACE("Parameters error (key @0x%"PRIxPTR") (size %d bits)",
@@ -81,7 +81,7 @@ TEE_Result crypto_acipher_alloc_dsa_public_key(struct dsa_public_key *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	dsa = imxcrypt_getmod(CRYPTO_DSA);
+	dsa = nxpcrypt_getmod(CRYPTO_DSA);
 	if (dsa)
 		ret = dsa->alloc_publickey(key, size_bits);
 
@@ -105,7 +105,7 @@ TEE_Result crypto_acipher_gen_dsa_key(struct dsa_keypair *key, size_t size_bits)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_dsa *dsa = NULL;
+	struct nxpcrypt_dsa *dsa = NULL;
 
 	/* Check input parameters */
 	if ((!key) || (size_bits == 0)) {
@@ -114,7 +114,7 @@ TEE_Result crypto_acipher_gen_dsa_key(struct dsa_keypair *key, size_t size_bits)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	dsa = imxcrypt_getmod(CRYPTO_DSA);
+	dsa = nxpcrypt_getmod(CRYPTO_DSA);
 	if (dsa)
 		ret = dsa->gen_keypair(key, size_bits);
 
@@ -150,8 +150,8 @@ TEE_Result crypto_acipher_dsa_sign(uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
-	struct imxcrypt_dsa       *dsa = NULL;
-	struct imxcrypt_sign_data sdata;
+	struct nxpcrypt_dsa       *dsa = NULL;
+	struct nxpcrypt_sign_data sdata;
 	size_t                    size_digest;
 	size_t                    qorder;
 
@@ -183,7 +183,7 @@ TEE_Result crypto_acipher_dsa_sign(uint32_t algo,
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	dsa = imxcrypt_getmod(CRYPTO_DSA);
+	dsa = nxpcrypt_getmod(CRYPTO_DSA);
 	if (dsa) {
 		/*
 		 * Prepare the Signature structure data
@@ -234,8 +234,8 @@ TEE_Result crypto_acipher_dsa_verify(uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
-	struct imxcrypt_dsa       *dsa = NULL;
-	struct imxcrypt_sign_data sdata;
+	struct nxpcrypt_dsa       *dsa = NULL;
+	struct nxpcrypt_sign_data sdata;
 
 	/* Verify first if the input parameters */
 	if ((!key) || (!msg) || (!sig)) {
@@ -243,7 +243,7 @@ TEE_Result crypto_acipher_dsa_verify(uint32_t algo,
 		return ret;
 	}
 
-	dsa = imxcrypt_getmod(CRYPTO_DSA);
+	dsa = nxpcrypt_getmod(CRYPTO_DSA);
 	if (dsa) {
 		/*
 		 * Prepare the Signature structure data

@@ -392,7 +392,7 @@ exit_gen_keypair:
  * @retval TEE_ERROR_SHORT_BUFFER      Result buffer too short
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_sign(struct imxcrypt_sign_data *sdata)
+static TEE_Result do_sign(struct nxpcrypt_sign_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
@@ -541,7 +541,7 @@ exit_sign:
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature is not valid
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-static TEE_Result do_verify(struct imxcrypt_sign_data *sdata)
+static TEE_Result do_verify(struct nxpcrypt_sign_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
@@ -669,7 +669,7 @@ exit_verify:
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_SHORT_BUFFER      Result buffer too short
  */
-static TEE_Result do_shared_secret(struct imxcrypt_secret_data *sdata)
+static TEE_Result do_shared_secret(struct nxpcrypt_secret_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
@@ -787,7 +787,7 @@ exit_shared:
 /**
  * @brief   Registration of the ECC Driver
  */
-struct imxcrypt_ecc driver_ecc = {
+struct nxpcrypt_ecc driver_ecc = {
 	.alloc_keypair   = &do_allocate_keypair,
 	.alloc_publickey = &do_allocate_publickey,
 	.free_publickey  = &do_free_publickey,
@@ -810,7 +810,7 @@ enum CAAM_Status caam_ecc_init(vaddr_t ctrl_addr __unused)
 {
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 
-	if (imxcrypt_register(CRYPTO_ECC, &driver_ecc) == 0)
+	if (nxpcrypt_register(CRYPTO_ECC, &driver_ecc) == 0)
 		retstatus = CAAM_NO_ERROR;
 
 	return retstatus;

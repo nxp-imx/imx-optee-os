@@ -16,9 +16,9 @@
  * @brief   i.MX Crypto Library HUK driver operations
  *
  */
-struct imxcrypt_huk {
+struct nxpcrypt_huk {
 	///< Allocates of the Software context
-	TEE_Result (*generate_huk)(struct imxcrypt_buf *hukkey);
+	TEE_Result (*generate_huk)(struct nxpcrypt_buf *hukkey);
 };
 
 #endif /* __LIBNXPCRYPT_HUL_H__ */

@@ -145,7 +145,7 @@ static TEE_Result do_gen_keypair(struct dh_keypair *key,
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_SHORT_BUFFER      Result buffer too short
  */
-static TEE_Result do_shared_secret(struct imxcrypt_secret_data *sdata)
+static TEE_Result do_shared_secret(struct nxpcrypt_secret_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
@@ -173,7 +173,7 @@ static TEE_Result do_shared_secret(struct imxcrypt_secret_data *sdata)
 /**
  * @brief   Registration of the DH Driver
  */
-struct imxcrypt_dh driver_dh = {
+struct nxpcrypt_dh driver_dh = {
 	.alloc_keypair   = &do_allocate_keypair,
 	.gen_keypair     = &do_gen_keypair,
 	.shared_secret   = &do_shared_secret,
@@ -189,7 +189,7 @@ int libsoft_dh_init(void)
 {
 	int ret;
 
-	ret = imxcrypt_register(CRYPTO_DH, &driver_dh);
+	ret = nxpcrypt_register(CRYPTO_DH, &driver_dh);
 
 	return ret;
 }

@@ -44,14 +44,14 @@
  */
 TEE_Result blob_encapsulate(enum blob_type type,
 		const uint8_t *key,
-		const struct imxcrypt_buf *payload,
-		struct imxcrypt_buf *blob)
+		const struct nxpcrypt_buf *payload,
+		struct nxpcrypt_buf *blob)
 {
 	TEE_Result ret;
-	struct imxcrypt_blob_data blob_data = {0};
-	struct imxcrypt_blob *blobdrv = NULL;
+	struct nxpcrypt_blob_data blob_data = {0};
+	struct nxpcrypt_blob *blobdrv = NULL;
 
-	blobdrv = imxcrypt_getmod(CRYPTO_BLOB);
+	blobdrv = nxpcrypt_getmod(CRYPTO_BLOB);
 	if (!blobdrv) {
 		LIB_TRACE("Blob is not supported");
 		return TEE_ERROR_NOT_IMPLEMENTED;
@@ -123,15 +123,15 @@ TEE_Result blob_encapsulate(enum blob_type type,
  */
 TEE_Result blob_decapsulate(enum blob_type type,
 		const uint8_t *key,
-		struct imxcrypt_buf *payload,
-		const struct imxcrypt_buf *blob)
+		struct nxpcrypt_buf *payload,
+		const struct nxpcrypt_buf *blob)
 {
 	TEE_Result ret;
 
-	struct imxcrypt_blob_data blob_data = {0};
-	struct imxcrypt_blob *blobdrv = NULL;
+	struct nxpcrypt_blob_data blob_data = {0};
+	struct nxpcrypt_blob *blobdrv = NULL;
 
-	blobdrv = imxcrypt_getmod(CRYPTO_BLOB);
+	blobdrv = nxpcrypt_getmod(CRYPTO_BLOB);
 	if (!blobdrv) {
 		LIB_TRACE("Blob is not supported");
 		return TEE_ERROR_NOT_IMPLEMENTED;

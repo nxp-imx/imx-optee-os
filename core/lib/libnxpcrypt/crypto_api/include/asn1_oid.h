@@ -107,14 +107,14 @@
 			OID_ITU_ORG_GOV OID_DIGEST_CSOR_NIST OID_DIGEST "\x03"
 
 /**
- * @brief   OID Macro defining a imxcrypt_oid ASN1 entry
+ * @brief   OID Macro defining a nxpcrypt_oid ASN1 entry
  */
 #define OID_DEF(id)     {id, (sizeof(id) - 1)}
 
 /**
  * @brief   Definition of the ASN1 OID structure
  */
-struct imxcrypt_oid {
+struct nxpcrypt_oid {
 	const char    *asn1;        ///< OID ASN1 string
 	const uint8_t asn1_length;  ///< OID ASN1 string length
 };
@@ -122,7 +122,7 @@ struct imxcrypt_oid {
 /**
  * @brief   Hash OID constant array
  */
-extern const struct imxcrypt_oid imxcrypt_hash_oid[MAX_HASH_SUPPORTED];
+extern const struct nxpcrypt_oid nxpcrypt_hash_oid[MAX_HASH_SUPPORTED];
 
 #endif /* __ASN1_OID_H__ */
 

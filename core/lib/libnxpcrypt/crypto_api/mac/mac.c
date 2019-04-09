@@ -45,8 +45,8 @@ struct crypto_mac {
 	size_t sizeblock; ///< Cipher Block size
 
 	union {
-		struct imxcrypt_hash   *hash;   ///< Hash operations
-		struct imxcrypt_cipher *cipher; ///< Cipher operations
+		struct nxpcrypt_hash   *hash;   ///< Hash operations
+		struct nxpcrypt_cipher *cipher; ///< Cipher operations
 	} op;
 };
 
@@ -59,10 +59,10 @@ struct crypto_mac {
  *
  * @retval  Reference to the driver operations
  */
-static struct imxcrypt_hash *do_check_algo(uint32_t algo,
-					enum imxcrypt_hash_id *hash_id)
+static struct nxpcrypt_hash *do_check_algo(uint32_t algo,
+					enum nxpcrypt_hash_id *hash_id)
 {
-	struct imxcrypt_hash *hash = NULL;
+	struct nxpcrypt_hash *hash = NULL;
 	uint8_t algo_op;
 	uint8_t algo_id;
 
@@ -76,14 +76,14 @@ static struct imxcrypt_hash *do_check_algo(uint32_t algo,
 
 		*hash_id = algo_id - 1;
 
-		hash = imxcrypt_getmod(CRYPTO_HMAC);
+		hash = nxpcrypt_getmod(CRYPTO_HMAC);
 
 		/* Verify that the HASH HW implements this algorithm */
 		if (hash) {
 			if (hash->max_hash < *hash_id)
-				hash = imxcrypt_getmod(CRYPTO_HMAC_SW);
+				hash = nxpcrypt_getmod(CRYPTO_HMAC_SW);
 		} else {
-			hash = imxcrypt_getmod(CRYPTO_HMAC_SW);
+			hash = nxpcrypt_getmod(CRYPTO_HMAC_SW);
 		}
 	}
 
@@ -102,10 +102,10 @@ static struct imxcrypt_hash *do_check_algo(uint32_t algo,
  *
  * @retval  Reference to the driver operations
  */
-static struct imxcrypt_cipher *do_check_algo_cipher(uint32_t algo,
-					enum imxcrypt_cipher_id *cipher_id)
+static struct nxpcrypt_cipher *do_check_algo_cipher(uint32_t algo,
+					enum nxpcrypt_cipher_id *cipher_id)
 {
-	struct imxcrypt_cipher *cipher = NULL;
+	struct nxpcrypt_cipher *cipher = NULL;
 	uint8_t algo_op;
 	uint8_t algo_id;
 	uint8_t algo_md;
@@ -123,7 +123,7 @@ static struct imxcrypt_cipher *do_check_algo_cipher(uint32_t algo,
 		(algo_md != TEE_CHAIN_MODE_CMAC)))
 		goto end_check_cipher;
 
-	cipher = imxcrypt_getmod(CRYPTO_CIPHER);
+	cipher = nxpcrypt_getmod(CRYPTO_CIPHER);
 
 	switch (algo_id) {
 	case TEE_MAIN_ALGO_AES:
@@ -170,8 +170,8 @@ TEE_Result crypto_mac_alloc_ctx(void **ctx, uint32_t algo)
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_mac       *mac = NULL;
-	enum imxcrypt_hash_id   hash_id = 0;
-	enum imxcrypt_cipher_id cipher_id = 0;
+	enum nxpcrypt_hash_id   hash_id = 0;
+	enum nxpcrypt_cipher_id cipher_id = 0;
 
 	/* Check the parameters */
 	if (!ctx)
@@ -344,9 +344,9 @@ TEE_Result crypto_mac_init(void *ctx, uint32_t algo,
 	struct crypto_mac *mac = ctx;
 
 	uint8_t                 *iv_tmp;
-	struct imxcrypt_cipher_init dinit;
+	struct nxpcrypt_cipher_init dinit;
 
-	enum imxcrypt_cipher_id cipher_id;
+	enum nxpcrypt_cipher_id cipher_id;
 	LIB_TRACE("mac init keylen %d", key_len);
 
 	/* Check the parameters */
@@ -444,7 +444,7 @@ TEE_Result crypto_mac_update(void *ctx, uint32_t algo __unused,
 
 	struct crypto_mac *mac = ctx;
 
-	struct imxcrypt_cipher_update dupdate;
+	struct nxpcrypt_cipher_update dupdate;
 
 	LIB_TRACE("mac update len %d", len);
 
@@ -509,7 +509,7 @@ TEE_Result crypto_mac_final(void *ctx, uint32_t algo __unused,
 
 	struct crypto_mac *mac = ctx;
 
-	struct imxcrypt_cipher_update dupdate;
+	struct nxpcrypt_cipher_update dupdate;
 	uint8_t *pad_src = NULL;
 	size_t  pad_size = 0;
 

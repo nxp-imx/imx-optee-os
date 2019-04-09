@@ -150,7 +150,7 @@ struct hashdata {
 	struct caambuf key;             ///< HMAC split key
 	enum keytype   key_type;        ///< HMAC key type
 
-	enum imxcrypt_hash_id algo_id;  ///< Hash Algorithm Id
+	enum nxpcrypt_hash_id algo_id;  ///< Hash Algorithm Id
 	const struct hashalg  *alg;     ///< Reference to the algo constants
 };
 
@@ -439,7 +439,7 @@ static void do_free(void *ctx)
  * @retval TEE_SUCCESS                 Success
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  */
-static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
+static TEE_Result do_allocate(void **ctx, enum nxpcrypt_hash_id algo)
 {
 	struct hashdata *hashdata;
 
@@ -641,7 +641,7 @@ static TEE_Result do_update(void *ctx, const uint8_t *data, size_t len)
 	}
 
 	if ((size_topost) && (data)) {
-		struct imxcrypt_buf indata = {
+		struct nxpcrypt_buf indata = {
 			.data = (uint8_t *)data,
 			.length = inLength};
 
@@ -841,7 +841,7 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 	cache_operation(TEE_CACHECLEAN, dst->ctx.data, dst->ctx.length);
 
 	if (src->blockbuf.filled) {
-		struct imxcrypt_buf srcdata = {
+		struct nxpcrypt_buf srcdata = {
 				.data   = src->blockbuf.buf.data,
 				.length = src->blockbuf.filled};
 
@@ -859,7 +859,7 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 /**
  * @brief   Registration of the HASH Driver
  */
-struct imxcrypt_hash driver_hash = {
+struct nxpcrypt_hash driver_hash = {
 	.alloc_ctx  = &do_allocate,
 	.free_ctx   = &do_free,
 	.init       = &do_init,
@@ -872,7 +872,7 @@ struct imxcrypt_hash driver_hash = {
 /**
  * @brief   Registration of the HMAC Driver
  */
-struct imxcrypt_hash driver_hmac = {
+struct nxpcrypt_hash driver_hmac = {
 	.alloc_ctx   = &do_allocate,
 	.free_ctx    = &do_free,
 	.init        = &do_init,
@@ -903,12 +903,12 @@ enum CAAM_Status caam_hash_init(vaddr_t ctrl_addr)
 		driver_hash.max_hash = hash_limit;
 		driver_hmac.max_hash = hash_limit;
 
-		if (imxcrypt_register(CRYPTO_HASH, &driver_hash) == 0) {
+		if (nxpcrypt_register(CRYPTO_HASH, &driver_hash) == 0) {
 			retstatus = CAAM_NO_ERROR;
 
 			/* Check if the HW support the HMAC Split key */
 			if (hal_ctrl_splitkey(ctrl_addr)) {
-				if (imxcrypt_register(CRYPTO_HMAC, &driver_hmac) != 0)
+				if (nxpcrypt_register(CRYPTO_HMAC, &driver_hmac) != 0)
 					retstatus = CAAM_FAILURE;
 			}
 		}

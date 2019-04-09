@@ -36,7 +36,7 @@
  * @retval TEE_ERROR_SHORT_BUFFER    Output buffer too short
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
+TEE_Result do_update_cmac(struct nxpcrypt_cipher_update *dupdate)
 {
 	TEE_Result       ret = TEE_ERROR_BAD_PARAMETERS;
 	enum CAAM_Status retstatus;
@@ -274,7 +274,7 @@ TEE_Result do_update_cmac(struct imxcrypt_cipher_update *dupdate)
 	}
 
 	if (size_topost) {
-		struct imxcrypt_buf indata = {
+		struct nxpcrypt_buf indata = {
 			.data   = (uint8_t *)dupdate->src.data,
 			.length = dupdate->src.length};
 

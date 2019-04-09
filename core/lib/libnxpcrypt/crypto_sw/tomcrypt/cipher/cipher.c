@@ -212,7 +212,7 @@ static const struct ltc_cipher_descriptor aes_wrap_desc = {
  * @retval  >=0 if found
  * @retval  (-1) if not found
  */
-int get_ltc_cipherindex(enum imxcrypt_cipher_id algo)
+int get_ltc_cipherindex(enum nxpcrypt_cipher_id algo)
 {
 	int index = (-1);
 

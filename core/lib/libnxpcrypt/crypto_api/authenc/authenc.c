@@ -33,7 +33,7 @@
  */
 struct crypto_authenc {
 	void                    *ctx; ///< Context
-	struct imxcrypt_authenc *op;  ///< Reference to the operation
+	struct nxpcrypt_authenc *op;  ///< Reference to the operation
 };
 
 
@@ -45,16 +45,16 @@ struct crypto_authenc {
  *
  * @retval  Reference to the driver operations
  */
-static struct imxcrypt_authenc *do_check_algo(uint32_t algo,
-	enum imxcrypt_authenc_id *authenc_id)
+static struct nxpcrypt_authenc *do_check_algo(uint32_t algo,
+	enum nxpcrypt_authenc_id *authenc_id)
 {
-	struct imxcrypt_authenc *authenc = NULL;
+	struct nxpcrypt_authenc *authenc = NULL;
 
 	LIB_TRACE("Check Authentication algo %x", algo);
 
-	authenc = imxcrypt_getmod(CRYPTO_AUTHENC);
+	authenc = nxpcrypt_getmod(CRYPTO_AUTHENC);
 	if (!authenc)
-		authenc = imxcrypt_getmod(CRYPTO_AUTHENC_SW);
+		authenc = nxpcrypt_getmod(CRYPTO_AUTHENC_SW);
 
 	if (!authenc)
 		return NULL;
@@ -67,7 +67,7 @@ static struct imxcrypt_authenc *do_check_algo(uint32_t algo,
 	case TEE_ALG_AES_GCM:
 		*authenc_id = AES_GCM;
 		if (!authenc->aes_gcm)
-			authenc = imxcrypt_getmod(CRYPTO_AUTHENC_SW);
+			authenc = nxpcrypt_getmod(CRYPTO_AUTHENC_SW);
 		break;
 
 	default:
@@ -98,7 +98,7 @@ TEE_Result authenc_alloc_ctx(void **ctx, uint32_t algo)
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_authenc    *authenc   = NULL;
-	enum imxcrypt_authenc_id authenc_id = 0;
+	enum nxpcrypt_authenc_id authenc_id = 0;
 
 	/* Check the parameters */
 	if (!ctx)
@@ -194,7 +194,7 @@ TEE_Result authenc_init(void *ctx, uint32_t algo __unused,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_authenc *authenc = ctx;
-	struct imxcrypt_authenc_init dinit;
+	struct nxpcrypt_authenc_init dinit;
 
 	/* Check the parameters */
 	if (!ctx)
@@ -256,7 +256,7 @@ TEE_Result authenc_update_aad(void *ctx, uint32_t algo __unused,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_authenc *authenc = ctx;
-	struct imxcrypt_authenc_aad daad;
+	struct nxpcrypt_authenc_aad daad;
 
 	/* Check the parameters */
 	if (!ctx)
@@ -306,7 +306,7 @@ TEE_Result authenc_update_payload(void *ctx, uint32_t algo __unused,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_authenc *authenc = ctx;
-	struct imxcrypt_authenc_data dpayload;
+	struct nxpcrypt_authenc_data dpayload;
 
 	/* Check the parameters */
 	if (!ctx)
@@ -374,7 +374,7 @@ TEE_Result authenc_update_final(void *ctx, uint32_t algo __unused,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_authenc *authenc = ctx;
-	struct imxcrypt_authenc_data dfinal;
+	struct nxpcrypt_authenc_data dfinal;
 
 	/* Check the parameters */
 	if (!ctx)

@@ -58,24 +58,24 @@
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_hash(enum imxcrypt_hash_id hash_id,
-			const struct imxcrypt_buf *data,
-			struct imxcrypt_buf *digest)
+static TEE_Result do_hash(enum nxpcrypt_hash_id hash_id,
+			const struct nxpcrypt_buf *data,
+			struct nxpcrypt_buf *digest)
 {
 	TEE_Result ret;
 
-	struct imxcrypt_hash *hash = NULL;
+	struct nxpcrypt_hash *hash = NULL;
 
 	void *ctx = NULL;
 
-	hash = imxcrypt_getmod(CRYPTO_HASH);
+	hash = nxpcrypt_getmod(CRYPTO_HASH);
 
 	/* Verify that the HASH HW implements this algorithm */
 	if (hash) {
 		if (hash->max_hash < hash_id)
-			hash = imxcrypt_getmod(CRYPTO_HASH_SW);
+			hash = nxpcrypt_getmod(CRYPTO_HASH_SW);
 	} else {
-		hash = imxcrypt_getmod(CRYPTO_HASH_SW);
+		hash = nxpcrypt_getmod(CRYPTO_HASH_SW);
 	}
 
 	if (!hash)
@@ -111,14 +111,14 @@ exit_hash:
  * @param[out] EM        Encoded Message
  *
  */
-static void emsa_pkcs1_v1_5_encode(struct imxcrypt_rsa_ssa *ssa_data,
-			struct imxcrypt_buf *EM)
+static void emsa_pkcs1_v1_5_encode(struct nxpcrypt_rsa_ssa *ssa_data,
+			struct nxpcrypt_buf *EM)
 {
-	const struct imxcrypt_oid *hash_oid;
+	const struct nxpcrypt_oid *hash_oid;
 	size_t  ps_size;
 	uint8_t *buf;
 
-	hash_oid = &imxcrypt_hash_oid[ssa_data->hash_id];
+	hash_oid = &nxpcrypt_hash_oid[ssa_data->hash_id];
 
 	RSA_DUMPBUF("Hash OID", hash_oid->asn1, hash_oid->asn1_length);
 
@@ -209,19 +209,19 @@ static void emsa_pkcs1_v1_5_encode(struct imxcrypt_rsa_ssa *ssa_data,
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result rsa_encrypt(struct imxcrypt_rsa_ssa *ssa_data,
-		struct imxcrypt_buf *msg)
+static TEE_Result rsa_encrypt(struct nxpcrypt_rsa_ssa *ssa_data,
+		struct nxpcrypt_buf *msg)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_rsa    *rsa = NULL;
-	struct imxcrypt_rsa_ed rsa_data;
+	struct nxpcrypt_rsa    *rsa = NULL;
+	struct nxpcrypt_rsa_ed rsa_data;
 
 	rsa_data.key.key       = ssa_data->key.key;
 	rsa_data.key.isprivate = true;
 	rsa_data.key.n_size    = ssa_data->key.n_size;
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/* Prepare the decryption data parameters */
 		rsa_data.rsa_id         = RSA_SIGN;
@@ -249,11 +249,11 @@ static TEE_Result rsa_encrypt(struct imxcrypt_rsa_ssa *ssa_data,
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result rsassa_pkcs1_v1_5_sign(struct imxcrypt_rsa_ssa *ssa_data)
+static TEE_Result rsassa_pkcs1_v1_5_sign(struct nxpcrypt_rsa_ssa *ssa_data)
 {
 	TEE_Result ret;
 
-	struct imxcrypt_buf EM = {0};
+	struct nxpcrypt_buf EM = {0};
 
 	EM.length = ssa_data->key.n_size;
 	EM.data   = malloc(EM.length);
@@ -283,12 +283,12 @@ static TEE_Result rsassa_pkcs1_v1_5_sign(struct imxcrypt_rsa_ssa *ssa_data)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature invalid
  */
-static TEE_Result rsassa_pkcs1_v1_5_verify(struct imxcrypt_rsa_ssa *ssa_data)
+static TEE_Result rsassa_pkcs1_v1_5_verify(struct nxpcrypt_rsa_ssa *ssa_data)
 {
 	TEE_Result ret;
 
-	struct imxcrypt_buf EM     = {0};
-	struct imxcrypt_buf EM_gen = {0};
+	struct nxpcrypt_buf EM     = {0};
+	struct nxpcrypt_buf EM_gen = {0};
 
 	EM.length = ssa_data->key.n_size;
 	EM.data   = malloc(EM.length);
@@ -341,16 +341,16 @@ end_verify:
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result emsa_pss_encode(struct imxcrypt_rsa_ssa *ssa_data,
-			size_t emBits, struct imxcrypt_buf *EM)
+static TEE_Result emsa_pss_encode(struct nxpcrypt_rsa_ssa *ssa_data,
+			size_t emBits, struct nxpcrypt_buf *EM)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
-	struct imxcrypt_rsa_mgf mgf_data;
-	struct imxcrypt_buf msg;
-	struct imxcrypt_buf hash;
-	struct imxcrypt_buf dbMask;
-	struct imxcrypt_buf DB;
+	struct nxpcrypt_rsa_mgf mgf_data;
+	struct nxpcrypt_buf msg;
+	struct nxpcrypt_buf hash;
+	struct nxpcrypt_buf dbMask;
+	struct nxpcrypt_buf DB;
 	size_t db_size;
 	size_t ps_size;
 	size_t msg_size;
@@ -358,7 +358,7 @@ static TEE_Result emsa_pss_encode(struct imxcrypt_rsa_ssa *ssa_data,
 	uint8_t *msg_db = NULL;
 	uint8_t *salt   = NULL;
 
-	struct imxcrypt_mod_op mod_op;
+	struct nxpcrypt_mod_op mod_op;
 
 	/*
 	 * Build EM = maskedDB || H || 0xbc
@@ -543,15 +543,15 @@ end_pss_encode:
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature invalid
  */
-static TEE_Result emsa_pss_verify(struct imxcrypt_rsa_ssa *ssa_data,
-			size_t emBits, struct imxcrypt_buf *EM)
+static TEE_Result emsa_pss_verify(struct nxpcrypt_rsa_ssa *ssa_data,
+			size_t emBits, struct nxpcrypt_buf *EM)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
-	struct imxcrypt_rsa_mgf mgf_data;
-	struct imxcrypt_buf msg;
-	struct imxcrypt_buf hash;
-	struct imxcrypt_buf hash_gen;
+	struct nxpcrypt_rsa_mgf mgf_data;
+	struct nxpcrypt_buf msg;
+	struct nxpcrypt_buf hash;
+	struct nxpcrypt_buf hash_gen;
 	size_t db_size;
 	size_t ps_size;
 	size_t msg_size;
@@ -559,7 +559,7 @@ static TEE_Result emsa_pss_verify(struct imxcrypt_rsa_ssa *ssa_data,
 	uint8_t *salt   = NULL;
 	uint8_t *buf;
 
-	struct imxcrypt_mod_op mod_op;
+	struct nxpcrypt_mod_op mod_op;
 
 	/*
 	 * EM = maskedDB || H || 0xbc
@@ -769,12 +769,12 @@ end_pss_verify:
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result rsassa_pss_sign(struct imxcrypt_rsa_ssa *ssa_data)
+static TEE_Result rsassa_pss_sign(struct nxpcrypt_rsa_ssa *ssa_data)
 {
 	TEE_Result ret;
 
 	struct rsa_keypair *key;
-	struct imxcrypt_buf EM = {0};
+	struct nxpcrypt_buf EM = {0};
 	size_t modBits;
 
 	key = ssa_data->key.key;
@@ -824,12 +824,12 @@ static TEE_Result rsassa_pss_sign(struct imxcrypt_rsa_ssa *ssa_data)
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature invalid
  */
-static TEE_Result rsassa_pss_verify(struct imxcrypt_rsa_ssa *ssa_data)
+static TEE_Result rsassa_pss_verify(struct nxpcrypt_rsa_ssa *ssa_data)
 {
 	TEE_Result ret;
 
 	struct rsa_public_key *key;
-	struct imxcrypt_buf EM = {0};
+	struct nxpcrypt_buf EM = {0};
 	size_t modBits;
 	size_t emLen;
 
@@ -894,7 +894,7 @@ static TEE_Result rsassa_pss_verify(struct imxcrypt_rsa_ssa *ssa_data)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-TEE_Result rsassa_sign(struct imxcrypt_rsa_ssa *ssa_data)
+TEE_Result rsassa_sign(struct nxpcrypt_rsa_ssa *ssa_data)
 {
 	switch (ssa_data->algo) {
 	case TEE_ALG_RSASSA_PKCS1_V1_5_MD5:
@@ -929,7 +929,7 @@ TEE_Result rsassa_sign(struct imxcrypt_rsa_ssa *ssa_data)
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature invalid
  */
-TEE_Result rsassa_verify(struct imxcrypt_rsa_ssa *ssa_data)
+TEE_Result rsassa_verify(struct nxpcrypt_rsa_ssa *ssa_data)
 {
 	switch (ssa_data->algo) {
 	case TEE_ALG_RSASSA_PKCS1_V1_5_MD5:

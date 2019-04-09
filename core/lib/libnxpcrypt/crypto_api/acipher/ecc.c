@@ -118,7 +118,7 @@ TEE_Result crypto_acipher_alloc_ecc_keypair(struct ecc_keypair *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_ecc *ecc = NULL;
+	struct nxpcrypt_ecc *ecc = NULL;
 
 	if ((!key) || (size_bits == 0)) {
 		LIB_TRACE("Parameters error (key @0x%"PRIxPTR") (size %d bits)",
@@ -126,7 +126,7 @@ TEE_Result crypto_acipher_alloc_ecc_keypair(struct ecc_keypair *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	ecc = imxcrypt_getmod(CRYPTO_ECC);
+	ecc = nxpcrypt_getmod(CRYPTO_ECC);
 	if (ecc)
 		ret = ecc->alloc_keypair(key, size_bits);
 
@@ -151,7 +151,7 @@ TEE_Result crypto_acipher_alloc_ecc_public_key(struct ecc_public_key *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_ecc *ecc = NULL;
+	struct nxpcrypt_ecc *ecc = NULL;
 
 	if ((!key) || (size_bits == 0)) {
 		LIB_TRACE("Parameters error (key @0x%"PRIxPTR") (size %d bits)",
@@ -159,7 +159,7 @@ TEE_Result crypto_acipher_alloc_ecc_public_key(struct ecc_public_key *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	ecc = imxcrypt_getmod(CRYPTO_ECC);
+	ecc = nxpcrypt_getmod(CRYPTO_ECC);
 	if (ecc)
 		ret = ecc->alloc_publickey(key, size_bits);
 
@@ -175,10 +175,10 @@ TEE_Result crypto_acipher_alloc_ecc_public_key(struct ecc_public_key *key,
  */
 void crypto_acipher_free_ecc_public_key(struct ecc_public_key *key)
 {
-	struct imxcrypt_ecc *ecc = NULL;
+	struct nxpcrypt_ecc *ecc = NULL;
 
 	if (key) {
-		ecc = imxcrypt_getmod(CRYPTO_ECC);
+		ecc = nxpcrypt_getmod(CRYPTO_ECC);
 		if (ecc) {
 			LIB_TRACE("ECC Public Key free");
 			ecc->free_publickey(key);
@@ -201,7 +201,7 @@ TEE_Result crypto_acipher_gen_ecc_key(struct ecc_keypair *key)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_ecc *ecc = NULL;
+	struct nxpcrypt_ecc *ecc = NULL;
 	size_t size_bits;
 
 	/* Check input parameters */
@@ -214,7 +214,7 @@ TEE_Result crypto_acipher_gen_ecc_key(struct ecc_keypair *key)
 	if (size_bits == 0)
 		return TEE_ERROR_NOT_IMPLEMENTED;
 
-	ecc = imxcrypt_getmod(CRYPTO_ECC);
+	ecc = nxpcrypt_getmod(CRYPTO_ECC);
 	if (ecc)
 		ret = ecc->gen_keypair(key, size_bits);
 
@@ -250,8 +250,8 @@ TEE_Result crypto_acipher_ecc_sign(uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
-	struct imxcrypt_ecc       *ecc = NULL;
-	struct imxcrypt_sign_data sdata;
+	struct nxpcrypt_ecc       *ecc = NULL;
+	struct nxpcrypt_sign_data sdata;
 	size_t                    size_bits;
 	size_t                    size_bytes;
 
@@ -277,7 +277,7 @@ TEE_Result crypto_acipher_ecc_sign(uint32_t algo,
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	ecc = imxcrypt_getmod(CRYPTO_ECC);
+	ecc = nxpcrypt_getmod(CRYPTO_ECC);
 	if (ecc) {
 		/*
 		 * Prepare the Signature structure data
@@ -328,8 +328,8 @@ TEE_Result crypto_acipher_ecc_verify(uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
-	struct imxcrypt_ecc       *ecc = NULL;
-	struct imxcrypt_sign_data sdata;
+	struct nxpcrypt_ecc       *ecc = NULL;
+	struct nxpcrypt_sign_data sdata;
 	size_t                    size_bits;
 	size_t                    size_bytes;
 
@@ -354,7 +354,7 @@ TEE_Result crypto_acipher_ecc_verify(uint32_t algo,
 		return TEE_ERROR_SIGNATURE_INVALID;
 	}
 
-	ecc = imxcrypt_getmod(CRYPTO_ECC);
+	ecc = nxpcrypt_getmod(CRYPTO_ECC);
 	if (ecc) {
 		/*
 		 * Prepare the Signature structure data
@@ -400,8 +400,8 @@ TEE_Result crypto_acipher_ecc_shared_secret(
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
-	struct imxcrypt_ecc         *ecc = NULL;
-	struct imxcrypt_secret_data sdata;
+	struct nxpcrypt_ecc         *ecc = NULL;
+	struct nxpcrypt_secret_data sdata;
 	size_t                      size_bits;
 
 	/* Verify first if the input parameters */
@@ -423,7 +423,7 @@ TEE_Result crypto_acipher_ecc_shared_secret(
 	if (*secret_len < (size_bits / 8))
 		return TEE_ERROR_SHORT_BUFFER;
 
-	ecc = imxcrypt_getmod(CRYPTO_ECC);
+	ecc = nxpcrypt_getmod(CRYPTO_ECC);
 	if (ecc) {
 		/*
 		 * Prepare the Secret structure data

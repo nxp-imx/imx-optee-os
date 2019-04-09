@@ -16,7 +16,7 @@
 /**
  * @brief   Hash Algorithm enumerate
  */
-enum imxcrypt_hash_id {
+enum nxpcrypt_hash_id {
 	HASH_MD5 = 0,       ///< MD5
 	HASH_SHA1,          ///< SHA 1
 	HASH_SHA224,        ///< SHA 224
@@ -30,12 +30,12 @@ enum imxcrypt_hash_id {
  * @brief   i.MX Crypto Library Hash driver operations
  *
  */
-struct imxcrypt_hash {
+struct nxpcrypt_hash {
 	///< Maximum hash supported
-	enum imxcrypt_hash_id max_hash;
+	enum nxpcrypt_hash_id max_hash;
 
 	///< Allocates of the Software context
-	TEE_Result (*alloc_ctx)(void **ctx, enum imxcrypt_hash_id algo);
+	TEE_Result (*alloc_ctx)(void **ctx, enum nxpcrypt_hash_id algo);
 	///< Free of the Software context
 	void (*free_ctx)(void *ctx);
 	///< Initialize the hashing operation

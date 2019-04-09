@@ -90,9 +90,9 @@
  */
 #define RSA_PRIVATE_KEY_FORMAT  3
 
-static TEE_Result do_caam_encrypt(struct imxcrypt_rsa_ed *rsa_data,
+static TEE_Result do_caam_encrypt(struct nxpcrypt_rsa_ed *rsa_data,
 				uint32_t operation);
-static TEE_Result do_caam_decrypt(struct imxcrypt_rsa_ed *rsa_data,
+static TEE_Result do_caam_decrypt(struct nxpcrypt_rsa_ed *rsa_data,
 				uint32_t operation);
 
 /**
@@ -702,24 +702,24 @@ exit_gen_keypair:
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_hash(enum imxcrypt_hash_id hash_id,
-			const struct imxcrypt_buf *data,
+static TEE_Result do_hash(enum nxpcrypt_hash_id hash_id,
+			const struct nxpcrypt_buf *data,
 			struct caambuf *digest)
 {
 	TEE_Result ret;
 
-	struct imxcrypt_hash *hash = NULL;
+	struct nxpcrypt_hash *hash = NULL;
 
 	void *ctx = NULL;
 
-	hash = imxcrypt_getmod(CRYPTO_HASH);
+	hash = nxpcrypt_getmod(CRYPTO_HASH);
 
 	/* Verify that the HASH HW implements this algorithm */
 	if (hash) {
 		if (hash->max_hash < hash_id)
-			hash = imxcrypt_getmod(CRYPTO_HASH_SW);
+			hash = nxpcrypt_getmod(CRYPTO_HASH_SW);
 	} else {
-		hash = imxcrypt_getmod(CRYPTO_HASH_SW);
+		hash = nxpcrypt_getmod(CRYPTO_HASH_SW);
 	}
 
 	if (!hash)
@@ -759,7 +759,7 @@ exit_hash:
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_oaep_decoding(struct imxcrypt_rsa_ed *rsa_data)
+static TEE_Result do_oaep_decoding(struct nxpcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
@@ -774,9 +774,9 @@ static TEE_Result do_oaep_decoding(struct imxcrypt_rsa_ed *rsa_data)
 	size_t db_size;
 	size_t b01_idx;
 
-	struct imxcrypt_rsa_mgf mgf_data;
-	struct imxcrypt_rsa_ed  dec_data = {0};
-	struct imxcrypt_mod_op  mod_op;
+	struct nxpcrypt_rsa_mgf mgf_data;
+	struct nxpcrypt_rsa_ed  dec_data = {0};
+	struct nxpcrypt_mod_op  mod_op;
 
 	RSA_TRACE("RSA OAEP Decoding");
 
@@ -1002,7 +1002,7 @@ exit_oaep_decrypt:
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_oaep_encoding(struct imxcrypt_rsa_ed *rsa_data)
+static TEE_Result do_oaep_encoding(struct nxpcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
@@ -1017,9 +1017,9 @@ static TEE_Result do_oaep_encoding(struct imxcrypt_rsa_ed *rsa_data)
 	size_t db_size;
 	size_t ps_size;
 
-	struct imxcrypt_rsa_mgf mgf_data;
-	struct imxcrypt_rsa_ed  enc_data = {0};
-	struct imxcrypt_mod_op  mod_op;
+	struct nxpcrypt_rsa_mgf mgf_data;
+	struct nxpcrypt_rsa_ed  enc_data = {0};
+	struct nxpcrypt_mod_op  mod_op;
 
 	RSA_TRACE("RSA OAEP Encoding");
 
@@ -1211,7 +1211,7 @@ exit_oaep_encrypt:
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_caam_encrypt(struct imxcrypt_rsa_ed *rsa_data,
+static TEE_Result do_caam_encrypt(struct nxpcrypt_rsa_ed *rsa_data,
 				uint32_t operation)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
@@ -1333,7 +1333,7 @@ exit_encrypt:
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_caam_decrypt(struct imxcrypt_rsa_ed *rsa_data,
+static TEE_Result do_caam_decrypt(struct nxpcrypt_rsa_ed *rsa_data,
 				uint32_t operation)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
@@ -1588,7 +1588,7 @@ exit_decrypt:
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_encrypt(struct imxcrypt_rsa_ed *rsa_data)
+static TEE_Result do_encrypt(struct nxpcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -1622,7 +1622,7 @@ static TEE_Result do_encrypt(struct imxcrypt_rsa_ed *rsa_data)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_decrypt(struct imxcrypt_rsa_ed *rsa_data)
+static TEE_Result do_decrypt(struct nxpcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -1650,7 +1650,7 @@ static TEE_Result do_decrypt(struct imxcrypt_rsa_ed *rsa_data)
 /**
  * @brief   Registration of the RSA Driver
  */
-struct imxcrypt_rsa driver_rsa = {
+struct nxpcrypt_rsa driver_rsa = {
 	.alloc_keypair   = &do_allocate_keypair,
 	.alloc_publickey = &do_allocate_publickey,
 	.free_publickey  = &do_free_publickey,
@@ -1677,7 +1677,7 @@ enum CAAM_Status caam_rsa_init(vaddr_t ctrl_addr)
 	caam_era = hal_ctrl_caam_era(ctrl_addr);
 	RSA_TRACE("CAAM Era %d", caam_era);
 
-	if (imxcrypt_register(CRYPTO_RSA, &driver_rsa) == 0)
+	if (nxpcrypt_register(CRYPTO_RSA, &driver_rsa) == 0)
 		retstatus = CAAM_NO_ERROR;
 
 	return retstatus;

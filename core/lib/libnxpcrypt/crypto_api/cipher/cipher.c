@@ -38,16 +38,16 @@
  *
  * @retval  Reference to the driver operations
  */
-static struct imxcrypt_cipher *do_check_algo(uint32_t algo,
-					enum imxcrypt_cipher_id *cipher_id)
+static struct nxpcrypt_cipher *do_check_algo(uint32_t algo,
+					enum nxpcrypt_cipher_id *cipher_id)
 {
-	struct imxcrypt_cipher *cipher = NULL;
+	struct nxpcrypt_cipher *cipher = NULL;
 	uint8_t algo_op;
 	uint8_t algo_id;
 	uint8_t algo_md;
 	uint8_t min_id;
 	uint8_t max_id;
-	enum imxcrypt_cipher_id cipher_algo = 0;
+	enum nxpcrypt_cipher_id cipher_algo = 0;
 
 	/* Extract the algorithms fields */
 	algo_op = TEE_ALG_GET_CLASS(algo);
@@ -59,17 +59,17 @@ static struct imxcrypt_cipher *do_check_algo(uint32_t algo,
 	if (algo_op == TEE_OPERATION_CIPHER) {
 		switch (algo_id) {
 		case TEE_MAIN_ALGO_AES:
-			min_id = IMX_AES_ID;
+			min_id = NXP_AES_ID;
 			max_id = AES_CBC_MAC;
 			break;
 
 		case TEE_MAIN_ALGO_DES:
-			min_id = IMX_DES_ID;
+			min_id = NXP_DES_ID;
 			max_id = MAX_DES_ID;
 			break;
 
 		case TEE_MAIN_ALGO_DES3:
-			min_id = IMX_DES3_ID;
+			min_id = NXP_DES3_ID;
 			max_id = MAX_DES3_ID;
 			break;
 
@@ -80,7 +80,7 @@ static struct imxcrypt_cipher *do_check_algo(uint32_t algo,
 		cipher_algo = min_id + algo_md;
 
 		if (cipher_algo < max_id) {
-			cipher     = imxcrypt_getmod(CRYPTO_CIPHER);
+			cipher     = nxpcrypt_getmod(CRYPTO_CIPHER);
 			*cipher_id = cipher_algo;
 		}
 	}
@@ -107,7 +107,7 @@ TEE_Result crypto_cipher_alloc_ctx(void **ctx, uint32_t algo)
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_cipher    *cipher   = NULL;
-	enum imxcrypt_cipher_id cipher_id = 0;
+	enum nxpcrypt_cipher_id cipher_id = 0;
 
 	/* Check the parameters */
 	if (!ctx)
@@ -205,7 +205,7 @@ TEE_Result crypto_cipher_init(void *ctx, uint32_t algo __unused,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_cipher        *cipher = ctx;
-	struct imxcrypt_cipher_init dinit;
+	struct nxpcrypt_cipher_init dinit;
 
 	/* Check the parameters */
 	if (!ctx)
@@ -275,7 +275,7 @@ TEE_Result crypto_cipher_update(void *ctx, uint32_t algo __unused,
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	struct crypto_cipher          *cipher = ctx;
-	struct imxcrypt_cipher_update dupdate;
+	struct nxpcrypt_cipher_update dupdate;
 
 	/* Check the parameters */
 	if ((!ctx) || (!dst)) {
@@ -353,8 +353,8 @@ TEE_Result crypto_cipher_get_block_size(uint32_t algo, size_t *size)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_cipher  *cipher   = NULL;
-	enum imxcrypt_cipher_id cipher_id = 0;
+	struct nxpcrypt_cipher  *cipher   = NULL;
+	enum nxpcrypt_cipher_id cipher_id = 0;
 
 	/* Check the parameters */
 	if (!size)

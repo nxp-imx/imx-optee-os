@@ -32,10 +32,10 @@
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result crypto_mp_export_pubkey(struct imxcrypt_buf *pubkey)
+TEE_Result crypto_mp_export_pubkey(struct nxpcrypt_buf *pubkey)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
-	struct imxcrypt_mp  *mp;
+	struct nxpcrypt_mp  *mp;
 
 	/* Check the pubkey buffer */
 	if (!pubkey) {
@@ -49,7 +49,7 @@ TEE_Result crypto_mp_export_pubkey(struct imxcrypt_buf *pubkey)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	mp = imxcrypt_getmod(CRYPTO_MP);
+	mp = nxpcrypt_getmod(CRYPTO_MP);
 	if (mp) {
 		if (mp->export_pubkey)
 			ret = mp->export_pubkey(pubkey);
@@ -68,10 +68,10 @@ TEE_Result crypto_mp_export_pubkey(struct imxcrypt_buf *pubkey)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result crypto_mp_export_mpmr(struct imxcrypt_buf *mpmr_reg)
+TEE_Result crypto_mp_export_mpmr(struct nxpcrypt_buf *mpmr_reg)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
-	struct imxcrypt_mp  *mp;
+	struct nxpcrypt_mp  *mp;
 
 	/* Check the pointer mpmr_reg*/
 	if (!mpmr_reg) {
@@ -85,7 +85,7 @@ TEE_Result crypto_mp_export_mpmr(struct imxcrypt_buf *mpmr_reg)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	mp = imxcrypt_getmod(CRYPTO_MP);
+	mp = nxpcrypt_getmod(CRYPTO_MP);
 	if (mp) {
 		if (mp->export_mpmr)
 			ret = mp->export_mpmr(mpmr_reg);
@@ -105,10 +105,10 @@ TEE_Result crypto_mp_export_mpmr(struct imxcrypt_buf *mpmr_reg)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result crypto_mp_sign(struct imxcrypt_mp_sign *sdata)
+TEE_Result crypto_mp_sign(struct nxpcrypt_mp_sign *sdata)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
-	struct imxcrypt_mp *mp;
+	struct nxpcrypt_mp *mp;
 
 	/* Check the pointer sdata */
 	if (!sdata) {
@@ -125,7 +125,7 @@ TEE_Result crypto_mp_sign(struct imxcrypt_mp_sign *sdata)
 	}
 
 	/* check the curve identifier */
-	mp = imxcrypt_getmod(CRYPTO_MP);
+	mp = nxpcrypt_getmod(CRYPTO_MP);
 	if (mp) {
 		if (mp->sign)
 			ret = mp->sign(sdata);

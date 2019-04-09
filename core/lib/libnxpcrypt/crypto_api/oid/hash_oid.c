@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    hash_oid.c
  *
@@ -13,7 +13,7 @@
 /**
  * @brief   Hash OID values
  */
-const struct imxcrypt_oid imxcrypt_hash_oid[MAX_HASH_SUPPORTED] = {
+const struct nxpcrypt_oid nxpcrypt_hash_oid[MAX_HASH_SUPPORTED] = {
 	/* MD5 */
 	OID_DEF(OID_ID_MD5),
 	/* SHA1 */

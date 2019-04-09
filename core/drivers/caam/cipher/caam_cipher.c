@@ -34,10 +34,10 @@
 #define MAX_CIPHER_BUFFER	(8 * 1024)
 
 /* Local Function declaration */
-static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate);
-static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate);
-static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate);
-static TEE_Result do_update_cts(struct imxcrypt_cipher_update *dupdate);
+static TEE_Result do_update_streaming(struct nxpcrypt_cipher_update *dupdate);
+static TEE_Result do_update_cipher(struct nxpcrypt_cipher_update *dupdate);
+static TEE_Result do_update_mac(struct nxpcrypt_cipher_update *dupdate);
+static TEE_Result do_update_cts(struct nxpcrypt_cipher_update *dupdate);
 
 /**
  * @brief   Constants definition of the AES algorithm
@@ -197,7 +197,7 @@ static const struct cipheralg des3_alg[MAX_DES3_SUPPORTED] = {
  * @retval  CAAM_OUT_MEMORY Allocation error
  */
 static enum CAAM_Status copy_ctx_data(struct caambuf *dst,
-			struct imxcrypt_buf *src)
+			struct nxpcrypt_buf *src)
 {
 	enum CAAM_Status ret;
 
@@ -376,7 +376,7 @@ enum CAAM_Status do_block(struct cipherdata *ctx,
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  */
-static TEE_Result do_allocate(void **ctx, enum imxcrypt_cipher_id algo)
+static TEE_Result do_allocate(void **ctx, enum nxpcrypt_cipher_id algo)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -402,18 +402,18 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_cipher_id algo)
 	/* Setup the algorithm id and constants reference */
 	cipherdata->algo_id = algo;
 
-	switch (IMX_CIPHER_ID(algo)) {
-	case IMX_AES_ID:
+	switch (NXP_CIPHER_ID(algo)) {
+	case NXP_AES_ID:
 		CIPHER_TRACE("AES 0x%x", algo);
 		alg = aes_alg;
 		break;
 
-	case IMX_DES_ID:
+	case NXP_DES_ID:
 		CIPHER_TRACE("DES 0x%x", algo);
 		alg = des_alg;
 		break;
 
-	case IMX_DES3_ID:
+	case NXP_DES3_ID:
 		CIPHER_TRACE("DES3 0x%x", algo);
 		alg = des3_alg;
 		break;
@@ -423,7 +423,7 @@ static TEE_Result do_allocate(void **ctx, enum imxcrypt_cipher_id algo)
 	}
 
 	/* Setup the Algorithm pointer */
-	cipherdata->alg = &alg[algo - IMX_CIPHER_ID(algo)];
+	cipherdata->alg = &alg[algo - NXP_CIPHER_ID(algo)];
 
 	/* Initialize the block buffer */
 	cipherdata->blockbuf.max = cipherdata->alg->size_block;
@@ -505,7 +505,7 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 	dst->alg     = src->alg;
 
 	if (src->blockbuf.filled) {
-		struct imxcrypt_buf srcdata = {
+		struct nxpcrypt_buf srcdata = {
 				.data = src->blockbuf.buf.data,
 				.length = src->blockbuf.filled};
 
@@ -513,28 +513,28 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 	}
 
 	if (src->key1.length) {
-		struct imxcrypt_buf key1 = {
+		struct nxpcrypt_buf key1 = {
 				.data   = src->key1.data,
 				.length = src->key1.length};
 		copy_ctx_data(&dst->key1, &key1);
 	}
 
 	if (src->key2.length) {
-		struct imxcrypt_buf key2 = {
+		struct nxpcrypt_buf key2 = {
 				.data   = src->key2.data,
 				.length = src->key2.length};
 		copy_ctx_data(&dst->key2, &key2);
 	}
 
 	if (src->ctx.length) {
-		struct imxcrypt_buf ctx = {
+		struct nxpcrypt_buf ctx = {
 				.data   = src->ctx.data,
 				.length = src->ctx.length};
 		copy_ctx_data(&dst->ctx, &ctx);
 	}
 
 	if (src->tweak.length) {
-		struct imxcrypt_buf tweak = {
+		struct nxpcrypt_buf tweak = {
 				.data   = src->tweak.data,
 				.length = src->tweak.length};
 		copy_ctx_data(&dst->tweak, &tweak);
@@ -550,23 +550,23 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
  *
  * @retval TEE_SUCCESS     Success
  */
-static TEE_Result do_get_blocksize(enum imxcrypt_cipher_id algo, size_t *size)
+static TEE_Result do_get_blocksize(enum nxpcrypt_cipher_id algo, size_t *size)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 	size_t       size_block = 0;
 	const struct cipheralg *alg;
 
-	switch (IMX_CIPHER_ID(algo)) {
-	case IMX_AES_ID:
+	switch (NXP_CIPHER_ID(algo)) {
+	case NXP_AES_ID:
 		alg = aes_alg;
 		break;
 
-	case IMX_DES_ID:
+	case NXP_DES_ID:
 		alg = des_alg;
 		break;
 
-	case IMX_DES3_ID:
+	case NXP_DES3_ID:
 		alg = des3_alg;
 		break;
 
@@ -574,7 +574,7 @@ static TEE_Result do_get_blocksize(enum imxcrypt_cipher_id algo, size_t *size)
 		return ret;
 	}
 
-	size_block = alg[algo - IMX_CIPHER_ID(algo)].size_block;
+	size_block = alg[algo - NXP_CIPHER_ID(algo)].size_block;
 
 	if (size_block) {
 		*size = size_block;
@@ -593,7 +593,7 @@ static TEE_Result do_get_blocksize(enum imxcrypt_cipher_id algo, size_t *size)
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-static TEE_Result do_init(struct imxcrypt_cipher_init *dinit)
+static TEE_Result do_init(struct nxpcrypt_cipher_init *dinit)
 {
 	TEE_Result       ret = TEE_ERROR_BAD_PARAMETERS;
 	enum CAAM_Status retstatus;
@@ -739,7 +739,7 @@ exit_init:
  * @retval TEE_ERROR_GENERIC         Other Error
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-static TEE_Result do_update_streaming(struct imxcrypt_cipher_update *dupdate)
+static TEE_Result do_update_streaming(struct nxpcrypt_cipher_update *dupdate)
 {
 	TEE_Result ret;
 	enum CAAM_Status retstatus;
@@ -986,7 +986,7 @@ end_streaming:
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad Parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-static TEE_Result do_update_cipher(struct imxcrypt_cipher_update *dupdate)
+static TEE_Result do_update_cipher(struct nxpcrypt_cipher_update *dupdate)
 {
 	TEE_Result ret;
 	enum CAAM_Status retstatus;
@@ -1145,7 +1145,7 @@ end_cipher:
  * @retval TEE_ERROR_SHORT_BUFFER    Output buffer too short
  * @retval TEE_ERROR_OUT_OF_MEMORY   Out of memory
  */
-static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
+static TEE_Result do_update_mac(struct nxpcrypt_cipher_update *dupdate)
 {
 	TEE_Result       ret = TEE_ERROR_BAD_PARAMETERS;
 	enum CAAM_Status retstatus;
@@ -1166,7 +1166,7 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 		.sgt_type = false};
 	struct sgtbuf *dst_cipher = NULL;
 
-	struct imxcrypt_buf indata_topost = {0};
+	struct nxpcrypt_buf indata_topost = {0};
 
 	size_t fullSize;
 	size_t size_topost;
@@ -1242,7 +1242,7 @@ static TEE_Result do_update_mac(struct imxcrypt_cipher_update *dupdate)
 		 */
 		if (ctx->blockbuf.filled != 0) {
 			/* Complete temporary buffer to make a full block */
-			struct imxcrypt_buf indata = {
+			struct nxpcrypt_buf indata = {
 				.data   = (uint8_t *)srcbuf.data,
 				.length = srcbuf.length};
 
@@ -1362,7 +1362,7 @@ end_mac:
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad Parameters
  * @retval TEE_ERROR_BAD_STATE       Data length error
  */
-static TEE_Result do_update_cts(struct imxcrypt_cipher_update *dupdate)
+static TEE_Result do_update_cts(struct nxpcrypt_cipher_update *dupdate)
 {
 	TEE_Result ret;
 	void *new_ctx = NULL;
@@ -1435,7 +1435,7 @@ end_update_cts:
  * @retval TEE_SUCCESS               Success
  * @retval TEE_ERROR_GENERIC         Other Error
  */
-static TEE_Result do_update(struct imxcrypt_cipher_update *dupdate)
+static TEE_Result do_update(struct nxpcrypt_cipher_update *dupdate)
 {
 	TEE_Result  ret;
 
@@ -1458,7 +1458,7 @@ static void do_final(void *ctx __unused)
 /**
  * @brief   Registration of the Cipher Driver
  */
-struct imxcrypt_cipher driver_cipher = {
+struct nxpcrypt_cipher driver_cipher = {
 	.alloc_ctx  = &do_allocate,
 	.free_ctx   = &do_free,
 	.init       = &do_init,
@@ -1481,7 +1481,7 @@ enum CAAM_Status caam_cipher_init(vaddr_t ctrl_addr __unused)
 {
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 
-	if (imxcrypt_register(CRYPTO_CIPHER, &driver_cipher) == 0)
+	if (nxpcrypt_register(CRYPTO_CIPHER, &driver_cipher) == 0)
 		retstatus = CAAM_NO_ERROR;
 
 	return retstatus;

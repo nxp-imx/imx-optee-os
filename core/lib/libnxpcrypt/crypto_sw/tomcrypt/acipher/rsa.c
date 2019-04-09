@@ -210,8 +210,8 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result rsa_nopad(rsa_key *ltc_key, const struct imxcrypt_buf *src,
-					struct imxcrypt_buf *dst)
+static TEE_Result rsa_nopad(rsa_key *ltc_key, const struct nxpcrypt_buf *src,
+					struct nxpcrypt_buf *dst)
 {
 	TEE_Result ret = TEE_SUCCESS;
 
@@ -278,7 +278,7 @@ end_rsa_nopad:
  * @retval TEE_ERROR_GENERIC           Generic error
  */
 static TEE_Result rsaes_encrypt(rsa_key *ltc_key,
-			struct imxcrypt_rsa_ed *rsa_data)
+			struct nxpcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -333,7 +333,7 @@ static TEE_Result rsaes_encrypt(rsa_key *ltc_key,
  * @retval TEE_ERROR_GENERIC           Generic error
  */
 static TEE_Result rsaes_decrypt(rsa_key *ltc_key,
-			struct imxcrypt_rsa_ed *rsa_data)
+			struct nxpcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -413,7 +413,7 @@ end_rsaes_decrypt:
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_encrypt(struct imxcrypt_rsa_ed *rsa_data)
+static TEE_Result do_encrypt(struct nxpcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -446,7 +446,7 @@ static TEE_Result do_encrypt(struct imxcrypt_rsa_ed *rsa_data)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_decrypt(struct imxcrypt_rsa_ed *rsa_data)
+static TEE_Result do_decrypt(struct nxpcrypt_rsa_ed *rsa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -488,7 +488,7 @@ static TEE_Result do_decrypt(struct imxcrypt_rsa_ed *rsa_data)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_ssa_sign(struct imxcrypt_rsa_ssa *ssa_data)
+static TEE_Result do_ssa_sign(struct nxpcrypt_rsa_ssa *ssa_data)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -575,7 +575,7 @@ static TEE_Result do_ssa_sign(struct imxcrypt_rsa_ssa *ssa_data)
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature invalid
  */
-static TEE_Result do_ssa_verify(struct imxcrypt_rsa_ssa *ssa_data)
+static TEE_Result do_ssa_verify(struct nxpcrypt_rsa_ssa *ssa_data)
 {
 	struct rsa_public_key *inkey = ssa_data->key.key;
 	rsa_key ltc_key = {0};
@@ -638,7 +638,7 @@ static TEE_Result do_ssa_verify(struct imxcrypt_rsa_ssa *ssa_data)
 /**
  * @brief   Registration of the RSA Driver
  */
-struct imxcrypt_rsa driver_rsa = {
+struct nxpcrypt_rsa driver_rsa = {
 	.alloc_keypair   = &do_allocate_keypair,
 	.alloc_publickey = &do_allocate_publickey,
 	.free_publickey  = &do_free_publickey,
@@ -659,7 +659,7 @@ int libsoft_rsa_init(void)
 {
 	int ret;
 
-	ret = imxcrypt_register(CRYPTO_RSA, &driver_rsa);
+	ret = nxpcrypt_register(CRYPTO_RSA, &driver_rsa);
 
 	return ret;
 }

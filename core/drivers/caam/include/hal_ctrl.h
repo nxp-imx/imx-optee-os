@@ -55,7 +55,7 @@ void hal_ctrl_get_mpmr(vaddr_t ctrl_addr, uint8_t *val_scfgr);
  * @param[in] msg_mpmr   Buffer with the message and length
  *                       to fill the MPMR content
  */
-void hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct imxcrypt_buf *msg_mpmr);
+void hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct nxpcrypt_buf *msg_mpmr);
 #endif
 
 /**

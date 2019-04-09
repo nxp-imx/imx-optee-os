@@ -17,13 +17,13 @@
  * @brief   i.MX Crypto Library MP driver operations
  *
  */
-struct imxcrypt_mp {
+struct nxpcrypt_mp {
 	///< Export the MP Public key
-	TEE_Result (*export_pubkey)(struct imxcrypt_buf *pubkey);
+	TEE_Result (*export_pubkey)(struct nxpcrypt_buf *pubkey);
 	///< Export the MPMR content
-	TEE_Result (*export_mpmr)(struct imxcrypt_buf *mpmr_reg);
+	TEE_Result (*export_mpmr)(struct nxpcrypt_buf *mpmr_reg);
 	///< Sign a message and returns the signature
-	TEE_Result (*sign)(struct imxcrypt_mp_sign *sdata);
+	TEE_Result (*sign)(struct nxpcrypt_mp_sign *sdata);
 };
 
 

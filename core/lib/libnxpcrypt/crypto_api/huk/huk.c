@@ -34,10 +34,10 @@
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-TEE_Result crypto_generate_huk(struct imxcrypt_buf *huk)
+TEE_Result crypto_generate_huk(struct nxpcrypt_buf *huk)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
-	struct imxcrypt_huk *hukdrv;
+	struct nxpcrypt_huk *hukdrv;
 
 	if (!huk) {
 		LIB_TRACE("Input parameters reference error");
@@ -49,7 +49,7 @@ TEE_Result crypto_generate_huk(struct imxcrypt_buf *huk)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	hukdrv = imxcrypt_getmod(CRYPTO_HUK);
+	hukdrv = nxpcrypt_getmod(CRYPTO_HUK);
 	if (hukdrv) {
 		if (hukdrv->generate_huk)
 			ret = hukdrv->generate_huk(huk);

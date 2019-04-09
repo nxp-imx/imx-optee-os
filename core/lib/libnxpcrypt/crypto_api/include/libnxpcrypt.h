@@ -16,7 +16,7 @@
 /**
  * @brief   i.MX Crypto Library Algorithm enumeration
  */
-enum imxcrypt_algo_id {
+enum nxpcrypt_algo_id {
 	CRYPTO_HASH = 0,      ///< HASH driver
 	CRYPTO_HASH_SW,      ///< HASH SW driver
 	CRYPTO_HMAC,         ///< HMAC driver
@@ -38,7 +38,7 @@ enum imxcrypt_algo_id {
 /**
  * @brief   i.MX Cryptographic buffer type
  */
-struct imxcrypt_buf {
+struct nxpcrypt_buf {
 	uint8_t *data;   ///< Pointer to the data buffer
 	size_t  length;  ///< Length in bytes of the data buffer
 };
@@ -79,7 +79,7 @@ enum blob_type {
  * @retval  0   Success
  * @retval (-1) Error
  */
-int imxcrypt_register(enum imxcrypt_algo_id idx, void *ops);
+int nxpcrypt_register(enum nxpcrypt_algo_id idx, void *ops);
 
 /**
  * @brief   Cryptographic module modify registration
@@ -87,7 +87,7 @@ int imxcrypt_register(enum imxcrypt_algo_id idx, void *ops);
  * @param[in] idx  Crypto index in the array
  * @param[in] ops  Reference to the cryptographic module
  */
-void imxcrypt_register_change(enum imxcrypt_algo_id idx, void *ops);
+void nxpcrypt_register_change(enum nxpcrypt_algo_id idx, void *ops);
 
 /**
  * @brief   Returns the address of the crypto module structure
@@ -96,7 +96,7 @@ void imxcrypt_register_change(enum imxcrypt_algo_id idx, void *ops);
  *
  * retval  address of the crypto module structure
  */
-void *imxcrypt_getmod(enum imxcrypt_algo_id idx);
+void *nxpcrypt_getmod(enum nxpcrypt_algo_id idx);
 
 /**
  * @brief   Initialize the Software library. Calls all Software drivers
@@ -105,7 +105,7 @@ void *imxcrypt_getmod(enum imxcrypt_algo_id idx);
  * @retval TEE_SUCCESS          Success
  * @retval TEE_ERROR_GENERIC    General failure
  */
-TEE_Result imxcrypt_libsoft_init(void);
+TEE_Result nxpcrypt_libsoft_init(void);
 
 /**
  * @brief   Crypto driver initialization function called by the Crypto

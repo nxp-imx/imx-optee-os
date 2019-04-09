@@ -67,7 +67,7 @@
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result caam_master_key_verif(struct imxcrypt_buf *outkey)
+static TEE_Result caam_master_key_verif(struct nxpcrypt_buf *outkey)
 {
 #ifdef CFG_PHYS_64BIT
 #define BLOB_MASTER_KEY_VERIF	9
@@ -166,7 +166,7 @@ exit_masterkey:
 /**
  * @brief   Registration of the HUK Driver
  */
-struct imxcrypt_huk driver_huk = {
+struct nxpcrypt_huk driver_huk = {
 	.generate_huk = &caam_master_key_verif,
 };
 
@@ -189,7 +189,7 @@ struct imxcrypt_huk driver_huk = {
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_GENERIC         Any other error
  */
-static TEE_Result do_operate(struct imxcrypt_blob_data *blob_data)
+static TEE_Result do_operate(struct nxpcrypt_blob_data *blob_data)
 {
 #ifdef CFG_PHYS_64BIT
 #define BLOB_OPERATE_DESC_ENTRIES	12
@@ -393,7 +393,7 @@ exit_operate:
 /**
  * @brief   Registration of the Blob Driver
  */
-struct imxcrypt_blob driver_blob = {
+struct nxpcrypt_blob driver_blob = {
 	.operate = &do_operate,
 };
 
@@ -410,8 +410,8 @@ enum CAAM_Status caam_blob_init(vaddr_t ctrl_addr __unused)
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 
 	/* Register the HUK Driver */
-	if (imxcrypt_register(CRYPTO_HUK, &driver_huk) == 0) {
-		if (imxcrypt_register(CRYPTO_BLOB, &driver_blob) == 0)
+	if (nxpcrypt_register(CRYPTO_HUK, &driver_huk) == 0) {
+		if (nxpcrypt_register(CRYPTO_BLOB, &driver_blob) == 0)
 			retstatus = CAAM_NO_ERROR;
 	}
 

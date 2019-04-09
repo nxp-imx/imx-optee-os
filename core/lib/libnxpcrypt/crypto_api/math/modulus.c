@@ -25,11 +25,11 @@
  * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
  * @retval TEE_ERROR_GENERIC         Operation failed
  */
-TEE_Result libnxpcrypt_xor_mod_n(struct imxcrypt_mod_op *data)
+TEE_Result libnxpcrypt_xor_mod_n(struct nxpcrypt_mod_op *data)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 
-	struct imxcrypt_math *math = NULL;
+	struct nxpcrypt_math *math = NULL;
 
 	/* Check input parameters */
 	if (((!data->A.data) || (!data->A.length)) ||
@@ -41,7 +41,7 @@ TEE_Result libnxpcrypt_xor_mod_n(struct imxcrypt_mod_op *data)
 	if (data->result.length < data->N.length)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	math = imxcrypt_getmod(CRYPTO_MATH_HW);
+	math = nxpcrypt_getmod(CRYPTO_MATH_HW);
 	if (math) {
 		/*
 		 * Operation done by Math driver

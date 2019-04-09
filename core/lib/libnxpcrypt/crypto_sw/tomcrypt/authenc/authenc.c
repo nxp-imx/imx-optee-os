@@ -31,7 +31,7 @@
  * @brief  AES CCM SW Context using the LibTomCrypt context
  */
 struct authenc_data {
-	enum imxcrypt_authenc_id algo;
+	enum nxpcrypt_authenc_id algo;
 	union {
 #ifdef LTC_CCM_MODE
 		ccm_state ccm_ctx;  ///< CCM State defined by LTC
@@ -53,7 +53,7 @@ struct authenc_data {
  * @retval  true if supported
  * @retval  false otherwise
  */
-static bool algo_isvalid(enum imxcrypt_authenc_id algo)
+static bool algo_isvalid(enum nxpcrypt_authenc_id algo)
 {
 	bool isvalid = false;
 
@@ -85,7 +85,7 @@ static bool algo_isvalid(enum imxcrypt_authenc_id algo)
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  */
-static TEE_Result do_allocate(void **ctx, enum imxcrypt_authenc_id algo)
+static TEE_Result do_allocate(void **ctx, enum nxpcrypt_authenc_id algo)
 {
 	TEE_Result ret = TEE_ERROR_OUT_OF_MEMORY;
 	struct authenc_data *auth_ctx = NULL;
@@ -139,7 +139,7 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  */
-static TEE_Result do_init(struct imxcrypt_authenc_init *dinit)
+static TEE_Result do_init(struct nxpcrypt_authenc_init *dinit)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -216,7 +216,7 @@ static TEE_Result do_init(struct imxcrypt_authenc_init *dinit)
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_GENERIC           Other Error
  */
-static TEE_Result do_update(struct imxcrypt_authenc_data *dupdate)
+static TEE_Result do_update(struct nxpcrypt_authenc_data *dupdate)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -288,12 +288,12 @@ static TEE_Result do_update(struct imxcrypt_authenc_data *dupdate)
  * @retval TEE_ERROR_SHORT_BUFFER      Tag Length is too short
  * @retval TEE_ERROR_MAC_INVALID       MAC is invalid
  */
-static TEE_Result do_update_final(struct imxcrypt_authenc_data *dfinal)
+static TEE_Result do_update_final(struct nxpcrypt_authenc_data *dfinal)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
 #ifdef LTC_GCM_MODE
-	struct imxcrypt_authenc_data dupdate;
+	struct nxpcrypt_authenc_data dupdate;
 #endif
 	struct authenc_data *ctx = dfinal->ctx;
 	int           ltc_res;
@@ -431,7 +431,7 @@ static TEE_Result do_update_final(struct imxcrypt_authenc_data *dfinal)
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  * @retval TEE_ERROR_GENERIC           Generic Error
  */
-static TEE_Result do_update_aad(struct imxcrypt_authenc_aad *daad)
+static TEE_Result do_update_aad(struct nxpcrypt_authenc_aad *daad)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -495,7 +495,7 @@ static void do_final(void *ctx)
 /**
  * @brief   Registration of the Authentication Driver
  */
-struct imxcrypt_authenc driver_authenc_sw = {
+struct nxpcrypt_authenc driver_authenc_sw = {
 #ifdef LTC_GCM_MODE
 	.aes_gcm      = true,
 #else
@@ -520,7 +520,7 @@ struct imxcrypt_authenc driver_authenc_sw = {
 int libsoft_authenc_init(void)
 {
 #if defined(LTC_CCM_MODE) || defined(LTC_GCM_MODE)
-	return imxcrypt_register(CRYPTO_AUTHENC_SW, (void *)&driver_authenc_sw);
+	return nxpcrypt_register(CRYPTO_AUTHENC_SW, (void *)&driver_authenc_sw);
 #endif
 	return 0;
 }

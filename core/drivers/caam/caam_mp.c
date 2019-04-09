@@ -161,7 +161,7 @@ exit_mppriv:
  * @retval  TEE_SUCCESS                Success
  * @retval  TEE_ERROR_BAD_PARAMETERS   Bad parameters
  */
-static TEE_Result do_mpmr(struct imxcrypt_buf *mpmr_reg)
+static TEE_Result do_mpmr(struct nxpcrypt_buf *mpmr_reg)
 {
 	MP_TRACE("Get MPMR content");
 	/* check the size of the MPMR register */
@@ -184,7 +184,7 @@ static TEE_Result do_mpmr(struct imxcrypt_buf *mpmr_reg)
  * @retval  TEE_ERROR_BAD_PARAMETERS   Bad parameters
  * @retval  TEE_ERROR_OUT_OF_MEMORY    Out of memory
  */
-static TEE_Result do_mppub(struct imxcrypt_buf *pubkey)
+static TEE_Result do_mppub(struct nxpcrypt_buf *pubkey)
 {
 #ifdef CFG_PHYS_64BIT
 #define MP_PUB_DESC_ENTRIES	7
@@ -278,7 +278,7 @@ exit_mppub:
  * @retval  TEE_ERROR_GENERIC          General error
  * @retval  TEE_ERROR_BAD_PARAMETERS   Bad parameters
  */
-static TEE_Result do_mpsign(struct imxcrypt_mp_sign *sdata)
+static TEE_Result do_mpsign(struct nxpcrypt_mp_sign *sdata)
 {
 #ifdef CFG_PHYS_64BIT
 #define MP_SIGN_DESC_ENTRIES	13
@@ -397,7 +397,7 @@ exit_mpsign:
 /**
  * @brief   Registration of the MP Driver
  */
-struct imxcrypt_mp driver_mp = {
+struct nxpcrypt_mp driver_mp = {
 	.export_pubkey = &do_mppub,
 	.export_mpmr = &do_mpmr,
 	.sign = &do_mpsign,
@@ -417,7 +417,7 @@ enum CAAM_Status caam_mp_init(vaddr_t ctrl_addr)
 	enum CAAM_Status retstatus = CAAM_FAILURE;
 	int hash_limit;
 	const char *passphrase = "manufacturing protection";
-	struct imxcrypt_buf msg_mpmr;
+	struct nxpcrypt_buf msg_mpmr;
 	const char *mpmr_data = "value to fill the MPMR content";
 
 	msg_mpmr.data = (uint8_t *)mpmr_data;
@@ -465,7 +465,7 @@ enum CAAM_Status caam_mp_init(vaddr_t ctrl_addr)
 	/* see the MPMR content (32 registers of 8 bits) */
 	hal_ctrl_get_mpmr(ctrl_addr, mp_privdata.val_mpmr);
 
-	if (imxcrypt_register(CRYPTO_MP, &driver_mp) == 0)
+	if (nxpcrypt_register(CRYPTO_MP, &driver_mp) == 0)
 		retstatus = CAAM_NO_ERROR;
 	else
 		retstatus = CAAM_FAILURE;

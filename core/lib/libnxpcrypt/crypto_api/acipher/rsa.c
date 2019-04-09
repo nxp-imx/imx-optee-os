@@ -43,7 +43,7 @@ TEE_Result crypto_acipher_alloc_rsa_keypair(struct rsa_keypair *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_rsa *rsa = NULL;
+	struct nxpcrypt_rsa *rsa = NULL;
 
 	if ((!key) || (size_bits == 0)) {
 		LIB_TRACE("Parameters error (key @0x%"PRIxPTR") (size %d bits)",
@@ -51,7 +51,7 @@ TEE_Result crypto_acipher_alloc_rsa_keypair(struct rsa_keypair *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa)
 		ret = rsa->alloc_keypair(key, size_bits);
 
@@ -76,7 +76,7 @@ TEE_Result crypto_acipher_alloc_rsa_public_key(struct rsa_public_key *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_rsa *rsa = NULL;
+	struct nxpcrypt_rsa *rsa = NULL;
 
 	if ((!key) || (size_bits == 0)) {
 		LIB_TRACE("Parameters error (key @0x%"PRIxPTR") (size %d bits)",
@@ -84,7 +84,7 @@ TEE_Result crypto_acipher_alloc_rsa_public_key(struct rsa_public_key *key,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa)
 		ret = rsa->alloc_publickey(key, size_bits);
 
@@ -100,10 +100,10 @@ TEE_Result crypto_acipher_alloc_rsa_public_key(struct rsa_public_key *key,
  */
 void crypto_acipher_free_rsa_public_key(struct rsa_public_key *key)
 {
-	struct imxcrypt_rsa *rsa = NULL;
+	struct nxpcrypt_rsa *rsa = NULL;
 
 	if (key) {
-		rsa = imxcrypt_getmod(CRYPTO_RSA);
+		rsa = nxpcrypt_getmod(CRYPTO_RSA);
 		if (rsa) {
 			LIB_TRACE("RSA Public Key free");
 			rsa->free_publickey(key);
@@ -127,7 +127,7 @@ TEE_Result crypto_acipher_gen_rsa_key(struct rsa_keypair *key, size_t size_bits)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_rsa *rsa = NULL;
+	struct nxpcrypt_rsa *rsa = NULL;
 
 	/* Check input parameters */
 	if ((!key) || (size_bits == 0)) {
@@ -136,7 +136,7 @@ TEE_Result crypto_acipher_gen_rsa_key(struct rsa_keypair *key, size_t size_bits)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa)
 		ret = rsa->gen_keypair(key, size_bits);
 
@@ -168,8 +168,8 @@ TEE_Result crypto_acipher_rsanopad_decrypt(struct rsa_keypair *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_rsa    *rsa = NULL;
-	struct imxcrypt_rsa_ed rsa_data;
+	struct nxpcrypt_rsa    *rsa = NULL;
+	struct nxpcrypt_rsa_ed rsa_data;
 
 	/* Check input parameters */
 	if ((!key) || (!msg) || (!cipher) || (!msg_len)) {
@@ -185,7 +185,7 @@ TEE_Result crypto_acipher_rsanopad_decrypt(struct rsa_keypair *key,
 	rsa_data.key.isprivate = true;
 	rsa_data.key.n_size    = crypto_bignum_num_bytes(key->n);
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/* Prepare the decryption data parameters */
 		rsa_data.rsa_id         = RSA_NOPAD;
@@ -228,8 +228,8 @@ TEE_Result crypto_acipher_rsanopad_encrypt(struct rsa_public_key *key,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_rsa    *rsa = NULL;
-	struct imxcrypt_rsa_ed rsa_data;
+	struct nxpcrypt_rsa    *rsa = NULL;
+	struct nxpcrypt_rsa_ed rsa_data;
 
 	/* Check input parameters */
 	if ((!key) || (!msg) || (!cipher) || (!cipher_len)) {
@@ -252,7 +252,7 @@ TEE_Result crypto_acipher_rsanopad_encrypt(struct rsa_public_key *key,
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/* Prepare the encryption data parameters */
 		rsa_data.rsa_id         = RSA_NOPAD;
@@ -300,8 +300,8 @@ TEE_Result crypto_acipher_rsaes_decrypt(uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_rsa    *rsa = NULL;
-	struct imxcrypt_rsa_ed rsa_data;
+	struct nxpcrypt_rsa    *rsa = NULL;
+	struct nxpcrypt_rsa_ed rsa_data;
 
 	/* Check input parameters */
 	if ((!key) || (!msg) || (!cipher) || (!msg_len) ||
@@ -316,7 +316,7 @@ TEE_Result crypto_acipher_rsaes_decrypt(uint32_t algo,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/* Prepare the encryption data parameters */
 		if (algo == TEE_ALG_RSAES_PKCS1_V1_5) {
@@ -386,8 +386,8 @@ TEE_Result crypto_acipher_rsaes_encrypt(uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
-	struct imxcrypt_rsa    *rsa = NULL;
-	struct imxcrypt_rsa_ed rsa_data;
+	struct nxpcrypt_rsa    *rsa = NULL;
+	struct nxpcrypt_rsa_ed rsa_data;
 
 	/* Check input parameters */
 	if ((!key) || (!msg) || (!cipher) || (!cipher_len) ||
@@ -413,7 +413,7 @@ TEE_Result crypto_acipher_rsaes_encrypt(uint32_t algo,
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/* Prepare the encryption data parameters */
 		if (algo == TEE_ALG_RSAES_PKCS1_V1_5) {
@@ -487,8 +487,8 @@ TEE_Result crypto_acipher_rsassa_sign(uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
-	struct imxcrypt_rsa     *rsa = NULL;
-	struct imxcrypt_rsa_ssa rsa_ssa;
+	struct nxpcrypt_rsa     *rsa = NULL;
+	struct nxpcrypt_rsa_ssa rsa_ssa;
 
 	/* Verify first if the input parameters */
 	if ((!key) || (!msg) || (!sig) || (!sig_len)) {
@@ -523,7 +523,7 @@ TEE_Result crypto_acipher_rsassa_sign(uint32_t algo,
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/*
 		 * Prepare the Encoded Signature structure data
@@ -578,8 +578,8 @@ TEE_Result crypto_acipher_rsassa_verify(uint32_t algo,
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 
-	struct imxcrypt_rsa     *rsa = NULL;
-	struct imxcrypt_rsa_ssa rsa_ssa;
+	struct nxpcrypt_rsa     *rsa = NULL;
+	struct nxpcrypt_rsa_ssa rsa_ssa;
 
 	/* Verify first if the input parameters */
 	if ((!key) || (!msg) || (!sig)) {
@@ -612,7 +612,7 @@ TEE_Result crypto_acipher_rsassa_verify(uint32_t algo,
 		return TEE_ERROR_SIGNATURE_INVALID;
 	}
 
-	rsa = imxcrypt_getmod(CRYPTO_RSA);
+	rsa = nxpcrypt_getmod(CRYPTO_RSA);
 	if (rsa) {
 		/*
 		 * Prepare the Encoded Signature structure data

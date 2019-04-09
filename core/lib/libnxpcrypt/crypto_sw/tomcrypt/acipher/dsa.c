@@ -205,7 +205,7 @@ static TEE_Result do_gen_keypair(struct dsa_keypair *key, size_t key_size)
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-static TEE_Result do_sign(struct imxcrypt_sign_data *sdata)
+static TEE_Result do_sign(struct nxpcrypt_sign_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -277,7 +277,7 @@ end_sign:
  * @retval TEE_ERROR_SIGNATURE_INVALID Signature is not valid
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  */
-static TEE_Result do_verify(struct imxcrypt_sign_data *sdata)
+static TEE_Result do_verify(struct nxpcrypt_sign_data *sdata)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 
@@ -334,7 +334,7 @@ end_sign:
 /**
  * @brief   Registration of the RSA Driver
  */
-struct imxcrypt_dsa driver_dsa = {
+struct nxpcrypt_dsa driver_dsa = {
 	.alloc_keypair   = &do_allocate_keypair,
 	.alloc_publickey = &do_allocate_publickey,
 	.gen_keypair     = &do_gen_keypair,
@@ -352,7 +352,7 @@ int libsoft_dsa_init(void)
 {
 	int ret;
 
-	ret = imxcrypt_register(CRYPTO_DSA, &driver_dsa);
+	ret = nxpcrypt_register(CRYPTO_DSA, &driver_dsa);
 
 	return ret;
 }

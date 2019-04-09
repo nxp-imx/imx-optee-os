@@ -17,7 +17,7 @@
 /**
  * @brief   MP Signature Curve enumerate
  */
-enum imxcrypt_mp_id {
+enum nxpcrypt_mp_id {
 	MP_P256 = 0,       ///< P256
 	MP_P384,           ///< P384
 	MP_P521           ///< P521
@@ -26,9 +26,9 @@ enum imxcrypt_mp_id {
 /**
  * @brief   MP Signature data
  */
-struct imxcrypt_mp_sign {
-	struct imxcrypt_buf message;    ///< Message to sign
-	struct imxcrypt_buf signature;  ///< Signature of the message
+struct nxpcrypt_mp_sign {
+	struct nxpcrypt_buf message;    ///< Message to sign
+	struct nxpcrypt_buf signature;  ///< Signature of the message
 };
 
 /**
@@ -40,7 +40,7 @@ struct imxcrypt_mp_sign {
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result crypto_mp_export_pubkey(struct imxcrypt_buf *pubkey);
+TEE_Result crypto_mp_export_pubkey(struct nxpcrypt_buf *pubkey);
 
 /**
  * @brief   Export the MPMR content
@@ -51,7 +51,7 @@ TEE_Result crypto_mp_export_pubkey(struct imxcrypt_buf *pubkey);
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result crypto_mp_export_mpmr(struct imxcrypt_buf *mpmr_reg);
+TEE_Result crypto_mp_export_mpmr(struct nxpcrypt_buf *mpmr_reg);
 
 /**
  * @brief   Sign a message with the MP Private key\n
@@ -63,7 +63,7 @@ TEE_Result crypto_mp_export_mpmr(struct imxcrypt_buf *mpmr_reg);
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
-TEE_Result crypto_mp_sign(struct imxcrypt_mp_sign *sdata);
+TEE_Result crypto_mp_sign(struct nxpcrypt_mp_sign *sdata);
 
 /**
  * @brief   Generation of the Hardware Unique Key (HUK)
@@ -76,7 +76,7 @@ TEE_Result crypto_mp_sign(struct imxcrypt_mp_sign *sdata);
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm is not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-TEE_Result crypto_generate_huk(struct imxcrypt_buf *huk);
+TEE_Result crypto_generate_huk(struct nxpcrypt_buf *huk);
 #endif // _CFG_CRYPTO_WITH_MP
 
 #ifdef _CFG_CRYPTO_WITH_BLOB
@@ -103,8 +103,8 @@ TEE_Result crypto_generate_huk(struct imxcrypt_buf *huk);
  */
 TEE_Result blob_encapsulate(enum blob_type type,
 		const uint8_t *key,
-		const struct imxcrypt_buf *payload,
-		struct imxcrypt_buf *blob);
+		const struct nxpcrypt_buf *payload,
+		struct nxpcrypt_buf *blob);
 
 /**
  * @brief Decapsulates input blob.
@@ -127,8 +127,8 @@ TEE_Result blob_encapsulate(enum blob_type type,
  */
 TEE_Result blob_decapsulate(enum blob_type type,
 		const uint8_t *key,
-		struct imxcrypt_buf *payload,
-		const struct imxcrypt_buf *blob);
+		struct nxpcrypt_buf *payload,
+		const struct nxpcrypt_buf *blob);
 #endif // _CFG_CRYPTO_WITH_BLOB
 
 #endif /* __CRYPTO_EXTENSION_H */

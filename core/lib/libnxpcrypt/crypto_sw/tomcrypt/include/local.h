@@ -127,7 +127,7 @@ int libsoft_authenc_init(void);
  * @retval  >=0 if found
  * @retval  (-1) if not found
  */
-int get_ltc_hashindex(enum imxcrypt_hash_id algo);
+int get_ltc_hashindex(enum nxpcrypt_hash_id algo);
 
 /**
  * @brief   Find Cipher index into the LibTomCrypt hash registered
@@ -137,7 +137,7 @@ int get_ltc_hashindex(enum imxcrypt_hash_id algo);
  * @retval  >=0 if found
  * @retval  (-1) if not found
  */
-int get_ltc_cipherindex(enum imxcrypt_cipher_id algo);
+int get_ltc_cipherindex(enum nxpcrypt_cipher_id algo);
 
 /**
  * @brief   Return the reference to the PRNG

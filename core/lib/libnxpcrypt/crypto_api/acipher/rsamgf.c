@@ -52,12 +52,12 @@
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  * @retval TEE_ERROR_GENERIC           Generic error
  */
-TEE_Result rsa_mgf1(struct imxcrypt_rsa_mgf *mgf_data)
+TEE_Result rsa_mgf1(struct nxpcrypt_rsa_mgf *mgf_data)
 {
 	TEE_Result ret;
 
-	enum imxcrypt_hash_id hash_id = mgf_data->hash_id;
-	struct imxcrypt_hash *hash = NULL;
+	enum nxpcrypt_hash_id hash_id = mgf_data->hash_id;
+	struct nxpcrypt_hash *hash = NULL;
 	void     *ctx = NULL;
 	size_t   lastBlock_size;
 	size_t   nbBlock = 0;
@@ -70,14 +70,14 @@ TEE_Result rsa_mgf1(struct imxcrypt_rsa_mgf *mgf_data)
 	RSA_TRACE("Generate Mask (%d bytes) with seed of %d bytes",
 			mgf_data->mask.length, mgf_data->seed.length);
 
-	hash = imxcrypt_getmod(CRYPTO_HASH);
+	hash = nxpcrypt_getmod(CRYPTO_HASH);
 
 	/* Verify that the HASH HW implements this algorithm */
 	if (hash) {
 		if (hash->max_hash < hash_id)
-			hash = imxcrypt_getmod(CRYPTO_HASH_SW);
+			hash = nxpcrypt_getmod(CRYPTO_HASH_SW);
 	} else {
-		hash = imxcrypt_getmod(CRYPTO_HASH_SW);
+		hash = nxpcrypt_getmod(CRYPTO_HASH_SW);
 	}
 
 	if (!hash)

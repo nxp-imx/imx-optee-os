@@ -41,7 +41,7 @@ struct ltc_hash_ctx {
  * @retval  >=0 if found
  * @retval  (-1) if not found
  */
-static int get_sw_hashindex(enum imxcrypt_hash_id algo)
+static int get_sw_hashindex(enum nxpcrypt_hash_id algo)
 {
 	int index = (-1);
 
@@ -99,7 +99,7 @@ static int get_sw_hashindex(enum imxcrypt_hash_id algo)
  * @retval TEE_ERROR_OUT_OF_MEMORY     Out of memory
  * @retval TEE_ERROR_NOT_IMPLEMENTED   Algorithm not implemented
  */
-static TEE_Result do_allocate(void **ctx, enum imxcrypt_hash_id algo)
+static TEE_Result do_allocate(void **ctx, enum nxpcrypt_hash_id algo)
 {
 	struct ltc_hash_ctx *hash_ctx;
 	int  index;
@@ -250,7 +250,7 @@ static void do_cpy_state(void *dst_ctx, void *src_ctx)
 /**
  * @brief   Registration of the HASH SW Driver
  */
-const struct imxcrypt_hash driver_hash_sw = {
+const struct nxpcrypt_hash driver_hash_sw = {
 	.alloc_ctx   = &do_allocate,
 	.free_ctx    = &do_free,
 	.init        = &do_init,
@@ -268,5 +268,5 @@ const struct imxcrypt_hash driver_hash_sw = {
  */
 int libsoft_hash_sw_init(void)
 {
-	return imxcrypt_register(CRYPTO_HASH_SW, (void *)&driver_hash_sw);
+	return nxpcrypt_register(CRYPTO_HASH_SW, (void *)&driver_hash_sw);
 }
