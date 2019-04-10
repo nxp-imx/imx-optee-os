@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    local.h
  *
@@ -10,8 +10,8 @@
 #define __LOCAL_H__
 
 /* Library i.MX includes */
-#include <libimxcrypt.h>
-#include <libimxcrypt_cipher.h>
+#include <libnxpcrypt.h>
+#include <libnxpcrypt_cipher.h>
 
 /*
  * Debug Macros

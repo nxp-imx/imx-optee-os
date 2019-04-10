@@ -95,7 +95,7 @@ libdir = $(CFG_CRYPTOLIB_DIR)
 include mk/lib.mk
 
 ifeq ($(CFG_NXPCRYPT), y)
-libname = imxcrypt
+libname = nxpcrypt
 libdir = core/lib/lib$(libname)
 include mk/lib.mk
 endif

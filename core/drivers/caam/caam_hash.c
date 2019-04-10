@@ -18,8 +18,8 @@
 #include <utee_defines.h>
 
 /* Library i.MX includes */
-#include <libimxcrypt.h>
-#include <libimxcrypt_hash.h>
+#include <libnxpcrypt.h>
+#include <libnxpcrypt_hash.h>
 
 /* Local includes */
 #include "common.h"

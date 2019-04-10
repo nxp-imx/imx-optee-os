@@ -14,7 +14,7 @@
 
 /* Library i.MX includes */
 #ifdef CFG_CRYPTO_MP_HW
-#include <libimxcrypt.h>
+#include <libnxpcrypt.h>
 #endif
 
 /* Local includes */

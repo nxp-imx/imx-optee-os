@@ -13,7 +13,7 @@
 
 #ifdef CFG_NXPCRYPT
 /* Library i.MX includes */
-#include <libimxcrypt.h>
+#include <libnxpcrypt.h>
 #endif
 
 /* Local includes */

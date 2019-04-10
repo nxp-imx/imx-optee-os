@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
- * @file    libimxcrypt_custom_with_hw.h
+ * @file    libtomcrypt_custom_with_hw.h
  *
  * @brief   Define the LibTomCrypt library algorithm to support
  *          in case of use with a library mixing Hardware accelerator

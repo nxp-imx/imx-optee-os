@@ -19,9 +19,9 @@
 #include <imx.h>
 
 /* Library i.MX includes */
-#include <libimxcrypt.h>
-#include <libimxcrypt_huk.h>
-#include <libimxcrypt_blob.h>
+#include <libnxpcrypt.h>
+#include <libnxpcrypt_huk.h>
+#include <libnxpcrypt_blob.h>
 
 /* Local includes */
 #include "common.h"

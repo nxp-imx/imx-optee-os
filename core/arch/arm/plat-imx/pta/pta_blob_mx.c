@@ -23,7 +23,7 @@
 
 /* Library crypto includes */
 #include <crypto_extension.h>
-#include <libimxcrypt_blob.h>
+#include <libnxpcrypt_blob.h>
 
 /* Library crypto includes */
 #include <crypto/crypto.h>

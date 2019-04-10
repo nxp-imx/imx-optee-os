@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    caam_mp.c
  *
@@ -15,9 +15,9 @@
 #include <tee/cache.h>
 
 /* Library i.MX includes */
-#include <libimxcrypt.h>
-#include <libimxcrypt_mp.h>
-#include <libimxcrypt_hash.h>
+#include <libnxpcrypt.h>
+#include <libnxpcrypt_mp.h>
+#include <libnxpcrypt_hash.h>
 
 /* Utils includes */
 #include "utils_mem.h"

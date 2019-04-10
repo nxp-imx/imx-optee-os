@@ -20,8 +20,8 @@
 
 #ifdef CFG_CRYPTO_RNG_HW
 /* Library i.MX includes */
-#include <libimxcrypt.h>
-#include <libimxcrypt_rng.h>
+#include <libnxpcrypt.h>
+#include <libnxpcrypt_rng.h>
 #endif // CFG_CRYPTO_RNG_HW
 
 /* Local includes */

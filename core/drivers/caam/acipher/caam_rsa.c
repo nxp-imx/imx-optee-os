@@ -15,9 +15,9 @@
 #include <utee_defines.h>
 
 /* Library i.MX includes */
-#include <libimxcrypt.h>
-#include <libimxcrypt_acipher.h>
-#include <libimxcrypt_math.h>
+#include <libnxpcrypt.h>
+#include <libnxpcrypt_acipher.h>
+#include <libnxpcrypt_math.h>
 
 /* Local includes */
 #include "local.h"
@@ -906,7 +906,7 @@ static TEE_Result do_oaep_decoding(struct imxcrypt_rsa_ed *rsa_data)
 	mod_op.result.data   = seed.data;
 	mod_op.result.length = seed.length;
 
-	ret = libimxcrypt_xor_mod_n(&mod_op);
+	ret = libnxpcrypt_xor_mod_n(&mod_op);
 	if (ret != TEE_SUCCESS)
 		goto exit_oaep_decrypt;
 
@@ -937,7 +937,7 @@ static TEE_Result do_oaep_decoding(struct imxcrypt_rsa_ed *rsa_data)
 	mod_op.result.data   = DB.data;
 	mod_op.result.length = DB.length;
 
-	ret = libimxcrypt_xor_mod_n(&mod_op);
+	ret = libnxpcrypt_xor_mod_n(&mod_op);
 	if (ret != TEE_SUCCESS)
 		goto exit_oaep_decrypt;
 
@@ -1141,7 +1141,7 @@ static TEE_Result do_oaep_encoding(struct imxcrypt_rsa_ed *rsa_data)
 	mod_op.result.data   = maskedDB.data;
 	mod_op.result.length = maskedDB.length;
 
-	ret = libimxcrypt_xor_mod_n(&mod_op);
+	ret = libnxpcrypt_xor_mod_n(&mod_op);
 	if (ret != TEE_SUCCESS)
 		goto exit_oaep_encrypt;
 
@@ -1176,7 +1176,7 @@ static TEE_Result do_oaep_encoding(struct imxcrypt_rsa_ed *rsa_data)
 	mod_op.result.data   = maskedSeed.data;
 	mod_op.result.length = maskedSeed.length;
 
-	ret = libimxcrypt_xor_mod_n(&mod_op);
+	ret = libnxpcrypt_xor_mod_n(&mod_op);
 	if (ret != TEE_SUCCESS)
 		goto exit_oaep_encrypt;
 

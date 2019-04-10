@@ -16,8 +16,8 @@
 #include <tee/tee_cryp_utl.h>
 
 /* Library i.MX includes */
-#include <libimxcrypt.h>
-#include <libimxcrypt_math.h>
+#include <libnxpcrypt.h>
+#include <libnxpcrypt_math.h>
 
 /* Local includes */
 #include "common.h"

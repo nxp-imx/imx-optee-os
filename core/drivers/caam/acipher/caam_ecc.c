@@ -13,8 +13,8 @@
 #include <tee/cache.h>
 
 /* Library i.MX includes */
-#include <libimxcrypt.h>
-#include <libimxcrypt_acipher.h>
+#include <libnxpcrypt.h>
+#include <libnxpcrypt_acipher.h>
 
 /* Local includes */
 #include "local.h"

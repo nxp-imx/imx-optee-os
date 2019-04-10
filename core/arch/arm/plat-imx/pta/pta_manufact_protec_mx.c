@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2018 NXP
+ * @copyright 2018-2019 NXP
  *
  * @file    pta_manufact_protec_mx.c
  *
@@ -23,7 +23,7 @@
 
 /* Library crypto includes */
 #include <crypto_extension.h>
-#include <libimxcrypt_hash.h>
+#include <libnxpcrypt_hash.h>
 
 /* Library crypto includes */
 #include <crypto/crypto.h>

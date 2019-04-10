@@ -13,7 +13,7 @@
 
 #ifdef CFG_CRYPTO_HASH_HW
 /* Library i.MX includes */
-#include <libimxcrypt_hash.h>
+#include <libnxpcrypt_hash.h>
 #endif
 
 /* Hal includes */
