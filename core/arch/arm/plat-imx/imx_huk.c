@@ -40,7 +40,7 @@ void tee_otp_get_hw_unique_key(struct tee_hw_unique_key *huk)
 {
 	TEE_Result ret;
 
-	struct imxcrypt_buf cryptohuk = {0};
+	struct nxpcrypt_buf cryptohuk = {0};
 
 	/* Initialize the HUK value */
 	memset(huk->data, 0, sizeof(huk->data));

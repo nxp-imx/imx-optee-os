@@ -50,7 +50,7 @@
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad Parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY	   Out of memory
  */
-static TEE_Result mppub_gen(struct imxcrypt_buf *pubkey)
+static TEE_Result mppub_gen(struct nxpcrypt_buf *pubkey)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 
@@ -77,7 +77,7 @@ static TEE_Result mppub_gen(struct imxcrypt_buf *pubkey)
  */
 static TEE_Result mpsign(void *cert, size_t len, size_t len_sig)
 {
-	struct imxcrypt_mp_sign sdata;
+	struct nxpcrypt_mp_sign sdata;
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	DMSG("MPSign function\n");
@@ -126,7 +126,7 @@ out:
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad Parameters
  * @retval TEE_ERROR_OUT_OF_MEMORY	   Out of memory
  */
-static TEE_Result mpmr_content(struct imxcrypt_buf *mpmr_reg)
+static TEE_Result mpmr_content(struct nxpcrypt_buf *mpmr_reg)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 
@@ -154,7 +154,7 @@ static TEE_Result pub_issuer_key(uint32_t type,
 	TEE_Param params[TEE_NUM_PARAMS])
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	struct imxcrypt_buf pubkey;
+	struct nxpcrypt_buf pubkey;
 	uint32_t exp_param_types;
 
 	exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -192,7 +192,7 @@ static TEE_Result certificate_signature(uint32_t type,
 	TEE_Param params[TEE_NUM_PARAMS])
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	struct imxcrypt_buf mpmr_reg;
+	struct nxpcrypt_buf mpmr_reg;
 	uint32_t exp_param_types;
 
 	exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT,

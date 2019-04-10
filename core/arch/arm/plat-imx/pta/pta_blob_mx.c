@@ -63,8 +63,8 @@ static TEE_Result encapsulate(uint32_t param_types,
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t exp_param_types;
-	struct imxcrypt_buf payload;
-	struct imxcrypt_buf blob;
+	struct nxpcrypt_buf payload;
+	struct nxpcrypt_buf blob;
 
 	exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
 					TEE_PARAM_TYPE_MEMREF_INPUT,
@@ -78,11 +78,11 @@ static TEE_Result encapsulate(uint32_t param_types,
 	if (params[1].memref.size != BLOB_KEY_MODIFIER_SIZE)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	/* Convert the payload to imxcrypt_buf object */
+	/* Convert the payload to nxpcrypt_buf object */
 	payload.data   = params[2].memref.buffer;
 	payload.length = params[2].memref.size;
 
-	/* Convert the blob to imxcrypt_buf object */
+	/* Convert the blob to nxpcrypt_buf object */
 	blob.data   = params[3].memref.buffer;
 	blob.length = params[3].memref.size;
 
@@ -125,8 +125,8 @@ static TEE_Result decapsulate(uint32_t param_types,
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t exp_param_types;
-	struct imxcrypt_buf payload;
-	struct imxcrypt_buf blob;
+	struct nxpcrypt_buf payload;
+	struct nxpcrypt_buf blob;
 
 	exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
 					TEE_PARAM_TYPE_MEMREF_INPUT,
@@ -140,11 +140,11 @@ static TEE_Result decapsulate(uint32_t param_types,
 	if (params[1].memref.size != BLOB_KEY_MODIFIER_SIZE)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	/* Convert the payload to imxcrypt_buf object */
+	/* Convert the payload to nxpcrypt_buf object */
 	payload.data   = params[3].memref.buffer;
 	payload.length = params[3].memref.size;
 
-	/* Convert the blob to imxcrypt_buf object */
+	/* Convert the blob to nxpcrypt_buf object */
 	blob.data   = params[2].memref.buffer;
 	blob.length = params[2].memref.size;
 
