@@ -371,13 +371,14 @@ static TEE_Result do_operate(struct nxpcrypt_blob_data *blob_data)
 				memcpy(blob_data->payload.data,
 					out_buf.data, routsize);
 
-			ret = TEE_SUCCESS;
 		}
 
 		if (blob_data->encaps)
 			blob_data->blob.length = routsize;
 		else
 			blob_data->payload.length = routsize;
+
+		ret = TEE_SUCCESS;
 	} else {
 		BLOB_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
 		ret = TEE_ERROR_GENERIC;
