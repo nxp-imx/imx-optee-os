@@ -64,7 +64,9 @@ TEE_Result crypto_mp_export_mpmr(struct nxpcrypt_buf *mpmr_reg);
  * @retval TEE_ERROR_BAD_PARAMETERS    Bad parameters
  */
 TEE_Result crypto_mp_sign(struct nxpcrypt_mp_sign *sdata);
+#endif // _CFG_CRYPTO_WITH_MP
 
+#ifdef _CFG_CRYPTO_WITH_BLOB
 /**
  * @brief   Generation of the Hardware Unique Key (HUK)
  *
@@ -77,9 +79,7 @@ TEE_Result crypto_mp_sign(struct nxpcrypt_mp_sign *sdata);
  * @retval TEE_ERROR_GENERIC           Generic error
  */
 TEE_Result crypto_generate_huk(struct nxpcrypt_buf *huk);
-#endif // _CFG_CRYPTO_WITH_MP
 
-#ifdef _CFG_CRYPTO_WITH_BLOB
 /**
  * @brief Encapsulates input data.
  *  Resulting blob is the input length + 48 bytes
