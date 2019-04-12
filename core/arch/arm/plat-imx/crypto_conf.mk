@@ -59,6 +59,8 @@ $(call force, CFG_CRYPTO_CMAC_HW,y)
 #
 ifneq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX7ULP)$(CFG_MX8M)$(CFG_MX8MM)),y)
 $(call force, CFG_IMX_MP,n)
+else
+$(call force, CFG_IMX_MP,y)
 endif
 
 #
