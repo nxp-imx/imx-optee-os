@@ -74,18 +74,18 @@ void desc_add_ptr(uint32_t *desc, paddr_t ptr)
 
 	/* Add Word at Last */
 	uint32_t *last = desc + len;
-	uint32_t inc = 0;
+	uint32_t inc = 1;
 
 #ifdef CFG_PHYS_64BIT
 	ptr_addr_t *ptr_addr = (ptr_addr_t *)(uintptr_t)last;
 
 	put32((void *)(&ptr_addr->m_halves.high), PHYS_ADDR_HI(ptr));
 	put32((void *)(&ptr_addr->m_halves.low), PHYS_ADDR_LO(ptr));
+	inc++;
 #else
 	put32((void *)last, ptr);
 #endif
 
 	/* Increase the length */
-	inc = (uint32_t) (sizeof(paddr_t) / sizeof(uint32_t));
 	put32((void *)(desc), (get32((void *)desc) + inc));
 }
