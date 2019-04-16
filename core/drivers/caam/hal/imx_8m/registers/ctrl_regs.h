@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /**
- * @copyright 2017-2018 NXP
+ * @copyright 2017-2019 NXP
  *
  * @file    ctrl_regs.h
  *
@@ -33,7 +33,8 @@
 
 /* Security Configuration */
 #define SCFGR					0x000C
-#define BM_SCFGR_MPCURVE		SHIFT_U32(0xF, 28)
+#define BS_SCFGR_MPCURVE		28
+#define BM_SCFGR_MPCURVE		SHIFT_U32(0xF, BS_SCFGR_MPCURVE)
 #define BM_SCFGR_MPMRL          BIT32(26)
 
 /* Manufacturing Protection Message */

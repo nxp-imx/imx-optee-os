@@ -35,10 +35,11 @@ size_t hal_ctrl_get_mpmr_size(void);
  *
  * @param[in] ctrl_addr  Controller base address
  *
- * @retval true       Success
- * @retval false      Failure
+ * @retval MPCurve Value read if device closed
+ * @retval 0                  if not programmed
+ * @retval (-1)               if not supported
  */
-bool hal_ctrl_is_mpcurve(vaddr_t ctrl_addr __maybe_unused);
+int8_t hal_ctrl_is_mpcurve(vaddr_t ctrl_addr);
 
 /**
  * @brief   Get the MPMR content

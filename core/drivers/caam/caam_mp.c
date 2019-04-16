@@ -37,9 +37,9 @@
 /*
  * Debug Macros
  */
-#define MP_DEBUG
+//#define MP_DEBUG
 #ifdef MP_DEBUG
-#define DUMP_DESC
+//#define DUMP_DESC
 //#define DUMP_BUF
 #define MP_TRACE		DRV_TRACE
 #else
@@ -82,9 +82,10 @@ static struct mp_privdata mp_privdata;
  * @param[in] passphrase         Passphrase
  * @param[in] len                Passphrase's length
  *
- * @retval  CAAM_NO_ERROR    Success
- * @retval  CAAM_FAILURE     General failure
- * @retval  CAAM_OUT_MEMORY  Out of memory
+ * @retval  CAAM_NO_ERROR       Success
+ * @retval  CAAM_FAILURE        General failure
+ * @retval  CAAM_NOT_SUPPORTED  Not supported feature
+ * @retval  CAAM_OUT_MEMORY     Out of memory
  */
 static enum CAAM_Status do_mppriv_gen(const uint8_t *passphrase, size_t len,
 					uint32_t curve)
@@ -142,6 +143,7 @@ static enum CAAM_Status do_mppriv_gen(const uint8_t *passphrase, size_t len,
 
 	if (ret != CAAM_NO_ERROR) {
 		MP_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+		ret = CAAM_NOT_SUPPORTED;
 	} else {
 		MP_TRACE("Do Mppriv gen CAAM");
 		ret = CAAM_NO_ERROR;
@@ -418,6 +420,7 @@ struct nxpcrypt_mp driver_mp = {
 enum CAAM_Status caam_mp_init(vaddr_t ctrl_addr)
 {
 	enum CAAM_Status retstatus = CAAM_FAILURE;
+	int8_t ret_curve;
 	int hash_limit;
 	const char *passphrase = "manufacturing protection";
 	struct nxpcrypt_buf msg_mpmr;
@@ -426,32 +429,86 @@ enum CAAM_Status caam_mp_init(vaddr_t ctrl_addr)
 	msg_mpmr.data = (uint8_t *)mpmr_data;
 	msg_mpmr.length = strlen(mpmr_data);
 
-	/* store the ctrl_addr in the private data */
-	hash_limit = hal_ctrl_hash_limit(ctrl_addr);
+	ret_curve = hal_ctrl_is_mpcurve(ctrl_addr);
 
-	switch (hash_limit) {
-	/* store the curve selection in the private data */
-	case HASH_SHA256:
-		mp_privdata.curve_sel = PDB_MP_CSEL_P256;
-		mp_privdata.sec_key_size = 32; break;
-	case HASH_SHA384:
-		mp_privdata.curve_sel = PDB_MP_CSEL_P384;
-		mp_privdata.sec_key_size = 48; break;
-	case HASH_SHA512:
-		mp_privdata.curve_sel = PDB_MP_CSEL_P521;
-		mp_privdata.sec_key_size = 66; break;
-
-	default:
-		MP_TRACE("This curve doesn't exist"); return retstatus;
+	if (ret_curve == (-1)) {
+		EMSG("*************************************");
+		EMSG("* Warning: Manufacturing protection *");
+		EMSG("*          is not supported         *");
+		EMSG("*************************************");
+		/*
+		 * Don't register the driver and return
+		 * no error to not stop the boot. Because
+		 * Driver is not register, the MP will not
+		 * be used.
+		 */
+		return CAAM_NO_ERROR;
 	}
 
-	if (!hal_ctrl_is_mpcurve(ctrl_addr)) {
-		MP_TRACE("MP Private key has not been generated .\n");
-		retstatus = do_mppriv_gen((const uint8_t *)passphrase,
-                            strlen(passphrase),
-			SHIFT_U32((PDB_MP_CSEL_P256 & 0xFF), 17));
+	if (ret_curve == 0) {
+		/*
+		 * Get the device HASH Limit to select the
+		 * MP Curve to be used
+		 */
+		hash_limit = hal_ctrl_hash_limit(ctrl_addr);
+
+		switch (hash_limit) {
+		case HASH_SHA256:
+			mp_privdata.curve_sel    = PDB_MP_CSEL_P256;
+			mp_privdata.sec_key_size = 32;
+			break;
+
+		case HASH_SHA384:
+			mp_privdata.curve_sel    = PDB_MP_CSEL_P384;
+			mp_privdata.sec_key_size = 48;
+			break;
+
+		case HASH_SHA512:
+			mp_privdata.curve_sel    = PDB_MP_CSEL_P521;
+			mp_privdata.sec_key_size = 66;
+			break;
+
+		default:
+			MP_TRACE("This curve doesn't exist");
+			return retstatus;
+		}
+
+		MP_TRACE("MP Private key has not been generated");
+		retstatus = do_mppriv_gen(
+				(const uint8_t *)passphrase,
+				strlen(passphrase),
+				SHIFT_U32((mp_privdata.curve_sel & 0xFF), 17));
+
 		if (retstatus != CAAM_NO_ERROR) {
 			MP_TRACE("do_mppriv_gen failed!");
+			EMSG("*************************************");
+			EMSG("* Warning: Manufacturing protection *");
+			EMSG("*          is not supported         *");
+			EMSG("*************************************");
+			return retstatus;
+		}
+	} else {
+		/*
+		 * MP Curve is already programmed
+		 * Set the Secure Kye size corresponding
+		 */
+		mp_privdata.curve_sel = ret_curve;
+
+		switch (ret_curve) {
+		case PDB_MP_CSEL_P256:
+			mp_privdata.sec_key_size = 32;
+			break;
+
+		case PDB_MP_CSEL_P384:
+			mp_privdata.sec_key_size = 48;
+			break;
+
+		case PDB_MP_CSEL_P521:
+			mp_privdata.sec_key_size = 66;
+			break;
+
+		default:
+			MP_TRACE("This curve is not supported");
 			return retstatus;
 		}
 	}

@@ -7,6 +7,10 @@
  * @brief   CAAM Controller Hardware Abstration Layer.\n
  *          Implementation of primitives to access HW
  */
+#ifndef CFG_LS
+/* Platform includes */
+#include <imx.h>
+#endif
 
 /* Local includes */
 #include "caam_io.h"
@@ -133,32 +137,43 @@ size_t hal_ctrl_get_mpmr_size(void)
  *
  * @param[in] ctrl_addr  Controller base address
  *
- * @retval true       Success
- * @retval false      Failure
+ * @retval MPCurve Value read if device closed
+ * @retval 0                  if not programmed
+ * @retval (-1)               if not supported
  */
-bool hal_ctrl_is_mpcurve(vaddr_t ctrl_addr __maybe_unused)
+int8_t hal_ctrl_is_mpcurve(vaddr_t ctrl_addr)
 {
-#ifdef CHECK_MPPRIVK
-	uint32_t val_scfgr;
-
-	/* get the SCFGR content */
-	val_scfgr = get32(ctrl_addr + SCFGR);
-	DMSG("val_scfgr = 0x%x", val_scfgr);
-
-	/**
-	 * check if the MPCURVE field value is 0
-	 * which means that the MP Private key has not been generated
-	 */
-	if (val_scfgr & BM_SCFGR_MPCURVE)
-		return true;
-
-#endif
+	uint32_t val_scfgr = 0;
 
 	/*
-	 * always return false to generate private key
-	 * even if the MPCURVE field is not clear
+	 * On i.MX8MQ B0, the MP is not usable, hence
+	 * return (-1)
 	 */
-	return false;
+	if (soc_is_imx8mq_b0_layer())
+		return (-1);
+
+	/*
+	 * Verify if the device is closed or not
+	 * If device is closed, check get the MPCurve
+	 */
+	if (imx_is_device_closed()) {
+		/* Get the SCFGR content */
+		val_scfgr = get32(ctrl_addr + SCFGR);
+		DMSG("val_scfgr = 0x%x", val_scfgr);
+
+		/* Get the MPCurve field value */
+		val_scfgr = (val_scfgr & BM_SCFGR_MPCURVE) >> BS_SCFGR_MPCURVE;
+
+		/*
+		 * If the device is closed and the MPCurve field is 0
+		 * return (-1) indicating that there is a problem and the
+		 * MP can not be supported.
+		 */
+		if (val_scfgr == 0)
+			return (-1);
+	}
+
+	return val_scfgr;
 }
 
 /**

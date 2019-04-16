@@ -16,6 +16,7 @@
 enum CAAM_Status {
 	CAAM_NO_ERROR = 0,   ///< No Error
 	CAAM_FAILURE,        ///< General failure
+	CAAM_NOT_SUPPORTED,  ///< Not supported feature
 	CAAM_OUT_MEMORY,     ///< Out of memory
 	CAAM_BAD_PARAM,      ///< Bad parameters
 	CAAM_BUSY,           ///< Operation is not possible, system busy

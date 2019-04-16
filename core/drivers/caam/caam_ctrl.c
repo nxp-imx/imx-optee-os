@@ -126,7 +126,8 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the MP Module */
 	retstatus = caam_mp_init(jr_cfg.base);
 
-	if (retstatus != CAAM_NO_ERROR) {
+	if ((retstatus != CAAM_NO_ERROR) &&
+			(retstatus != CAAM_NOT_SUPPORTED)) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
