@@ -104,6 +104,7 @@ CFG_TZDRAM_START ?= ((CFG_DRAM0_BASE + CFG_DRAM0_SIZE) - CFG_TEE_OS_DRAM0_SIZE)
 CFG_TZDRAM_SIZE ?= ( CFG_TEE_OS_DRAM0_SIZE - CFG_SHMEM_SIZE)
 #CFG_SHMEM_START (Non-Secure shared memory) needs to be 2MB aligned boundary for TZASC 380 configuration.
 CFG_SHMEM_START ?= ((CFG_DRAM0_BASE + CFG_DRAM0_SIZE) - CFG_SHMEM_SIZE)
+$(call force,CFG_ARM64_core,y)
 else
 #In ARMv7 platform CFG_SHMEM_SIZE is different to that of ARMv8 platforms.
 CFG_TZDRAM_START ?= ((CFG_DRAM0_BASE + CFG_DRAM0_SIZE) - CFG_TEE_OS_DRAM0_SIZE)
