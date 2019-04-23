@@ -48,7 +48,7 @@ $(call force, CFG_CRYPTO_DSA_HW,n)
 $(call force, CFG_CRYPTO_DH_HW,n)
 $(call force, CFG_CRYPTO_ECC_HW,y)
 
-$(call force, CFG_CRYPTO_CMAC_HW,n)
+$(call force, CFG_CRYPTO_CMAC_HW,y)
 
 # Definition of the HASH Algorithm supported by all LS
 ifeq ($(CFG_CRYPTO_HASH_HW), y)

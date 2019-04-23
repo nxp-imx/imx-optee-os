@@ -46,7 +46,7 @@ TEE_Result do_update_cmac(struct nxpcrypt_cipher_update *dupdate)
 
 	struct jr_jobctx jobctx = {0};
 	descPointer_t    desc;
-	uint8_t          desclen = 1;
+	uint8_t          desclen = 0;
 
 	size_t fullSize;
 	size_t size_topost;
@@ -110,29 +110,29 @@ TEE_Result do_update_cmac(struct nxpcrypt_cipher_update *dupdate)
 
 	if ((size_todo) || (dupdate->last)) {
 		desc = ctx->descriptor;
+		desc_init(desc);
+		desc_add_word(desc, DESC_HEADER(0));
 
 		if (ctx->alg->require_key & NEED_KEY1) {
 			/* Build the descriptor */
-			desc[desclen++] = LD_KEY_PLAIN(CLASS_1, REG,
-				ctx->key1.length);
-			desc[desclen++] = ctx->key1.paddr;
+			desc_add_word(desc, LD_KEY_PLAIN(CLASS_1, REG,
+				ctx->key1.length));
+			desc_add_ptr(desc, ctx->key1.paddr);
 		}
 
 		/* If context already allocated, this is an update */
 		if (ctx->ctx.length) {
 			CIPHER_TRACE("%s Operation",
 					(dupdate->last ? "Final" : "Update"));
-
-			desc[desclen++] = LD_NOIMM_OFF(CLASS_1, REG_CTX,
-				ctx->ctx.length, ctx->alg->ctx_offset);
-			desc[desclen++] = ctx->ctx.paddr;
-
+			desc_add_word(desc, LD_NOIMM_OFF(CLASS_1, REG_CTX,
+				ctx->ctx.length, ctx->alg->ctx_offset));
+			desc_add_ptr(desc, ctx->ctx.paddr);
 			if (dupdate->last)
-				desc[desclen++] = CIPHER_FINAL(ctx->alg->type,
-					true);
+				desc_add_word(desc, CIPHER_FINAL(ctx->alg->type,
+					true));
 			else
-				desc[desclen++] = CIPHER_UPDATE(ctx->alg->type,
-					true);
+				desc_add_word(desc, CIPHER_UPDATE(ctx->alg->type,
+					true));
 		} else {
 			CIPHER_TRACE("%s Operation",
 					(dupdate->last ? "Init/Final" : "Init"));
@@ -145,11 +145,11 @@ TEE_Result do_update_cmac(struct nxpcrypt_cipher_update *dupdate)
 			}
 
 			if (dupdate->last) {
-				desc[desclen++] = CIPHER_INITFINAL(
-					ctx->alg->type, true);
+				desc_add_word(desc, CIPHER_INITFINAL(
+					ctx->alg->type, true));
 			} else {
-				desc[desclen++] = CIPHER_INIT(ctx->alg->type,
-					true);
+				desc_add_word(desc, CIPHER_INIT(ctx->alg->type,
+					true));
 			}
 		}
 
@@ -160,15 +160,15 @@ TEE_Result do_update_cmac(struct nxpcrypt_cipher_update *dupdate)
 		if (ctx->blockbuf.filled != 0) {
 			/* Add the temporary buffer */
 			if (size_inmade) {
-				desc[desclen++] = FIFO_LD_EXT(CLASS_1, MSG,
-					NOACTION);
+				desc_add_word(desc, FIFO_LD_EXT(CLASS_1, MSG,
+					NOACTION));
 			} else {
-				desc[desclen++] = FIFO_LD_EXT(CLASS_1, MSG,
-					LAST_C1);
+				desc_add_word(desc, FIFO_LD_EXT(CLASS_1, MSG,
+					LAST_C1));
 			}
 
-			desc[desclen++] = ctx->blockbuf.buf.paddr;
-			desc[desclen++] = ctx->blockbuf.filled;
+			desc_add_ptr(desc, ctx->blockbuf.buf.paddr);
+			desc_add_word(desc, ctx->blockbuf.filled);
 
 			/* Clean the circular buffer data to be loaded */
 			cache_operation(TEE_CACHECLEAN,
@@ -178,10 +178,9 @@ TEE_Result do_update_cmac(struct nxpcrypt_cipher_update *dupdate)
 
 		if (size_inmade) {
 			/* Add the input data multiple of blocksize */
-			desc[desclen++] = FIFO_LD_EXT(CLASS_1, MSG, LAST_C1);
-			desc[desclen++] = psrc;
-			desc[desclen++] = size_inmade;
-
+			desc_add_word(desc, FIFO_LD_EXT(CLASS_1, MSG, LAST_C1));
+			desc_add_ptr(desc, psrc);
+			desc_add_word(desc, size_inmade);
 			if (dupdate->src.length) {
 				/* Clean the input data to be loaded */
 				cache_operation(TEE_CACHECLEAN,
@@ -194,27 +193,26 @@ TEE_Result do_update_cmac(struct nxpcrypt_cipher_update *dupdate)
 				 * Add the input data of 0 bytes to start
 				 * algorithm by setting the input data size
 				 */
-				desc[desclen++] = FIFO_LD(CLASS_1, MSG,
-					LAST_C1, 0);
-				desc[desclen++] = 0;
+				desc_add_word(desc, FIFO_LD(CLASS_1, MSG,
+					LAST_C1, 0));
+				desc_add_ptr(desc, 0);
 			}
 		}
 
 		ctx->blockbuf.filled = 0;
 		if (dupdate->last) {
-			desc[desclen++] = ST_NOIMM_OFF(CLASS_1, REG_CTX,
-						dupdate->dst.length, 0);
-			desc[desclen++] = dst_align.paddr;
+			desc_add_word(desc, ST_NOIMM_OFF(CLASS_1, REG_CTX,
+						dupdate->dst.length, 0));
+			desc_add_ptr(desc, dst_align.paddr);
 		} else {
 			/* Store the context */
-			desc[desclen++] = ST_NOIMM_OFF(CLASS_1, REG_CTX,
+			desc_add_word(desc, ST_NOIMM_OFF(CLASS_1, REG_CTX,
 						ctx->ctx.length,
-						ctx->alg->ctx_offset);
-			desc[desclen++] = ctx->ctx.paddr;
+						ctx->alg->ctx_offset));
+			desc_add_ptr(desc, ctx->ctx.paddr);
 		}
 
-		/* Set the descriptor Header with length */
-		desc[0] = DESC_HEADER(desclen);
+		desclen = desc_get_len(desc);
 		if (desclen > MAX_DESC_ENTRIES)	{
 			CIPHER_TRACE("Descriptor Size too short (%d vs %d)",
 						desclen, MAX_DESC_ENTRIES);
