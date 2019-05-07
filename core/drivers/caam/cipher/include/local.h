@@ -41,7 +41,11 @@
 /**
  * @brief    Maximum number of entry in the descriptor
  */
+#ifdef	CFG_PHYS_64BIT
+#define MAX_DESC_ENTRIES	19
+#else
 #define MAX_DESC_ENTRIES	14
+#endif
 
 /**
  * @brief   Definition of flags tagging which key(s) is required

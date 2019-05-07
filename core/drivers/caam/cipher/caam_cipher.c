@@ -22,6 +22,8 @@
 #include "common.h"
 #include "caam_cipher.h"
 #include "caam_jr.h"
+#include "caam_io.h"
+
 #include "local.h"
 
 /* Utils includes */
@@ -757,6 +759,7 @@ static TEE_Result do_update_streaming(struct nxpcrypt_cipher_update *dupdate)
 	size_t size_topost;
 	size_t size_todo;
 	size_t size_indone = 0;
+	uint32_t src_len_f_e = 0, dst_len_f_e = 0;
 
 	int realloc = 0;
 	struct caambuf dst_align = {0};
@@ -835,41 +838,47 @@ static TEE_Result do_update_streaming(struct nxpcrypt_cipher_update *dupdate)
 			dst.buf[1].nocache = dst_align.nocache;
 
 #ifndef ARM64
-			src.sgt[0].ptr_ls = ctx->blockbuf.buf.paddr;
-			src.sgt[0].length = ctx->blockbuf.filled;
-			src.sgt[1].ptr_ls = psrc;
-			src.sgt[1].length = (dupdate->src.length -
-				size_topost);
-			src.sgt[1].final  = 1;
+			put32(&src.sgt[0].ptr_ls, ctx->blockbuf.buf.paddr);
+			put32(&src.sgt[0].len_f_e, (ctx->blockbuf.filled &
+				SG_ENTRY_LENGTH_MASK));
 
-			dst.sgt[0].ptr_ls = ctx->blockbuf.buf.paddr;
-			dst.sgt[0].length = ctx->blockbuf.filled;
-			dst.sgt[1].ptr_ls = dst_align.paddr;
-			dst.sgt[1].length = (dupdate->dst.length -
-				size_topost);
-			dst.sgt[1].final  = 1;
+			put32(&src.sgt[1].ptr_ls, psrc);
+			src_len_f_e = ((dupdate->src.length - size_topost)
+				& SG_ENTRY_LENGTH_MASK) |
+				SG_ENTRY_FINAL_BIT;
+			put32(&src.sgt[1].len_f_e, src_len_f_e);
+
+			put32(&dst.sgt[0].ptr_ls, ctx->blockbuf.buf.paddr);
+			put32(&dst.sgt[0].len_f_e, (ctx->blockbuf.filled &
+				SG_ENTRY_LENGTH_MASK));
+
+			put32(&dst.sgt[1].ptr_ls, dst_align.paddr);
+			dst_len_f_e = ((dupdate->dst.length - size_topost)
+				& SG_ENTRY_LENGTH_MASK) |
+				SG_ENTRY_FINAL_BIT;
+			put32(&dst.sgt[1].len_f_e, dst_len_f_e);
 #else
-			src.sgt[0].ptr_ls =
-			    (uint32_t)(ctx->blockbuf.buf.paddr);
-			src.sgt[0].ptr_ms =
-			    (uint32_t)(ctx->blockbuf.buf.paddr >> 32);
-			src.sgt[0].length = ctx->blockbuf.filled;
-			src.sgt[1].ptr_ls = (uint32_t)(psrc);
-			src.sgt[1].ptr_ms = (uint32_t)(psrc >> 32);
-			src.sgt[1].length = (dupdate->src.length -
-				size_topost);
-			src.sgt[1].final  = 1;
+			put32(&src.sgt[0].ptr_ls,
+				(uint32_t)(ctx->blockbuf.buf.paddr));
+			put32(&src.sgt[0].ptr_ms, (uint32_t)(ctx->blockbuf.buf.paddr >> 32));
+			put32(&src.sgt[0].len_f_e, (((uint32_t)ctx->blockbuf.filled) & SG_ENTRY_LENGTH_MASK));
 
-			dst.sgt[0].ptr_ls =
-			    (uint32_t)(ctx->blockbuf.buf.paddr);
-			dst.sgt[0].ptr_ms =
-			    (uint32_t)(ctx->blockbuf.buf.paddr >> 32);
-			dst.sgt[0].length = ctx->blockbuf.filled;
-			dst.sgt[1].ptr_ls = (uint32_t)(dst_align.paddr);
-			dst.sgt[1].ptr_ms = (uint32_t)(dst_align.paddr >> 32);
-			dst.sgt[1].length = (dupdate->dst.length -
-				size_topost);
-			dst.sgt[1].final  = 1;
+			put32(&src.sgt[1].ptr_ls, (uint32_t)(psrc));
+			put32(&src.sgt[1].ptr_ms, (uint32_t)(psrc >> 32));
+			src_len_f_e = (((dupdate->src.length - size_topost)
+				& SG_ENTRY_LENGTH_MASK) |
+				SG_ENTRY_FINAL_BIT);
+			put32(&src.sgt[1].len_f_e, src_len_f_e);
+
+			put32(&dst.sgt[0].ptr_ls, (uint32_t)(ctx->blockbuf.buf.paddr));
+			put32(&dst.sgt[0].ptr_ms, (uint32_t)(ctx->blockbuf.buf.paddr >> 32));
+			put32(&dst.sgt[0].len_f_e, (ctx->blockbuf.filled & SG_ENTRY_LENGTH_MASK));
+
+			put32(&dst.sgt[1].ptr_ls, (uint32_t)(dst_align.paddr));
+			put32(&dst.sgt[1].ptr_ms, (uint32_t)(dst_align.paddr >> 32));
+			dst_len_f_e = (((dupdate->dst.length - size_topost) & SG_ENTRY_LENGTH_MASK) | SG_ENTRY_FINAL_BIT);
+			put32(&dst.sgt[1].len_f_e, dst_len_f_e);
+
 #endif
 			ctx->blockbuf.filled = 0;
 		} else {

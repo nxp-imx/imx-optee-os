@@ -97,22 +97,25 @@ struct defkey {
 /**
  * @brief Scatter/Gather Table type for inputs and outputs data
  */
+#define	SG_ENTRY_LENGTH_MASK	0x3FFFFFFF
+#define	SG_ENTRY_EXTENSION_BIT	BIT32(31)
+#define	SG_ENTRY_FINAL_BIT	BIT32(30)
+
+#define	SG_ENTRY_OFFSET_MASK	0x00001FFF
+#define	SG_ENTRY_OFFSET_SHIFT	0
+
 struct sgt {
 	/* Word 0 */
-	uint32_t ptr_ms :8;   ///< Address pointer (MS 8 bits)
-	uint32_t res_w0 :24;  ///< Not used
+	uint32_t ptr_ms;   ///< Address pointer (MS 8 LSBs)
 
 	/* Word 1 */
 	uint32_t ptr_ls;      ///< Address pointer (LS 32 bits)
 
 	/* Word 2 */
-	uint32_t length :30;  ///< Length (30 bits)
-	uint32_t final  :1;   ///< Last entry in the table
-	uint32_t ext    :1;   ///< Extension bit (if set, point to sgt table)
+	uint32_t len_f_e;  ///< Length 30bits + 1bit Final + 1bit Extension)
 
 	/* Word 3 */
-	uint32_t offset :13;  ///< Offset in memory buffer
-	uint32_t res_w3 :19;  ///< Not used
+	uint32_t offset;   ///< Offset in memory buffer (13 LSBs)
 };
 
 /**
