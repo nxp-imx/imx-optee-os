@@ -113,7 +113,7 @@ static const struct hashalg hash_alg[MAX_HASH_SUPPORTED] = {
 		.size_digest = TEE_SHA384_HASH_SIZE,
 		.size_block  = TEE_MAX_HASH_SIZE * 2,
 		.size_ctx    = HASH_MSG_LEN + TEE_SHA512_HASH_SIZE,
-		.size_key    = 96,
+		.size_key    = 128,
 	},
 	{
 		/* sha512 */
@@ -262,7 +262,7 @@ static TEE_Result do_split_key(void *ctx, const uint8_t *ikey, size_t ilen)
 	}
 
 	/* Allocate the job descriptor */
-	desc = caam_alloc_desc(KEY_REDUCE_DESC_ENTRIES);
+	desc = caam_alloc_desc(KEY_COMPUTE_DESC_ENTRIES);
 	if (!desc) {
 		ret = TEE_ERROR_OUT_OF_MEMORY;
 		goto exit_split_key;
@@ -798,7 +798,7 @@ static TEE_Result do_final(void *ctx, uint8_t *digest, size_t len)
 		if (realloc)
 			memcpy(digest, digest_align.data, len);
 
-		HASH_DUMPBUF("Digest", digest.data, alg->size_digest);
+		HASH_DUMPBUF("Digest", digest, alg->size_digest);
 	} else {
 		HASH_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
