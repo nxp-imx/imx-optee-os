@@ -615,15 +615,15 @@ static TEE_Result do_verify(struct nxpcrypt_sign_data *sdata)
 	desc_add_word(desc, DESC_HEADER(0));
 	desc_add_word(desc, PDB_PKVERIFY_PD1 | PDB_ECC_ECDSEL(curve));
 	/* Public key */
-	desc_add_word(desc, ecckey.xy.paddr);
+	desc_add_ptr(desc, ecckey.xy.paddr);
 	/* Input message */
-	desc_add_word(desc, paddr_msg);
+	desc_add_ptr(desc, paddr_msg);
 	/* Signature 1st part */
-	desc_add_word(desc, paddr_sign);
+	desc_add_ptr(desc, paddr_sign);
 	/* Signature 2nd part */
-	desc_add_word(desc, (paddr_sign + sdata->size_sec));
+	desc_add_ptr(desc, (paddr_sign + sdata->size_sec));
 	/* Temporary buffer */
-	desc_add_word(desc, tmp.paddr);
+	desc_add_ptr(desc, tmp.paddr);
 	/* Message length */
 	desc_add_word(desc, sdata->message.length);
 
