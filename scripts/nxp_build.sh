@@ -34,10 +34,10 @@ mx8build()
 build()
 {
 	case $1 in
-		mx[6-7]*) mx67build $1 ;;&
-		mx8*) mx8build $1 ;;&
+		mx[6-7]*) mx67build $1 ;;
+		mx8*) mx8build $1 ;;
 	esac
-		
+
 }
 
 list_board()
