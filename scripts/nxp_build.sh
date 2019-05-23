@@ -36,6 +36,7 @@ build()
 	case $1 in
 		mx[6-7]*) mx67build $1 ;;
 		mx8*) mx8build $1 ;;
+		*) echo "No function to build $1"; return 1;;
 	esac
 
 }
