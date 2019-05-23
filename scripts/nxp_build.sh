@@ -18,9 +18,11 @@ mx67build()
 	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
 		PLATFORM=imx PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
 	${CROSS_COMPILE}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
+	ln -s -rf ${O}/build.$platform/tee.bin ${O}/build.$platform/tee-$platform.bin && \
 	imx_load_addr=`cat ${O}/build.$platform/core/tee-init_load_addr.txt` && \
 	${MKIMAGE} -A arm -O linux -C none -a $imx_load_addr -e $imx_load_addr \
-			-d ${O}/build.$platform/tee.bin ${O}/build.$platform/uTee.$platform && \
+			-d ${O}/build.$platform/tee.bin ${O}/build.$platform/uTee && \
+	ln -s -rf ${O}/build.$platform/uTee ${O}/build.$platform/uTee-$platform && \
 	return 0
 }
 
@@ -30,6 +32,7 @@ mx8build()
 	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
 		PLATFORM=imx PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
 	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
+	ln -s -rf ${O}/build.$platform/tee.bin ${O}/build.$platform/tee-$platform.bin && \
 	return 0
 }
 
@@ -39,6 +42,7 @@ lsbuild()
 	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
 		PLATFORM=ls PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
 	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
+	ln -s -rf ${O}/build.$platform/tee.bin ${O}/build.$platform/tee-$platform.bin && \
 	return 0
 }
 
