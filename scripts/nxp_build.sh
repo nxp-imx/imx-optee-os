@@ -10,11 +10,12 @@ CROSS_COMPILE="${CROSS_COMPILE:-arm-linux-gnueabihf-}"
 CROSS_COMPILE64="${CROSS_COMPILE64:-aarch64-linux-gnu-}"
 MKIMAGE="${MKIMAGE:-mkimage}"
 O="${O:-.}"
+NB_CORES="${NB_CORES:-1}"
 
 mx67build()
 {
 	platform=$1 && \
-	make CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
+	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
 		PLATFORM=imx PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
 	${CROSS_COMPILE}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
 	imx_load_addr=`cat ${O}/build.$platform/core/tee-init_load_addr.txt` && \
@@ -26,7 +27,7 @@ mx67build()
 mx8build()
 {
 	platform=$1 && \
-	make CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
+	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
 		PLATFORM=imx PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
 	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
 	return 0
@@ -35,7 +36,7 @@ mx8build()
 lsbuild()
 {
 	platform=$1 && \
-	make CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
+	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
 		PLATFORM=ls PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
 	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
 	return 0
