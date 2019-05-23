@@ -15,7 +15,7 @@ mx67build()
 {
 	platform=$1 && \
 	make CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
-		PLATFORM=imx PLATFORM_FLAVOR=$platform CFG_TEE_CORE_LOG_LEVEL=1 O=${O}/build.$platform && \
+		PLATFORM=imx PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
 	${CROSS_COMPILE}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
 	imx_load_addr=`cat ${O}/build.$platform/core/tee-init_load_addr.txt` && \
 	${MKIMAGE} -A arm -O linux -C none -a $imx_load_addr -e $imx_load_addr \
@@ -27,7 +27,7 @@ mx8build()
 {
 	platform=$1 && \
 	make CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
-		PLATFORM=imx PLATFORM_FLAVOR=$platform  CFG_TEE_CORE_LOG_LEVEL=1 O=${O}/build.$platform && \
+		PLATFORM=imx PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
 	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
 	return 0
 }
