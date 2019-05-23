@@ -3,7 +3,8 @@
 boards_list=(mx6ulevk mx6ul9x9evk mx6ullevk mx6slevk mx6sllevk mx6sxsabreauto \
 	mx6sxsabresd mx6qsabrelite mx6qsabresd mx6qsabreauto mx6qpsabresd mx6qpsabreauto \
 	mx6dlsabresd mx6dlsabreauto mx6solosabresd mx6solosabreauto mx7dsabresd mx7ulpevk \
-	mx8mqevk mx8mmevk mx8qmmek mx8qmlpddr4arm2 mx8qxpmek mx8qxplpddr4arm2 )
+	mx8mqevk mx8mmevk mx8qmmek mx8qmlpddr4arm2 mx8qxpmek mx8qxplpddr4arm2 \
+	ls1021atwr ls1021aqds ls1012ardb ls1012afrwy ls1043ardb ls1046ardb ls1088ardb ls2088ardb lx2160ardb)
 
 CROSS_COMPILE="${CROSS_COMPILE:-arm-linux-gnueabihf-}"
 CROSS_COMPILE64="${CROSS_COMPILE64:-aarch64-linux-gnu-}"
@@ -31,11 +32,21 @@ mx8build()
 	return 0
 }
 
+lsbuild()
+{
+	platform=$1 && \
+	make CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
+		PLATFORM=ls PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
+	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
+	return 0
+}
+
 build()
 {
 	case $1 in
 		mx[6-7]*) mx67build $1 ;;
 		mx8*) mx8build $1 ;;
+		l[s-x]*) lsbuild $1 ;;
 		*) echo "No function to build $1"; return 1;;
 	esac
 
