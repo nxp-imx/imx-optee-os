@@ -95,6 +95,11 @@ static TEE_Result imx_wdog_base(vaddr_t *wdog_vbase)
 		"/soc/aips-bus@2000000/wdog@20c0000",
 		"/soc/aips-bus@2200000/wdog@2288000",
 	};
+#elif defined CFG_MX6SLL
+	static const char * const wdog_path[] = {
+		"/soc/aips-bus@2000000/watchdog@20bc000",
+		"/soc/aips-bus@2000000/watchdog@20c0000",
+	};
 #else
 	static const char * const wdog_path[] = {
 		"/soc/aips-bus@2000000/wdog@20bc000",
