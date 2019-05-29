@@ -34,6 +34,7 @@
 #include <drivers/imx_uart.h>
 #include <imx.h>
 #include <io.h>
+#include <imx_pm.h>
 #include <kernel/generic_boot.h>
 #include <kernel/interrupt.h>
 #include <kernel/misc.h>
@@ -53,8 +54,13 @@ static const struct thread_handlers handlers = {
 #if defined(CFG_WITH_ARM_TRUSTED_FW)
 	.cpu_on = cpu_on_handler,
 	.cpu_off = pm_do_nothing,
-	.cpu_suspend = pm_do_nothing,
+#ifdef CFG_MX8MM
+	.cpu_resume = cpu_resume_handler,
+	.cpu_suspend = cpu_suspend_handler,
+#else
 	.cpu_resume = pm_do_nothing,
+	.cpu_suspend = pm_do_nothing,
+#endif
 	.system_off = pm_do_nothing,
 	.system_reset = pm_do_nothing,
 #else
