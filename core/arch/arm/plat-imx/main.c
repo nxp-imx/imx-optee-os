@@ -35,6 +35,7 @@
 #include <imx.h>
 #include <io.h>
 #include <kernel/boot.h>
+#include <imx_pm.h>
 #include <kernel/interrupt.h>
 #include <kernel/misc.h>
 #include <kernel/panic.h>
