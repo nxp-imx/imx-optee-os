@@ -24,6 +24,10 @@
 					LOWPOWER_IDLE_OCRAM_SIZE)
 #define BUSFREQ_MAX_SIZE		(IRAM_TBL_OFFSET - BUSFREQ_OCRAM_OFFSET)
 
+#define PM_CORE_LEVEL    0
+#define PM_CLUSTER_LEVEL 1
+#define PM_SYSTEM_LEVEL  2
+
 /*
  * Except i.MX6SX only 16KB ocram_s available, others use 16KB offset.
  */
@@ -246,5 +250,10 @@ enum imx7ulp_sys_pwr_mode {
 	VLPS,
 	VLLS,
 };
+
+/* IMX8 pm handlers */
+unsigned long cpu_resume_handler(unsigned long a0, unsigned long a1);
+unsigned long cpu_suspend_handler(unsigned long a0, unsigned long a1);
+
 #endif
 #endif
