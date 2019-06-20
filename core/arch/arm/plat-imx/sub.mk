@@ -1,10 +1,10 @@
 global-incdirs-y += .
 
 srcs-y += main.c
-srcs-$(CFG_MX6)$(CFG_MX7)$(CFG_MX7ULP)$(CFG_MX8M)$(CFG_MX8MM) += imx-common.c
+srcs-$(CFG_MX6)$(CFG_MX7)$(CFG_MX7ULP)$(CFG_MX8M)$(CFG_MX8MM)$(CFG_MX8MN) += imx-common.c
 srcs-$(CFG_MX6)$(CFG_MX7) += imx_src.c mmdc.c
 srcs-$(CFG_MX7) += gpcv2.c
-srcs-$(CFG_MX6)$(CFG_MX7)$(CFG_MX7ULP)$(CFG_MX8M)$(CFG_MX8MM) += imx_ocotp.c
+srcs-$(CFG_MX6)$(CFG_MX7)$(CFG_MX7ULP)$(CFG_MX8M)$(CFG_MX8MM)$(CFG_MX8MN) += imx_ocotp.c
 
 srcs-$(_CFG_CRYPTO_WITH_HUK) += imx_huk.c
 

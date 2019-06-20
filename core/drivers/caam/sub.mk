@@ -2,7 +2,7 @@ incdirs-y += include
 
 subdirs-$(CFG_LS) += hal/ls
 subdirs-$(CFG_MX6)$(CFG_MX7)$(CFG_MX7ULP) += hal/imx_6_7
-subdirs-$(CFG_MX8M)$(CFG_MX8MM) += hal/imx_8m
+subdirs-$(CFG_MX8M)$(CFG_MX8MM)$(CFG_MX8MN) += hal/imx_8m
 subdirs-y += utils
 
 srcs-y += caam_pwr.c

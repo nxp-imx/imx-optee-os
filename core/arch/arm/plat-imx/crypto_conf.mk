@@ -44,7 +44,7 @@ $(call force, CFG_CRYPTO_PKCS_HW,n)
 $(call force, CFG_CRYPTO_BLOB_HW,y)
 $(call force, CFG_BLOB_PTA,y)
 
-ifeq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX8MM)$(CFG_MX8M)),y)
+ifeq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX8MM)$(CFG_MX8M)$(CFG_MX8MN)),y)
 # Definition of the Asymmetric Cipher supported by HW
 $(call force, CFG_CRYPTO_RSA_HW,y)
 $(call force, CFG_CRYPTO_DSA_HW,n)
@@ -57,7 +57,7 @@ $(call force, CFG_CRYPTO_CMAC_HW,y)
 #
 # Force CFG_IMX_MP to n for platform not supported it
 #
-ifneq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX7ULP)$(CFG_MX8M)$(CFG_MX8MM)),y)
+ifneq ($(filter y, $(CFG_MX6UL)$(CFG_MX7)$(CFG_MX7ULP)$(CFG_MX8M)$(CFG_MX8MM)$(CFG_MX8MN)),y)
 $(call force, CFG_IMX_MP,n)
 else
 CFG_IMX_MP ?= y

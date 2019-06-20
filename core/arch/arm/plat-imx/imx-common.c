@@ -42,7 +42,7 @@ static void imx_digproc(void)
 		digprog |= 0x1;
 	}
 
-#elif defined(CFG_MX8MM)
+#elif defined(CFG_MX8MM) || defined(CFG_MX8MN)
 	digprog = read32(anatop_addr + HW_ANADIG_DIGPROG_IMX8MM);
 #else
 	digprog = read32(anatop_addr + HW_ANADIG_DIGPROG);

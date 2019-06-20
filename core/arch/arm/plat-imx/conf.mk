@@ -16,6 +16,7 @@ mx7s-flavorlist = mx7swarp7
 mx7ulp-flavorlist = mx7ulpevk
 mx8m-flavorlist = mx8mqevk
 mx8mm-flavorlist = mx8mmevk
+mx8mn-flavorlist = mx8mnevk
 mx8qm-flavorlist = mx8qmmek mx8qmlpddr4arm2
 mx8qx-flavorlist = mx8qxpmek mx8qxplpddr4arm2
 
@@ -91,6 +92,11 @@ $(call force,CFG_TEE_CORE_NB_CORE,4)
 $(call force,CFG_IMX_LPUART,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8mm-flavorlist)))
 $(call force,CFG_MX8MM,y)
+$(call force,CFG_ARM64_core,y)
+$(call force,CFG_TEE_CORE_NB_CORE,4)
+$(call force,CFG_IMX_LPUART,n)
+else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8mn-flavorlist)))
+$(call force,CFG_MX8MN,y)
 $(call force,CFG_ARM64_core,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
 $(call force,CFG_IMX_LPUART,n)
@@ -439,6 +445,11 @@ CFG_UART_BASE ?= UART1_BASE
 endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mmevk))
+CFG_DDR_SIZE ?= 0x80000000
+CFG_UART_BASE ?= UART2_BASE
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mnevk))
 CFG_DDR_SIZE ?= 0x80000000
 CFG_UART_BASE ?= UART2_BASE
 endif
