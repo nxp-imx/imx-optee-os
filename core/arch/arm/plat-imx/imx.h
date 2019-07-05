@@ -41,6 +41,7 @@ bool soc_is_imx7ds(void);
 bool soc_is_imx7ulp(void);
 bool soc_is_imx8mm(void);
 bool soc_is_imx8mq(void);
+bool soc_is_imx8mq_b0_layer(void);
 bool soc_is_imx8mq_b1_layer(void);
 uint16_t soc_revision(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);

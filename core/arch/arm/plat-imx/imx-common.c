@@ -191,6 +191,22 @@ bool soc_is_imx8mq_b1_layer(void)
 	return false;
 }
 
+bool soc_is_imx8mq_b0_layer(void)
+{
+	if (imx_soc_type() == SOC_MX8M)
+	{
+		switch (imx_soc_revision)
+		{
+			// B0
+			case 0x410:
+				return true;
+			default:
+				break;
+		}
+	}
+	return false;
+}
+
 uint16_t soc_revision(void)
 {
 	if (imx_soc_revision < 0)
