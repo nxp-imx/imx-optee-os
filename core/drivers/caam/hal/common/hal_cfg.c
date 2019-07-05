@@ -55,11 +55,6 @@
  */
 #define CFG_JR_INDEX		CFG_JR_IDX
 #define CFG_JR_IRQ		CFG_JR_IRQ_ID
-
-#ifdef CFG_WITH_HAB
-#define CFG_JR_INDEX_HAB	1
-#define CFG_JR_IRQ_HAB		106
-#endif
 #endif
 
 #ifdef CFG_DT
@@ -232,13 +227,6 @@ enum CAAM_Status hal_cfg_get_conf(struct jr_cfg *jr_cfg)
 	jr_cfg->nb_jobs = NB_JOBS_QUEUE;
 	// Add index of the first SPI interrupt
 	jr_cfg->it_num  = CFG_JR_IRQ;
-
-#ifdef CFG_WITH_HAB
-	if (imx_is_device_closed()) {
-		jr_cfg->offset = (CFG_JR_INDEX_HAB + 1) * JRx_BLOCK_SIZE;
-		jr_cfg->it_num = CFG_JR_IRQ_HAB + 32;
-	}
-#endif
 #endif // CFG_DT
 
 	retstatus = CAAM_NO_ERROR;

@@ -3,10 +3,17 @@
 #
 $(call force, CFG_JR_BLOCK_SIZE,0x1000)
 
-#Job Ring 1
+ifeq ($(filter y, $(CFG_MX6)$(CFG_MX7)),y)
+# Job Ring 0
 $(call force,CFG_JR_IDX,0x0)
-#Job Ring IRQ Num(105 + 32) = 137
+# Job Ring IRQ Num(105 + 32) = 137
 $(call force,CFG_JR_IRQ_ID,137)
+else
+# Job Ring 1
+$(call force,CFG_JR_IDX,0x1)
+# Job Ring IRQ Num(106 + 32) = 138
+$(call force,CFG_JR_IRQ_ID,138)
+endif
 
 ifeq ($(CFG_NXPCRYPT), y)
 $(call force, CFG_CRYPTO_WITH_HW_ACC,y)

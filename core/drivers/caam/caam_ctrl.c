@@ -191,10 +191,9 @@ exit_init:
 driver_init(crypto_driver_init);
 #endif
 
-#ifdef CFG_WITH_HAB
 /**
  * @brief   Crypto driver late initialization function to complete
- *          CAAM operation in case of HAB usage on Closed devices
+ *          CAAM operation
  *
  * @retval  TEE_SUCCESS        Success
  * @retval  TEE_ERROR_GENERIC  Generic Error (driver init failure)
@@ -211,4 +210,3 @@ static TEE_Result init_caam_late(void)
 		return TEE_ERROR_GENERIC;
 }
 driver_init_late(init_caam_late);
-#endif

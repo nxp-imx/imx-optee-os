@@ -432,10 +432,6 @@ static enum CAAM_Status caam_rng_init_data(void)
 	for (idx = 0; (idx < RNG_DATABUF_NB); idx++) {
 		rng = &rng_privdata->databuf[idx];
 		retstatus = prepare_gen_desc(rng);
-		if (retstatus == CAAM_NO_ERROR) {
-			RNG_TRACE("Start RNG #%d data generation", idx);
-			retstatus = do_rng_start(rng);
-		}
 
 		if (retstatus != CAAM_NO_ERROR)
 			break;

@@ -109,7 +109,6 @@ $(call force,CFG_TZC380,n)
 $(call force,CFG_CSU,n)
 $(call force,CFG_IMX_UART,n)
 $(call force,CFG_IMX_SNVS,n)
-$(call force,CFG_WITH_HAB,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qx-flavorlist)))
 $(call force,CFG_MX8QX,y)
 $(call force,CFG_ARM64_core,y)
@@ -119,7 +118,6 @@ $(call force,CFG_TZC380,n)
 $(call force,CFG_CSU,n)
 $(call force,CFG_IMX_UART,n)
 $(call force,CFG_IMX_SNVS,n)
-$(call force,CFG_WITH_HAB,n)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -149,7 +147,6 @@ CFG_IMX_UART ?= y
 CFG_IMX_LPUART ?= y
 CFG_NXP_CAAM ?= y
 CFG_IMX_SNVS ?= y
-CFG_WITH_HAB ?= y
 else
 # arm-v7 platforms Common definition
 ta-targets = ta_arm32
@@ -170,7 +167,6 @@ CFG_TZC380 ?= y
 CFG_CSU ?= y
 CFG_NXP_CAAM ?= y
 CFG_IMX_SNVS ?= y
-CFG_WITH_HAB ?= y
 $(call force,CFG_BOOT_SYNC_CPU,n)
 $(call force,CFG_BOOT_SECONDARY_REQUEST,n)
 $(call force,CFG_IMX_LPUART,n)
@@ -192,7 +188,6 @@ CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_ENABLE_SCTLR_RR ?= y
 CFG_NXP_CAAM ?= y
 CFG_IMX_SNVS ?= y
-CFG_WITH_HAB ?= y
 $(call force,CFG_IMX_LPUART,n)
 endif
 
@@ -206,7 +201,6 @@ CFG_TZC380 ?= y
 CFG_CSU ?= y
 CFG_NXP_CAAM ?= y
 CFG_IMX_SNVS ?= y
-CFG_WITH_HAB ?= y
 $(call force,CFG_IMX_LPUART,n)
 endif
 
@@ -216,7 +210,6 @@ include core/arch/arm/cpu/cortex-a7.mk
 CFG_IMX_LPUART ?= y
 $(call force,CFG_BOOT_SECONDARY_REQUEST,n)
 CFG_NXP_CAAM ?= y
-CFG_WITH_HAB ?= y
 $(call force,CFG_IMX_UART,n)
 endif
 
