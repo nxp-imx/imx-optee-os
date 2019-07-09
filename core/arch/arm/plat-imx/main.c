@@ -115,6 +115,15 @@ register_phys_mem(MEM_AREA_IO_SEC,
 		  CORE_MMU_DEVICE_SIZE);
 #endif
 
+/*
+ * Mapping needed for dynamic shared memory with the non-secure world.
+ * Currently, only the shared memory is supported by u-boot optee driver.
+ * All the non-secure RAM can be mapped as dynamic shared memory by a CA
+ */
+#ifdef DRAM0_NSEC_BASE
+register_dynamic_shm(DRAM0_NSEC_BASE, DRAM0_NSEC_SIZE);
+#endif
+
 const struct thread_handlers *generic_boot_get_handlers(void)
 {
 	return &handlers;
