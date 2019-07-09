@@ -21,6 +21,9 @@
 #include "caam_jr.h"
 #include "caam_rng.h"
 #include "caam_pwr.h"
+#ifdef CFG_CRYPTO_SM_HW
+#include "caam_sm.h"
+#endif
 #ifdef CFG_CRYPTO_PK_HW
 #include "caam_acipher.h"
 #endif
@@ -103,6 +106,15 @@ static TEE_Result crypto_driver_init(void)
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
+
+#ifdef CFG_CRYPTO_SM_HW
+	/* Initialize the Secure memory module */
+	retstatus = caam_sm_init(&jr_cfg);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+#endif // CFG_CRYPTO_SM_HW
 
 #ifdef CFG_CRYPTO_HASH_HW
 	/* Initialize the Hash Module */
