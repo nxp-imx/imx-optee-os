@@ -91,6 +91,14 @@ CFG_CRYPTO_HASH_HW_SHA384 ?= n
 CFG_CRYPTO_HASH_HW_SHA512 ?= n
 endif
 
+# Enable DEK blob encapsulation
+#   - CFG_CRYPTO_WITH_SM: CAAM Secure memory driver
+#   - CFG_CRYPTO_WITH_BLOB: CAAM blob driver
+ifeq ($(CFG_GEN_DEK_BLOB),y)
+CFG_CRYPTO_SM_HW ?= y
+CFG_CRYPTO_BLOB_HW ?= y
+endif
+
 cryp-one-hw-enabled =						\
 	$(call cfg-one-enabled, $(foreach cfg, $(1),		\
                CFG_CRYPTO_$(strip $(cfg))_HW))

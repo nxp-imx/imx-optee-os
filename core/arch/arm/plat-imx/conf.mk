@@ -473,6 +473,12 @@ CFG_IMX_WDOG ?= y
 $(call force,CFG_IMX_OCRAM,y)
 endif
 
+# Enable DEK blob encapsulation requires DEK blob PTA
+# Note: CAAM must be enabled manually
+ifeq ($(CFG_GEN_DEK_BLOB),y)
+CFG_DEK_BLOB_PTA ?=y
+endif
+
 ifeq ($(CFG_NXP_CAAM),y)
 # currently disable the use of CAAM in OP-TEE
 CFG_NXPCRYPT ?= n
