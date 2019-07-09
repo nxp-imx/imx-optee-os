@@ -29,6 +29,8 @@ struct nxpcrypt_blob_data {
 struct nxpcrypt_blob {
 	///< Encapsulate/Decapsulate data
 	TEE_Result (*operate)(struct nxpcrypt_blob_data *blob_data);
+	///< Encapsulate DEK Blob
+	TEE_Result (*dek)(struct nxpcrypt_blob_data *blob_data);
 };
 
 #endif /* __LIBNXPCRYPT_BLOB_H__ */

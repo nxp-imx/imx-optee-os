@@ -27,6 +27,9 @@
 #include "common.h"
 #include "caam_blob.h"
 #include "caam_jr.h"
+#ifdef CFG_CRYPTO_SM_HW
+#include "caam_sm.h"
+#endif
 
 /* Utils includes */
 #include "utils_mem.h"
@@ -170,6 +173,220 @@ exit_masterkey:
 struct nxpcrypt_huk driver_huk = {
 	.generate_huk = &caam_master_key_verif,
 };
+
+#ifdef CFG_PHYS_64BIT
+#define BLOB_OPERATE_DESC_ENTRIES	12
+#else
+#define BLOB_OPERATE_DESC_ENTRIES	9
+#endif
+
+#ifdef CFG_CRYPTO_SM_HW
+/**
+ * @brief      Encapsulate DEK blob for HAB encrypted boot. DEK blob
+ *             generation requires the encapsulation to be done from a
+ *             partition of the CAAM secure memory. The BKEK for secure
+ *             memory blobs is generated in a manner that it binds the access
+ *             permissions of the partition to the blob. Any attempt to
+ *             decapsulate a secure memory blob into a partition with different
+ *             access permission would fail when checking MAC tag.
+ *
+ *             Secure memory blobs does not have to be decapsulate from the same
+ *             partition. However both partition (for encap and decap) must be
+ *             owned by the same Job ring.
+ *
+ *             The BKEK here, is derived from the master key and a 128 bits key
+ *             modifier within the blob descriptor that includes a constant
+ *             specific to secure memory blobs and the values of the partition
+ *             access permission.
+ *
+ * @param      blob_data  The blob data
+ *
+ *   Output data length is: inLen + BLOB_BPAD_SIZE
+ *
+ * @param[in/out] blob_data    DEK Blob data to encapsulate
+ *
+ * @retval TEE_SUCCESS               Success
+ * @retval TEE_ERROR_OUT_OF_MEMORY   Not enough memory
+ * @retval TEE_ERROR_BAD_PARAMETERS  Bad parameters
+ * @retval TEE_ERROR_GENERIC         Any other error
+ */
+static TEE_Result do_dek(struct nxpcrypt_blob_data *blob_data)
+{
+	TEE_Result retstatus = TEE_ERROR_GENERIC;
+	paddr_t paddr_input = 0;
+	paddr_t paddr_key = 0;
+	descPointer_t desc = NULL;
+	struct caambuf out_buf = {0};
+	struct sm_data *sm = NULL;
+	int ret_input = 0;
+	int ret_output = 0;
+	size_t insize, rinsize;
+	size_t outsize, routsize;
+	struct jr_jobctx jobctx = {0};
+
+	if (blob_data->type != DEK || blob_data->encaps != true)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	/* Get key paddr */
+	paddr_key = virt_to_phys(blob_data->key.data);
+	if (!paddr_key)
+		goto exit_operate;
+
+	/* Re-allocate output buffer if alignment needed */
+	ret_input = caam_realloc_align(blob_data->blob.data, &out_buf,
+				       blob_data->blob.length);
+	if (ret_input < 0) {
+		BLOB_TRACE("Signature reallocation error");
+		retstatus = TEE_ERROR_OUT_OF_MEMORY;
+		goto exit_operate;
+	}
+
+	/**
+	 * Allocate secure memory. By default, we use partition 1 and one page
+	 * to generate the DEK blob.
+	 */
+	ret_output	= caam_sm_alloc(&sm, PARTITION_1, PAGE_2);
+	if (ret_output) {
+		retstatus = TEE_ERROR_OUT_OF_MEMORY;
+		BLOB_TRACE("Secure memory allocation error");
+		goto exit_operate;
+	}
+
+	insize   = blob_data->payload.length;
+	outsize  = blob_data->blob.length;
+	rinsize  = blob_data->payload.length;
+	routsize = blob_data->blob.length;
+
+	/* Copy DEK in secure memory */
+	memcpy((void *)sm->sm_va, blob_data->payload.data,
+		blob_data->payload.length);
+
+	BLOB_DUMPBUF("Secure Mem", sm->sm_va, blob_data->payload.length);
+
+	/* Set payload address DMA secure memory */
+	paddr_input = sm->sm_dma_addr;
+
+	/**
+	 * Set partition access rights
+	 * SMAPR_CSP: page will be zeroized after de-allocation or
+	 * after security alarm.
+	 * SMAPR_SMAP_LOCK: lock SMAP register until de-allocation.
+	 * SMAPG_SMAP_LOCK: lock SMAG register until de-allocation.
+	 * SMAPR_G1_SMBLOB: allow importing/exporting secure memory
+	 * blob from group 1.
+	 */
+	caam_sm_set_access_perm(sm, SMAPR_CSP | SMAPR_SMAP_LOCK |
+					    SMAPR_SMAG_LOCK | SMAPR_G1_SMBLOB);
+
+	/* Allocate the descriptor */
+	desc = caam_alloc_desc(BLOB_OPERATE_DESC_ENTRIES);
+	if (!desc) {
+		BLOB_TRACE("CAAM Context Descriptor Allocation error");
+		retstatus = TEE_ERROR_OUT_OF_MEMORY;
+		goto exit_operate;
+	}
+
+	/*
+	 * Create the Blob encapsulation descriptor
+	 */
+	desc_init(desc);
+	desc_add_word(desc, DESC_HEADER(0));
+
+	/**
+	 * Command Protocol
+	 *
+	 * LD_IMM_OFF:
+	 *	- LOAD command
+	 *	- IMM Immediate flag, data follows as part of descriptor
+	 *	- CLASS 2: object in CCB
+	 *	- DST(REG_KEY): Class 2 Key register
+	 *	- 0x08: length of the data
+	 *	- 0x0c: offset of the data
+	 */
+	desc_add_word(desc, LD_IMM_OFF(CLASS_2, REG_KEY, 0x08, 0x0c));
+
+	/**
+	 * Additional authenticated data
+	 *
+	 * AAD_ALG_SIZE: key length
+	 * AES CCM
+	 */
+	desc_add_word(desc, AAD_ALG_SIZE(blob_data->payload.length)
+			| AAD_AES_SRC | AAD_CCM_MODE);
+
+	/**
+	 * Additional authenticated data
+	 */
+	desc_add_word(desc, 0x0);
+
+	/* Define the Input data sequence */
+	desc_add_word(desc, SEQ_IN_PTR(insize));
+	desc_add_ptr(desc, paddr_input);
+
+	/* Define the Output data sequence */
+	desc_add_word(desc, SEQ_OUT_PTR(outsize));
+	desc_add_ptr(desc, out_buf.paddr);
+
+	/* Define the encapsulation operation */
+	desc_add_word(desc, BLOB_ENCAPS | PROT_BLOB_SEC_MEM);
+
+	BLOB_DUMPDESC(desc);
+
+	cache_operation(TEE_CACHECLEAN, blob_data->key.data,
+			blob_data->key.length);
+
+	cache_operation(TEE_CACHECLEAN, blob_data->payload.data,
+		rinsize);
+
+	if (out_buf.nocache == 0)
+		cache_operation(TEE_CACHEFLUSH, out_buf.data, out_buf.length);
+
+	jobctx.desc = desc;
+	retstatus = caam_jr_enqueue(&jobctx, NULL);
+
+	if (retstatus == CAAM_NO_ERROR) {
+		BLOB_TRACE("Done CAAM DEK BLOB encaps");
+
+		if (out_buf.nocache == 0)
+			cache_operation(TEE_CACHEINVALIDATE, out_buf.data,
+				out_buf.length);
+
+		BLOB_DUMPBUF("Output", out_buf.data, routsize);
+
+		if (ret_input == 1)
+			/*
+			 * Copy the result data in the correct output
+			 * buffer function of the operation direction
+			 */
+			memcpy(blob_data->blob.data, out_buf.data, routsize);
+
+		blob_data->blob.length = routsize;
+
+		retstatus = TEE_SUCCESS;
+	} else {
+		BLOB_TRACE("CAAM Status 0x%08"PRIx32"", jobctx.status);
+		retstatus = TEE_ERROR_GENERIC;
+	}
+
+exit_operate:
+	if (ret_input == 1)
+		caam_free_buf(&out_buf);
+
+	if (ret_output == 0)
+		caam_sm_free(sm);
+
+	caam_free_desc(&desc);
+
+	return retstatus;
+}
+
+#else /* CFG_CRYPTO_SM_HW */
+static inline TEE_Result do_dek(struct nxpcrypt_blob_data
+						*blob_data __maybe_unused)
+{
+	return TEE_ERROR_NOT_IMPLEMENTED;
+}
+#endif /* CFG_CRYPTO_SM_HW */
 
 /**
  * @brief
@@ -397,6 +614,7 @@ exit_operate:
  */
 struct nxpcrypt_blob driver_blob = {
 	.operate = &do_operate,
+	.dek = &do_dek,
 };
 
 /**

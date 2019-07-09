@@ -339,6 +339,7 @@
 #define PROT_BLOB_FMT_MSTR			BIT32(1)
 #define PROT_BLOB_TYPE(type)		SHIFT_U32(1, PROT_BLOB_TYPE_##type)
 #define PROT_BLOB_TYPE_BLACK_KEY	2
+#define PROT_BLOB_SEC_MEM			BIT(3)
 #define PROT_BLOB_EKT				8
 #define PROT_BLOB_INFO(aes)			SHIFT_U32(PROT_BLOB_AES_##aes, \
 					PROT_BLOB_EKT)
@@ -643,6 +644,11 @@
 /* Black key padding */
 #define BLACK_KEY_NONCE_SIZE		6
 #define BLACK_KEY_ICV_SIZE			6
+
+/* AAD - Additional authenticated data */
+#define AAD_AES_SRC			SHIFT_U32(0x55, 8)
+#define AAD_CCM_MODE			SHIFT_U32(0x66, 0)
+#define AAD_ALG_SIZE(len)		SHIFT_U32((len & 0xFF), 16)
 
 /*
  * ECC Predefined Domain

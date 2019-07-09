@@ -95,7 +95,11 @@ TEE_Result blob_encapsulate(enum blob_type type,
 	blob_data.blob.data      = blob->data;
 	blob_data.blob.length    = blob->length;
 
-	ret = blobdrv->operate(&blob_data);
+	if (type == DEK)
+		ret = blobdrv->dek(&blob_data);
+	else
+		ret = blobdrv->operate(&blob_data);
+
 	/* Return the size of the encapsulated blob */
 	blob->length = blob_data.blob.length;
 

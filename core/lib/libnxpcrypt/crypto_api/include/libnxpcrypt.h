@@ -50,6 +50,7 @@ enum blob_type {
 	RED       = 0,  ///< Red Blob mode   - data in plain text
 	BLACK_ECB,      ///< Black Blob mode - data encrypted in AES ECB
 	BLACK_CCM,      ///< Black Blod mode - data encrypted in AES CCM
+	DEK,            ///< DEK Blob mode   - data encrypted in AES CCM SM
 	BLOB_MAX_TYPE   ///< Maximum number of blob type supported
 };
 
