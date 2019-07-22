@@ -2,6 +2,7 @@
 /*
  * Copyright 2019 Pengutronix
  * All rights reserved.
+ * Copyright 2019 NXP
  *
  * Rouven Czerwinski <entwicklung@pengutronix.de>
  */
@@ -16,16 +17,14 @@
 #include <mm/core_memprot.h>
 #include <mm/generic_ram_layout.h>
 
-/*
- * TZASC2_BASE is asserted non null when used.
- * This is needed to compile the code for i.MX6UL/L
- * and i.MX8MQ.
- */
-#ifndef TZASC2_BASE
-#define TZASC2_BASE			0
+register_phys_mem(MEM_AREA_IO_SEC, TZASC_BASE, TZASC_SIZE);
+#ifdef TZASC2_BASE
+register_phys_mem(MEM_AREA_IO_SEC, TZASC2_BASE, TZASC2_SIZE);
+#else
+#define TZASC2_BASE	0
 #endif
 
-static TEE_Result imx_configure_tzasc(void)
+static void imx_configure_tzasc(void)
 {
 	vaddr_t addr[2] = {0};
 	int end = 1;
@@ -45,19 +44,32 @@ static TEE_Result imx_configure_tzasc(void)
 
 		tzc_init(addr[i]);
 
-		region = tzc_auto_configure(CFG_DRAM_BASE, CFG_DDR_SIZE,
-			     TZC_ATTR_SP_NS_RW, region);
-		region = tzc_auto_configure(CFG_TZDRAM_START, CFG_TZDRAM_SIZE,
-			     TZC_ATTR_SP_S_RW, region);
-		region = tzc_auto_configure(CFG_SHMEM_START, CFG_SHMEM_SIZE,
-			     TZC_ATTR_SP_ALL, region);
-		tzc_dump_state();
-		if (tzc_regions_lockdown() != TEE_SUCCESS)
-			panic("Region lockdown failed!");
-	}
-	return TEE_SUCCESS;
-}
+		/*
+		 * It is possible to access memory protected by the TZASC in
+		 * case the DDR installed is smaller than the memory space
+		 * supported by the controller. (Ref: RM, section about the
+		 * TZASC: "Address Mapping in various memory mapping modes").
+		 *
+		 * Without aliasing protection it is possible to use an address
+		 * outside of the DDR ranged and bypass TZASC protection.
+		 */
+		tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
+		region =
+			tzc_auto_configure(CFG_IMX_TZC_NSEC_START, CFG_DDR_SIZE,
+					   TZC_ATTR_SP_NS_RW, region);
+		region = tzc_auto_configure(CFG_IMX_TZC_SEC_START,
+					    CFG_TZDRAM_SIZE, TZC_ATTR_SP_S_RW,
+					    region);
+		region = tzc_auto_configure(CFG_IMX_TZC_SHMEM_START,
+					    CFG_SHMEM_SIZE, TZC_ATTR_SP_ALL,
+					    region);
+
+		DMSG("Action register: 0x%" PRIx32, tzc_get_action());
+	}
+
+	tzc_dump_state();
+}
 
 static TEE_Result pm_enter_resume(enum pm_op op, uint32_t pm_hint __unused,
 		const struct pm_callback_handle *pm_handle __unused)
