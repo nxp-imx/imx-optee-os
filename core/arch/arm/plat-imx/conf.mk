@@ -100,6 +100,7 @@ $(call force,CFG_MX6,y)
 $(call force,CFG_MX6QP,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
 CFG_BUSFREQ ?= y
+$(call force,CFG_TZC380,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6d-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6D,y)
@@ -178,6 +179,7 @@ CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 6
 $(call force,CFG_NXP_CAAM,n)
+$(call force,CFG_TZC380,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qx-flavorlist)))
 $(call force,CFG_MX8QX,y)
 $(call force,CFG_ARM64_core,y)
@@ -186,6 +188,7 @@ CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 4
 $(call force,CFG_NXP_CAAM,n)
+$(call force,CFG_TZC380,n)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -328,6 +331,7 @@ CFG_UART_BASE ?= UART0_BASE
 CFG_NSEC_DDR_1_BASE ?= 0x880000000UL
 CFG_NSEC_DDR_1_SIZE  ?= 0x380000000UL
 CFG_CORE_ARM64_PA_BITS ?= 40
+$(call force,CFG_TZC380,n)
 endif
 
 # i.MX6 Solo/SL/SoloX/DualLite/Dual/Quad specific config
@@ -406,10 +410,22 @@ CFG_IMX_SNVS ?= y
 supported-ta-targets = ta_arm64
 endif
 
+CFG_TZC380 ?= y
+
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) - 0x02000000 + $(CFG_DDR_SIZE))
 CFG_TZDRAM_SIZE ?= 0x01c00000
 CFG_SHMEM_START ?= ($(CFG_TZDRAM_START) + $(CFG_TZDRAM_SIZE))
 CFG_SHMEM_SIZE ?= 0x00400000
+
+ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MQ)))
+CFG_IMX_TZC_NSEC_START ?= 0x0
+CFG_IMX_TZC_SEC_START ?= ($(CFG_TZDRAM_START) - $(CFG_DRAM_BASE))
+CFG_IMX_TZC_SHMEM_START ?= ($(CFG_SHMEM_START) - $(CFG_DRAM_BASE))
+else
+CFG_IMX_TZC_NSEC_START ?= $(CFG_DRAM_BASE)
+CFG_IMX_TZC_SEC_START ?= $(CFG_TZDRAM_START)
+CFG_IMX_TZC_SHMEM_START ?= $(CFG_SHMEM_START)
+endif
 
 CFG_NSEC_DDR_0_BASE ?= $(CFG_DRAM_BASE)
 CFG_NSEC_DDR_0_SIZE ?= ($(CFG_DDR_SIZE) - 0x02000000)
@@ -420,6 +436,11 @@ CFG_MMAP_REGIONS ?= 24
 # Almost all platforms include CAAM HW Modules, except the
 # ones forced to be disabled
 CFG_NXP_CAAM ?= n
+
+# Disable CAAM driver for MX8Q
+ifneq (,$(filter y, $(CFG_MX8QM) $(CFG_MX8QX)))
+CFG_NXP_CAAM = n
+endif
 
 ifeq ($(CFG_NXP_CAAM),y)
 # As NXP CAAM Driver is enabled, disable the small local CAAM driver
