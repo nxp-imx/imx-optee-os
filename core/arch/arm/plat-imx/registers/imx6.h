@@ -59,7 +59,12 @@
 #define MMDC_P1_BASE			0x021B4000
 #define MMDC_P1_SIZE			0x4000
 #define TZASC_BASE			0x21D0000
+#define TZASC_SIZE			0x4000
+#if defined(CFG_MX6QP) || defined(CFG_MX6Q) || defined(CFG_MX6DL) || \
+	defined(CFG_MX6D)
 #define TZASC2_BASE			0x21D4000
+#define TZASC2_SIZE			0x4000
+#endif
 #define UART2_BASE			0x021E8000
 #define UART3_BASE			0x021EC000
 #define UART4_BASE			0x021F0000
