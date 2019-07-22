@@ -97,6 +97,7 @@ $(call force,CFG_MX6,y)
 $(call force,CFG_MX6QP,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
 CFG_BUSFREQ ?= y
+$(call force,CFG_TZC380,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6d-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6D,y)
@@ -179,6 +180,7 @@ CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x40000000
 CFG_TEE_CORE_NB_CORE ?= 4
 $(call force,CFG_NXP_CAAM,n)
+$(call force,CFG_TZC380,n)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -313,6 +315,7 @@ endif
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8qxpmek mx8qmmek))
 CFG_DDR_SIZE ?= 0x80000000
 CFG_UART_BASE ?= UART0_BASE
+$(call force,CFG_TZC380,n)
 endif
 
 # i.MX6 Solo/SL/SoloX/DualLite/Dual/Quad specific config
@@ -389,10 +392,22 @@ CFG_IMX_SNVS ?= y
 supported-ta-targets = ta_arm64
 endif
 
+CFG_TZC380 ?= y
+
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) - 0x02000000 + $(CFG_DDR_SIZE))
 CFG_TZDRAM_SIZE ?= 0x01c00000
 CFG_SHMEM_START ?= ($(CFG_TZDRAM_START) + $(CFG_TZDRAM_SIZE))
 CFG_SHMEM_SIZE ?= 0x00400000
+
+ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MQ)))
+CFG_IMX_TZC_NSEC_START ?= 0x0
+CFG_IMX_TZC_SEC_START ?= ($(CFG_TZDRAM_START) - $(CFG_DRAM_BASE))
+CFG_IMX_TZC_SHMEM_START ?= ($(CFG_SHMEM_START) - $(CFG_DRAM_BASE))
+else
+CFG_IMX_TZC_NSEC_START ?= $(CFG_DRAM_BASE)
+CFG_IMX_TZC_SEC_START ?= $(CFG_TZDRAM_START)
+CFG_IMX_TZC_SHMEM_START ?= $(CFG_SHMEM_START)
+endif
 
 CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 CFG_WITH_STACK_CANARIES ?= y
@@ -402,8 +417,8 @@ CFG_MMAP_REGIONS ?= 24
 # ones forced to be disabled
 CFG_NXP_CAAM ?= n
 
-# Disable CAAM driver for IMX8Q
-ifneq (,$(filter y, $(CFG_IMX8QM) $(CFG_IMX8QX)))
+# Disable CAAM driver for MX8Q
+ifneq (,$(filter y, $(CFG_MX8QM) $(CFG_MX8QX)))
 CFG_NXP_CAAM = n
 endif
 
