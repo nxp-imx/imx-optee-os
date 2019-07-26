@@ -18,5 +18,6 @@
 #define OCOTP_BASE  0x30350000
 #define ANATOP_BASE 0x30360000
 #define SNVS_BASE   0x30370000
+#define SECMEM_BASE 0x00100000
 
 #endif /* __IMX8_REGS_H__ */
