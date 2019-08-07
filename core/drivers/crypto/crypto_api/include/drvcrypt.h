@@ -8,19 +8,28 @@
 #define __DRVCRYPT_H__
 
 #include <tee_api_types.h>
-#include <trace.h>
 
 #ifdef CFG_CRYPTO_DRIVER_DEBUG
-#define CRYPTO_TRACE	DMSG
+#include <trace.h>
+#define CRYPTO_TRACE DMSG
 #else
 #define CRYPTO_TRACE(...)
 #endif
+
+/*
+ * Definition of a crypto buffer type
+ */
+struct cryptobuf {
+	uint8_t *data;
+	size_t length;
+};
 
 /*
  * Crypto Library Algorithm enumeration
  */
 enum drvcrypt_algo_id {
 	CRYPTO_HASH = 0, /* Hash driver */
+	CRYPTO_CIPHER,   /* Cipher driver */
 	CRYPTO_MAX_ALGO  /* Maximum number of algo supported */
 };
 
