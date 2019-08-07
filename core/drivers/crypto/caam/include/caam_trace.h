@@ -32,6 +32,9 @@
 #define DBG_TRACE_BLOB    BIT32(12) /* BLOB trace */
 #define DBG_DESC_BLOB     BIT32(13) /* BLOB dump descriptor */
 #define DBG_BUF_BLOB      BIT32(14) /* BLOB dump Buffer */
+#define DBG_TRACE_CIPHER  BIT32(15) /* Cipher trace */
+#define DBG_DESC_CIPHER   BIT32(16) /* Cipher dump descriptor */
+#define DBG_BUF_CIPHER    BIT32(17) /* Cipher dump Buffer */
 
 /* HAL */
 #if (CFG_CAAM_DBG & DBG_TRACE_HAL)
@@ -146,6 +149,29 @@
 #define BLOB_TRACE(...)
 #define BLOB_DUMPDESC(desc)
 #define BLOB_DUMPBUF(...)
+#endif
+
+/* Cipher */
+#if (CFG_CAAM_DBG & DBG_TRACE_CIPHER)
+#define CIPHER_TRACE DRV_TRACE
+#if (CFG_CAAM_DBG & DBG_DESC_CIPHER)
+#define CIPHER_DUMPDESC(desc)                                                  \
+	do {                                                                   \
+		CIPHER_TRACE("CIPHER Descriptor");                             \
+		DRV_DUMPDESC(desc);                                            \
+	} while (0)
+#else
+#define CIPHER_DUMPDESC(desc)
+#endif
+#if (CFG_CAAM_DBG & DBG_BUF_CIPHER)
+#define CIPHER_DUMPBUF DRV_DUMPBUF
+#else
+#define CIPHER_DUMPBUF(...)
+#endif
+#else
+#define CIPHER_TRACE(...)
+#define CIPHER_DUMPDESC(desc)
+#define CIPHER_DUMPBUF(...)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_DEBUG)

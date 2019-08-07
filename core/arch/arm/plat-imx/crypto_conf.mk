@@ -20,6 +20,9 @@
 # DBG_TRACE_BLOB   BIT32(12) // BLOB trace
 # DBG_DESC_BLOB    BIT32(13) // BLOB dump descriptor
 # DBG_BUF_BLOB     BIT32(14) // BLOB dump Buffer
+# DBG_TRACE_CIPHER BIT32(15) // Cipher trace
+# DBG_DESC_CIPHER  BIT32(16) // Cipher dump descriptor
+# DBG_BUF_CIPHER   BIT32(17) // Cipher dump Buffer
 CFG_CAAM_DBG ?= 0x2
 
 #
@@ -64,5 +67,6 @@ endef
 
 # Definition of the HW and Cryto Driver Algorithm supported by all i.MX
 $(eval $(call cryphw-enable-drv-hw, HASH))
+$(eval $(call cryphw-enable-drv-hw, CIPHER))
 
 endif

@@ -4,6 +4,7 @@
  *
  * Brief   CAAM Global Controller.
  */
+#include <caam_cipher.h>
 #include <caam_common.h>
 #include <caam_hal_cfg.h>
 #include <caam_hal_clk.h>
@@ -60,6 +61,13 @@ TEE_Result crypto_driver_init(void)
 
 	/* Initialize the Hash Module */
 	retstatus = caam_hash_init(jrcfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+
+	/* Initialize the Cipher Module */
+	retstatus = caam_cipher_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
