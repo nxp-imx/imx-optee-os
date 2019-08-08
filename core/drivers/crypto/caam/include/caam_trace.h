@@ -36,6 +36,7 @@
 #define DBG_TRACE_RSA	 BIT32(8)  /* RSA trace */
 #define DBG_TRACE_CIPHER BIT32(9)  /* Cipher dump Buffer */
 #define DBG_TRACE_BLOB   BIT32(10) /* BLOB trace */
+#define DBG_TRACE_ECC    BIT32(11) /* ECC trace */
 
 /* HAL */
 #if CAAM_DBG_TRACE(HAL)
@@ -173,6 +174,29 @@
 #define CIPHER_TRACE(...)
 #define CIPHER_DUMPDESC(desc)
 #define CIPHER_DUMPBUF(...)
+#endif
+
+/* ECC */
+#if CAAM_DBG_TRACE(ECC)
+#define ECC_TRACE DRV_TRACE
+#if CAAM_DBG_DESC(ECC)
+#define ECC_DUMPDESC(desc)                                                     \
+	do {                                                                   \
+		ECC_TRACE("ECC Descriptor");                                   \
+		DRV_DUMPDESC(desc);                                            \
+	} while (0)
+#else
+#define ECC_DUMPDESC(desc)
+#endif
+#if CAAM_DBG_BUF(ECC)
+#define ECC_DUMPBUF DRV_DUMPBUF
+#else
+#define ECC_DUMPBUF(...)
+#endif
+#else
+#define ECC_TRACE(...)
+#define ECC_DUMPDESC(desc)
+#define ECC_DUMPBUF(...)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_DEBUG)
