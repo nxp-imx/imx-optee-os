@@ -38,3 +38,12 @@ uint8_t caam_hal_ctrl_hash_limit(vaddr_t baseaddr)
 
 	return UINT8_MAX;
 }
+
+uint8_t caam_hal_ctrl_pknum(vaddr_t baseaddr)
+{
+	uint32_t val = 0;
+
+	val = io_caam_read32(baseaddr + CHANUM_LS);
+
+	return GET_CHANUM_LS_PKNUM(val);
+}
