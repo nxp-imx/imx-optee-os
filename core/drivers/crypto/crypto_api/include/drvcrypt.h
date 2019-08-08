@@ -30,6 +30,7 @@ struct cryptobuf {
 enum drvcrypt_algo_id {
 	CRYPTO_HASH = 0, /* Hash driver */
 	CRYPTO_CIPHER,   /* Cipher driver */
+	CRYPTO_ECC,      /* Assymetric ECC driver */
 	CRYPTO_MAX_ALGO  /* Maximum number of algo supported */
 };
 
