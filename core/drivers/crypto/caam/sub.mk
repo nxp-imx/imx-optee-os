@@ -2,6 +2,7 @@ incdirs-y += include
 
 subdirs-y += hal
 subdirs-y += utils
+subdirs-y += blob
 
 srcs-y += caam_pwr.c
 srcs-y += caam_ctrl.c

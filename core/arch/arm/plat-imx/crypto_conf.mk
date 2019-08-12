@@ -5,18 +5,21 @@
 #
 # CAAM Debug Trace
 #
-# DBG_TRACE_HAL  BIT32(0)  // HAL trace
-# DBG_TRACE_CTRL BIT32(1)  // Controller trace
-# DBG_TRACE_MEM  BIT32(2)  // Memory utility trace
-# DBG_TRACE_SGT  BIT32(3)  // Scatter Gather trace
-# DBG_TRACE_PWR  BIT32(4)  // Power trace
-# DBG_TRACE_JR   BIT32(5)  // Job Ring trace
-# DBG_DESC_JR    BIT32(6)  // Job Ring dump descriptor
-# DBG_TRACE_RNG  BIT32(7)  // RNG trace
-# DBG_DESC_RNG   BIT32(8)  // RNG dump descriptor
-# DBG_TRACE_HASH BIT32(9)  // Hash trace
-# DBG_DESC_HASH  BIT32(10) // Hash dump descriptor
-# DBG_BUF_HASH   BIT32(11) // Hash dump Buffer
+# DBG_TRACE_HAL    BIT32(0)  // HAL trace
+# DBG_TRACE_CTRL   BIT32(1)  // Controller trace
+# DBG_TRACE_MEM    BIT32(2)  // Memory utility trace
+# DBG_TRACE_SGT    BIT32(3)  // Scatter Gather trace
+# DBG_TRACE_PWR    BIT32(4)  // Power trace
+# DBG_TRACE_JR     BIT32(5)  // Job Ring trace
+# DBG_DESC_JR      BIT32(6)  // Job Ring dump descriptor
+# DBG_TRACE_RNG    BIT32(7)  // RNG trace
+# DBG_DESC_RNG     BIT32(8)  // RNG dump descriptor
+# DBG_TRACE_HASH   BIT32(9)  // Hash trace
+# DBG_DESC_HASH    BIT32(10) // Hash dump descriptor
+# DBG_BUF_HASH     BIT32(11) // Hash dump Buffer
+# DBG_TRACE_BLOB   BIT32(12) // BLOB trace
+# DBG_DESC_BLOB    BIT32(13) // BLOB dump descriptor
+# DBG_BUF_BLOB     BIT32(14) // BLOB dump Buffer
 CFG_CAAM_DBG ?= 0x2
 
 #
@@ -28,6 +31,11 @@ $(call force, CFG_JR_BLOCK_SIZE,0x1000)
 
 $(call force, CFG_JR_INDEX,0)  # Default JR index used
 $(call force, CFG_JR_INT,137)  # Default JR IT Number (105 + 32) = 137
+
+#
+# Enable HUK CAAM Generation
+#
+CFG_NXP_CAAM_HUK_DRV ?= y
 
 #
 # Configuration of the Crypto Driver

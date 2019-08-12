@@ -9,16 +9,17 @@
 #include <caam_hal_clk.h>
 #include <caam_hal_ctrl.h>
 #include <caam_hash.h>
+#include <caam_huk.h>
 #include <caam_jr.h>
 #include <caam_pwr.h>
 #include <caam_rng.h>
-#include <caam_utils_mem.h>
+#include <crypto/crypto.h>
 #include <initcall.h>
 #include <kernel/panic.h>
 #include <tee_api_types.h>
 
 /* Crypto driver initialization */
-static TEE_Result crypto_driver_init(void)
+TEE_Result crypto_driver_init(void)
 {
 	TEE_Result retresult = TEE_ERROR_GENERIC;
 	enum caam_status retstatus = CAAM_FAILURE;
@@ -45,6 +46,13 @@ static TEE_Result crypto_driver_init(void)
 
 	/* Initialize the RNG Module */
 	retstatus = caam_rng_init(jrcfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+
+	/* Initialize the HUK Module */
+	retstatus = caam_huk_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
@@ -78,8 +86,6 @@ exit_init:
 
 	return retresult;
 }
-
-driver_init(crypto_driver_init);
 
 /* Crypto driver late initialization to complete on-going CAAM operations */
 static TEE_Result init_caam_late(void)
