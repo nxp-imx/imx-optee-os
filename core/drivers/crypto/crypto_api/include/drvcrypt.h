@@ -48,12 +48,13 @@ struct cryptobuf {
  * Crypto Library Algorithm enumeration
  */
 enum drvcrypt_algo_id {
-	CRYPTO_HASH = 0, /* Hash driver */
-	CRYPTO_CIPHER,   /* Cipher driver */
-	CRYPTO_ECC,      /* Assymetric ECC driver */
-	CRYPTO_RSA,      /* Asymmetric RSA driver */
-	CRYPTO_MATH,     /* Mathematical driver */
-	CRYPTO_MAX_ALGO  /* Maximum number of algo supported */
+	CRYPTO_HASH = 0, /* HASH driver */
+	CRYPTO_HMAC,	 /* HMAC driver */
+	CRYPTO_CIPHER,	 /* CIPHER driver */
+	CRYPTO_ECC,	 /* Assymetric ECC driver */
+	CRYPTO_RSA,	 /* Asymmetric RSA driver */
+	CRYPTO_MATH,	 /* Mathematical driver */
+	CRYPTO_MAX_ALGO	 /* Maximum number of algo supported */
 };
 
 /*
