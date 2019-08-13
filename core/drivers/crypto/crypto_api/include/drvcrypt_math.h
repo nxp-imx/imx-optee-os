@@ -14,10 +14,10 @@
  * Binary Modular operation data
  */
 struct drvcrypt_mod_op {
-	struct cryptobuf N;      /* Modulus N*/
-	struct cryptobuf A;      /* Operand A*/
-	struct cryptobuf B;      /* Operand B*/
-	struct cryptobuf result; /* Result of operation*/
+	struct cryptobuf n;      /* Modulus N */
+	struct cryptobuf a;      /* Operand A */
+	struct cryptobuf b;      /* Operand B */
+	struct cryptobuf result; /* Result of operation */
 };
 
 /*

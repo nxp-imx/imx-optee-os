@@ -74,8 +74,22 @@ TEE_Result crypto_driver_init(void)
 		goto exit_init;
 	}
 
+	/* Initialize the MATH Module */
+	retstatus = caam_math_init(jrcfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+
 	/* Initialize the ECC Module */
 	retstatus = caam_ecc_init(jrcfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+
+	/* Initialize the RSA Module */
+	retstatus = caam_rsa_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;

@@ -38,6 +38,9 @@
 #define DBG_TRACE_ECC     BIT32(18) /* ECC trace */
 #define DBG_DESC_ECC      BIT32(19) /* ECC dump descriptor */
 #define DBG_BUF_ECC       BIT32(20) /* ECC dump Buffer */
+#define DBG_TRACE_RSA     BIT32(21) /* RSA trace */
+#define DBG_DESC_RSA      BIT32(22) /* RSA dump descriptor */
+#define DBG_BUF_RSA       BIT32(23) /* RSA dump Buffer */
 
 /* HAL */
 #if (CFG_CAAM_DBG & DBG_TRACE_HAL)
@@ -200,6 +203,29 @@
 #define ECC_DUMPBUF(...)
 #endif
 
+/* RSA */
+#if (CFG_CAAM_DBG & DBG_TRACE_RSA)
+#define RSA_TRACE DRV_TRACE
+#if (CFG_CAAM_DBG & DBG_DESC_RSA)
+#define RSA_DUMPDESC(desc)                                                     \
+	do {                                                                   \
+		RSA_TRACE("RSA Descriptor");                                   \
+		DRV_DUMPDESC(desc);                                            \
+	} while (0)
+#else
+#define RSA_DUMPDESC(desc)
+#endif
+#if (CFG_CAAM_DBG & DBG_BUF_RSA)
+#define RSA_DUMPBUF DRV_DUMPBUF
+#else
+#define RSA_DUMPBUF(...)
+#endif
+#else
+#define RSA_TRACE(...)
+#define RSA_DUMPDESC(desc)
+#define RSA_DUMPBUF(...)
+#endif
+
 #if (TRACE_LEVEL >= TRACE_DEBUG)
 #define DRV_TRACE(...)                                                         \
 	trace_printf(__func__, __LINE__, TRACE_DEBUG, true, __VA_ARGS__)
@@ -210,8 +236,7 @@
 		__typeof__(buf) _buf = (buf);                                  \
 		__typeof__(len) _len = (len);                                  \
 									       \
-		DRV_TRACE("%s @0x%" PRIxPTR ": %zu", title, (uintptr_t)_buf,   \
-			  _len);                                               \
+		DRV_TRACE("%s @%p : %zu", title, _buf, _len);                  \
 		dhex_dump(NULL, 0, 0, _buf, _len);                             \
 	} while (0)
 

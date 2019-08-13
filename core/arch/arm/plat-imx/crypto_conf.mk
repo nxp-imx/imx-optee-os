@@ -26,6 +26,9 @@
 # DBG_TRACE_ECC    BIT32(18) // ECC trace
 # DBG_DESC_ECC     BIT32(19) // ECC dump descriptor
 # DBG_BUF_ECC      BIT32(20) // ECC dump Buffer
+# DBG_TRACE_RSA    BIT32(21) // RSA trace
+# DBG_DESC_RSA     BIT32(22) // RSA dump descriptor
+# DBG_BUF_RSA      BIT32(23) // RSA dump Buffer
 CFG_CAAM_DBG ?= 0x2
 
 #
@@ -81,9 +84,10 @@ $(eval $(call cryphw-enable-drv-hw, CIPHER))
 ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6SX)), y)
 $(eval $(call cryphw-enable-drv-hw, ECC))
+$(eval $(call cryphw-enable-drv-hw, RSA))
 endif
 
-$(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, ECC))
+$(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, ECC RSA))
 
 #
 # Enable Cryptographic Driver interface

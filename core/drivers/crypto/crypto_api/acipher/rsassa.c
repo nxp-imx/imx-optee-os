@@ -457,11 +457,11 @@ static TEE_Result emsa_pss_encode(struct drvcrypt_rsa_ssa *ssa_data,
 	 * Step 10
 	 * maskedDB = DB xor dbMask
 	 */
-	mod_op.N.length = dbMask.length;
-	mod_op.A.data = DB.data;
-	mod_op.A.length = DB.length;
-	mod_op.B.data = dbMask.data;
-	mod_op.B.length = dbMask.length;
+	mod_op.n.length = dbMask.length;
+	mod_op.a.data = DB.data;
+	mod_op.a.length = DB.length;
+	mod_op.b.data = dbMask.data;
+	mod_op.b.length = dbMask.length;
 	mod_op.result.data = dbMask.data;
 	mod_op.result.length = dbMask.length;
 
@@ -603,11 +603,11 @@ static TEE_Result emsa_pss_verify(struct drvcrypt_rsa_ssa *ssa_data,
 	 *
 	 * Note: maskedDB is in the EM input
 	 */
-	mod_op.N.length = db_size;
-	mod_op.A.data = EM->data;
-	mod_op.A.length = db_size;
-	mod_op.B.data = msg_db;
-	mod_op.B.length = db_size;
+	mod_op.n.length = db_size;
+	mod_op.a.data = EM->data;
+	mod_op.a.length = db_size;
+	mod_op.b.data = msg_db;
+	mod_op.b.length = db_size;
 	mod_op.result.data = msg_db;
 	mod_op.result.length = db_size;
 

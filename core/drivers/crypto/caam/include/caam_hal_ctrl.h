@@ -38,4 +38,10 @@ uint8_t caam_hal_ctrl_hash_limit(vaddr_t baseaddr);
  */
 uint8_t caam_hal_ctrl_pknum(vaddr_t baseaddr);
 
+/*
+ * Returns the CAAM Era
+ *
+ * @baseaddr  Controller base address
+ */
+uint8_t caam_hal_ctrl_era(vaddr_t baseaddr);
 #endif /* __CAAM_HAL_CTRL_H__ */

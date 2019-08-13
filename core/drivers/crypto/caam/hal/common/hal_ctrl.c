@@ -47,3 +47,13 @@ uint8_t caam_hal_ctrl_pknum(vaddr_t baseaddr)
 
 	return GET_CHANUM_LS_PKNUM(val);
 }
+
+uint8_t caam_hal_ctrl_era(vaddr_t baseaddr)
+{
+	uint32_t val = 0;
+
+	/* Read the number of instance */
+	val = io_caam_read32(baseaddr + CCBVID);
+
+	return GET_CCBVID_CAAM_ERA(val);
+}

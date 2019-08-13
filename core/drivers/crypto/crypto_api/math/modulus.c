@@ -17,12 +17,12 @@ TEE_Result drvcrypt_xor_mod_n(struct drvcrypt_mod_op *data)
 	struct drvcrypt_math *math = NULL;
 
 	/* Check input parameters */
-	if (!data->A.data || !data->A.length || !data->B.data ||
-	    !data->B.length || !data->result.data || !data->result.length ||
-	    !data->N.length)
+	if (!data->a.data || !data->a.length || !data->b.data ||
+	    !data->b.length || !data->result.data || !data->result.length ||
+	    !data->n.length)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	if (data->result.length < data->N.length)
+	if (data->result.length < data->n.length)
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	math = drvcrypt_get_ops(CRYPTO_MATH);
@@ -38,26 +38,26 @@ TEE_Result drvcrypt_xor_mod_n(struct drvcrypt_mod_op *data)
 		size_t min = 0, idx = 0;
 
 		/* Calculate the minimum size to do A xor B */
-		min = MIN(data->A.length, data->B.length);
-		min = MIN(min, data->N.length);
+		min = MIN(data->a.length, data->b.length);
+		min = MIN(min, data->n.length);
 
 		for (; idx < min; idx++)
 			data->result.data[idx] =
-				data->A.data[idx] ^ data->B.data[idx];
+				data->a.data[idx] ^ data->b.data[idx];
 
-		if (min < data->N.length) {
+		if (min < data->n.length) {
 			/* Complete result to make a N modulus number */
-			if (data->A.length > min) {
+			if (data->a.length > min) {
 				memcpy(&data->result.data[idx],
-				       &data->A.data[idx],
-				       data->N.length - min);
-			} else if (data->B.length > min) {
+				       &data->a.data[idx],
+				       data->n.length - min);
+			} else if (data->b.length > min) {
 				memcpy(&data->result.data[idx],
-				       &data->B.data[idx],
-				       data->N.length - min);
+				       &data->b.data[idx],
+				       data->n.length - min);
 			} else {
 				memset(&data->result.data[idx], 0,
-				       data->N.length - min);
+				       data->n.length - min);
 			}
 		}
 
