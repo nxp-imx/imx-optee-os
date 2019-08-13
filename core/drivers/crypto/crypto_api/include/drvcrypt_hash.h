@@ -8,6 +8,7 @@
 #define __DRVCRYPT_HASH_H__
 
 #include <crypto/crypto_impl.h>
+#include <drvcrypt.h>
 #include <tee_api_types.h>
 
 /*

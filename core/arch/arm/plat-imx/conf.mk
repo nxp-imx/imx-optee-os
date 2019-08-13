@@ -431,7 +431,7 @@ $(call force,CFG_IMX_CAAM,n)
 # it with generic crypto API can be enabled.
 CFG_CRYPTO_DRIVER ?= y
 # Crypto Driver Debug
-CFG_CRYPTO_DRIVER_DEBUG ?= n
+CFG_CRYPTO_DRIVER_DEBUG ?= 0
 else
 $(call force,CFG_CRYPTO_DRIVER,n)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
