@@ -389,6 +389,11 @@ CFG_MMAP_REGIONS ?= 24
 # ones forced to be disabled
 CFG_NXP_CAAM ?= n
 
+# Disable CAAM driver for IMX8Q
+ifneq (,$(filter y, $(CFG_IMX8QM) $(CFG_IMX8QX)))
+CFG_NXP_CAAM = n
+endif
+
 ifeq ($(CFG_NXP_CAAM),y)
 # As NXP CAAM Driver is enabled, disable the small local CAAM driver
 # used just to release Job Rings to Non-Secure world
