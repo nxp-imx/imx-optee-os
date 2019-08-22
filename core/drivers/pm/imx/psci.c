@@ -27,17 +27,6 @@
 #include "imx_pm.h"
 #include "local.h"
 
-#ifdef CFG_PSCI_ARM32
-/*
- * Platform Wakeup late function executed with MMU
- * ON after suspend.
- */
-void plat_cpu_wakeup_late(void)
-{
-
-}
-#endif
-
 #define IOMUXC_GPR5_OFFSET	0x14
 #define ARM_WFI_STAT_MASK(n)	BIT(n)
 
