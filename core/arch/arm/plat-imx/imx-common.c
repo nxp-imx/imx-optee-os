@@ -59,7 +59,7 @@ static uint32_t imx_soc_rev_major(void)
 	return imx_soc_revision >> 4;
 }
 
-static uint32_t imx_soc_type(void)
+uint32_t imx_soc_type(void)
 {
 	if (imx_cpu_type < 0)
 		imx_digproc();
