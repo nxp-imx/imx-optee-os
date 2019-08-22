@@ -145,7 +145,7 @@
 	/* Flush the BTAC. */
 	write_bpiallis
 
-	ldr	r6, =iram_tbl_phys_addr
+	ldr	r6, =iram_tlb_phys_addr
 	ldr	r7, [r6]
 
 	dsb
