@@ -131,3 +131,21 @@ void main_secondary_init_gic(void)
 	gic_cpu_init(&gic_data);
 }
 #endif
+
+
+void plat_primary_init_early(void)
+{
+	/* primary core */
+}
+
+#ifdef CFG_PSCI_ARM32
+/*
+ * Platform Wakeup late function executed with MMU
+ * ON after suspend.
+ */
+void plat_cpu_wakeup_late(void)
+{
+
+}
+#endif
+
