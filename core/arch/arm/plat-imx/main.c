@@ -197,3 +197,14 @@ void plat_cpu_reset_late(void)
 		imx_configure_tzasc();
 	}
 }
+
+#ifdef CFG_PSCI_ARM32
+/*
+ * Platform Wakeup late function executed with MMU
+ * ON after suspend.
+ */
+void plat_cpu_wakeup_late(void)
+{
+
+}
+#endif
