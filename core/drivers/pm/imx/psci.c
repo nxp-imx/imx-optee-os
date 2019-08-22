@@ -25,18 +25,6 @@
 
 #include "imx_pm.h"
 
-#ifdef CFG_PSCI_ARM32
-/*
- * Platform Wakeup late function executed with MMU
- * ON after suspend.
- */
-void plat_cpu_wakeup_late(void)
-{
-
-}
-#endif
-
-
 int psci_features(uint32_t psci_fid)
 {
 	switch (psci_fid) {
