@@ -32,21 +32,24 @@
 #include <tee/entry_fast.h>
 #include <util.h>
 
+/*
+ * cpuidle and suspend use the same one,
+ * because lowpower idle and suspend can not reach at the same time
+ */
+
 int imx7d_cpuidle_init(void)
 {
-	uint32_t lpm_idle_ocram_base =
+	uint32_t lowpower_idle_ocram_base =
 		core_mmu_get_va(TRUSTZONE_OCRAM_START +
 				LOWPOWER_IDLE_OCRAM_OFFSET,
 				MEM_AREA_TEE_COHERENT,
 				sizeof(struct imx7_pm_info));
 	struct imx7_pm_info *p =
-		(struct imx7_pm_info *)lpm_idle_ocram_base;
-
-	pm_imx7_iram_tbl_init();
+		(struct imx7_pm_info *)lowpower_idle_ocram_base;
 
 	dcache_op_level1(DCACHE_OP_CLEAN_INV);
 
-	p->va_base = lpm_idle_ocram_base;
+	p->va_base = lowpower_idle_ocram_base;
 	p->pa_base = TRUSTZONE_OCRAM_START + LOWPOWER_IDLE_OCRAM_OFFSET;
 	p->tee_resume = (paddr_t)virt_to_phys((void *)(vaddr_t)v7_cpu_resume);
 	p->pm_info_size = sizeof(*p);
@@ -69,11 +72,11 @@ int imx7d_cpuidle_init(void)
 	p->num_lpi_cpus = 0;
 	p->num_online_cpus = -1;
 
-	memcpy((void *)(lpm_idle_ocram_base + sizeof(*p)),
-	       (void *)(vaddr_t)imx7d_low_power_idle,
+	memcpy((void *)(lowpower_idle_ocram_base + sizeof(*p)),
+		(void *)(vaddr_t)imx7d_low_power_idle,
 	       LOWPOWER_IDLE_OCRAM_SIZE - sizeof(*p));
 
-	dcache_clean_range((void *)lpm_idle_ocram_base,
+	dcache_clean_range((void *)lowpower_idle_ocram_base,
 			   LOWPOWER_IDLE_OCRAM_SIZE);
 	/*
 	 * Note that IRAM IOSEC map, if changed to MEM map,
@@ -150,23 +153,19 @@ int imx7d_lowpower_idle(uint32_t power_state __unused,
 			uint32_t context_id __unused,
 			struct sm_nsec_ctx *nsec)
 {
-	struct imx7_pm_info *p;
-	uint32_t cpuidle_ocram_base;
-	static uint32_t gic_inited;
 	int ret;
-
-	uint32_t cpu_id __maybe_unused = get_core_pos();
-	uint32_t type = (power_state & PSCI_POWER_STATE_TYPE_MASK) >>
-		PSCI_POWER_STATE_TYPE_SHIFT;
-	uint32_t cpu = get_core_pos();
-
-	cpuidle_ocram_base = core_mmu_get_va(TRUSTZONE_OCRAM_START +
+	uint32_t cpuidle_ocram_base = core_mmu_get_va(TRUSTZONE_OCRAM_START +
 					     LOWPOWER_IDLE_OCRAM_OFFSET,
 					     MEM_AREA_TEE_COHERENT,
 					     sizeof(struct imx7_pm_info));
-	p = (struct imx7_pm_info *)cpuidle_ocram_base;
+	struct imx7_pm_info *p =
+			(struct imx7_pm_info *)cpuidle_ocram_base;
+	uint32_t type = (power_state & PSCI_POWER_STATE_TYPE_MASK) >>
+		PSCI_POWER_STATE_TYPE_SHIFT;
+	static uint32_t gic_inited;
+	uint32_t cpu_id = get_core_pos();
 
-	imx_pen_lock(cpu);
+	imx_pen_lock(cpu_id);
 
 	if (!lowpoweridle_init) {
 		imx7d_cpuidle_init();
@@ -190,7 +189,7 @@ int imx7d_lowpower_idle(uint32_t power_state __unused,
 	 */
 	if (ret < 0) {
 		p->num_lpi_cpus--;
-		imx_pen_unlock(cpu);
+		imx_pen_unlock(cpu_id);
 		DMSG("=== Not suspended, GPC IRQ Pending === %d\n", cpu_id);
 		return 0;
 	}
@@ -203,16 +202,16 @@ int imx7d_lowpower_idle(uint32_t power_state __unused,
 	sm_restore_unbanked_regs(&nsec->ub_regs);
 
 	p->num_lpi_cpus--;
-	/* Back to Linux */
+
+	/* Set entry for back to Linux */
 	nsec->mon_lr = (uint32_t)entry;
 
 	if (gic_inited == 0) {
 		/*
-		 * TODO: Call the Wakeup Late function to restore some
+		 * Call the Wakeup Late function to restore some
 		 * HW configuration (e.g. TZASC)
 		 */
-		if (!get_core_pos())
-			plat_primary_init_early();
+		plat_cpu_wakeup_late();
 
 		main_init_gic();
 		gic_inited = 1;
@@ -222,7 +221,7 @@ int imx7d_lowpower_idle(uint32_t power_state __unused,
 		gic_inited = 0;
 	}
 
-	imx_pen_unlock(cpu);
+	imx_pen_unlock(cpu_id);
 
 	return 0;
 }

@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2017 NXP
+ * Copyright 2017-2018 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
 
 #include <arm.h>
-#include <arm32.h>
 #include <console.h>
 #include <drivers/imx_uart.h>
 #include <io.h>
@@ -55,10 +54,13 @@ int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		return 0;
 	}
 
-	if (!get_core_pos())
-		plat_primary_init_early();
-
 	sm_restore_unbanked_regs(&nsec->ub_regs);
+
+	/*
+	 * Call the Wakeup Late function to restore some
+	 * HW configuration (e.g. TZASC)
+	 */
+	plat_cpu_wakeup_late();
 
 	/* Set entry for back to Linux */
 	nsec->mon_lr = (uint32_t)entry;
