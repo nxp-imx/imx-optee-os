@@ -282,11 +282,7 @@ unsigned long cpu_suspend_handler(unsigned long a0, unsigned long a1);
 paddr_t imx_get_ocram_tz_start_addr(void);
 
 #ifdef CFG_PSCI_ARM32
-void plat_cpu_wakeup_late(void);
-#else
-static inline void plat_cpu_wakeup_late(void)
-{
-}
+inline void plat_cpu_wakeup_late(void) {}
 #endif
 
 int imx_get_ddr_type(void);
