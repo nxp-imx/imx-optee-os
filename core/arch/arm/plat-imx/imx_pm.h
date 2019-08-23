@@ -17,6 +17,11 @@
 #define SUSPEND_OCRAM_OFFSET		0x0
 #define LOWPOWER_IDLE_OCRAM_OFFSET	0x1000
 
+/*
+ * Except i.MX6SX only 16KB ocram_s available, others use 16KB offset.
+ */
+#define IRAM_TBL_OFFSET			0x4000
+
 #ifndef __ASSEMBLER__
 #include <sm/sm.h>
 
