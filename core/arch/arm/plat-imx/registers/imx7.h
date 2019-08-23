@@ -6,6 +6,7 @@
 #define __IMX7_H__
 
 #include <registers/imx7-crm.h>
+#include <registers/imx7-iomux.h>
 
 #define GIC_BASE		0x31000000
 #define GIC_SIZE		0x8000
