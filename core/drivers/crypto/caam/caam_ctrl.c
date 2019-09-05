@@ -13,6 +13,7 @@
 #include <caam_hash.h>
 #include <caam_huk.h>
 #include <caam_jr.h>
+#include <caam_mp.h>
 #include <caam_pwr.h>
 #include <caam_rng.h>
 #include <crypto/crypto.h>
@@ -56,6 +57,13 @@ TEE_Result crypto_driver_init(void)
 	/* Initialize the HUK Module */
 	retstatus = caam_huk_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+
+	/* Initialize the Manufacturing Protection Module */
+	retstatus = caam_mp_init(jrcfg.base);
+	if (retstatus != CAAM_NO_ERROR && retstatus != CAAM_NOT_SUPPORTED) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}

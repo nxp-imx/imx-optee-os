@@ -41,6 +41,9 @@
 #define DBG_TRACE_RSA     BIT32(21) /* RSA trace */
 #define DBG_DESC_RSA      BIT32(22) /* RSA dump descriptor */
 #define DBG_BUF_RSA       BIT32(23) /* RSA dump Buffer */
+#define DBG_TRACE_MP      BIT32(24) /* MP trace */
+#define DBG_DESC_MP       BIT32(25) /* MP dump descriptor */
+#define DBG_BUF_MP        BIT32(26) /* MP dump Buffer */
 
 /* HAL */
 #if (CFG_CAAM_DBG & DBG_TRACE_HAL)
@@ -224,6 +227,29 @@
 #define RSA_TRACE(...)
 #define RSA_DUMPDESC(desc)
 #define RSA_DUMPBUF(...)
+#endif
+
+/* MP */
+#if (CFG_CAAM_DBG & DBG_TRACE_MP)
+#define MP_TRACE DRV_TRACE
+#if (CFG_CAAM_DBG & DBG_DESC_MP)
+#define MP_DUMPDESC(desc)                                                      \
+	do {                                                                   \
+		MP_TRACE("MP Descriptor");                                     \
+		DRV_DUMPDESC(desc);                                            \
+	} while (0)
+#else
+#define MP_DUMPDESC(desc)
+#endif
+#if (CFG_CAAM_DBG & DBG_BUF_MP)
+#define MP_DUMPBUF DRV_DUMPBUF
+#else
+#define MP_DUMPBUF(...)
+#endif
+#else
+#define MP_TRACE(...)
+#define MP_DUMPDESC(desc)
+#define MP_DUMPBUF(...)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_DEBUG)
