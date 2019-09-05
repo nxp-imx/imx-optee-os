@@ -41,7 +41,7 @@
 #define JRxMIDR_LS_NONSEQ_MID(val)	SHIFT_U32((val) & 0xF, 16)
 #define JRxMIDR_LS_SEQ_NS		BIT32(4)
 #define JRxMIDR_LS_SEQ_MID(val)		SHIFT_U32((val) & 0xF, 0)
-#endif
+#endif /* CFG_MX7ULP */
 
 /* Security Configuration */
 #define SCFGR				0x000C

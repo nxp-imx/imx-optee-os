@@ -38,6 +38,7 @@
 #define DBG_TRACE_BLOB   BIT32(10) /* BLOB trace */
 #define DBG_TRACE_ECC    BIT32(11) /* ECC trace */
 #define DBG_TRACE_DSA	 BIT32(12) /* DSA trace */
+#define DBG_TRACE_MP	 BIT32(13) /* MP trace */
 
 /* HAL */
 #if CAAM_DBG_TRACE(HAL)
@@ -221,6 +222,29 @@
 #define DSA_TRACE(...)
 #define DSA_DUMPDESC(desc)
 #define DSA_DUMPBUF(...)
+#endif
+
+/* MP */
+#if CAAM_DBG_TRACE(MP)
+#define MP_TRACE DRV_TRACE
+#if CAAM_DBG_DESC(MP)
+#define MP_DUMPDESC(desc)                                                      \
+	do {                                                                   \
+		MP_TRACE("MP Descriptor");                                     \
+		DRV_DUMPDESC(desc);                                            \
+	} while (0)
+#else
+#define MP_DUMPDESC(desc)
+#endif
+#if CAAM_DBG_BUF(MP)
+#define MP_DUMPBUF DRV_DUMPBUF
+#else
+#define MP_DUMPBUF(...)
+#endif
+#else
+#define MP_TRACE(...)
+#define MP_DUMPDESC(desc)
+#define MP_DUMPBUF(...)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_DEBUG)
