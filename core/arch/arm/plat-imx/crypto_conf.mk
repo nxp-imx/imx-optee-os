@@ -8,6 +8,7 @@
 # CFG_DBG_CAAM_DESC   Module descriptor dump
 # CFG_DBG_CAAM_BUF    Module buffer dump
 #
+
 # DBG_HAL    BIT32(0)  // HAL trace
 # DBG_CTRL   BIT32(1)  // Controller trace
 # DBG_MEM    BIT32(2)  // Memory utility trace
@@ -23,6 +24,8 @@
 # DBG_ECC    BIT32(12) // ECC trace
 # DBG_DH     BIT32(13) // DH Trace
 # DBG_DSA    BIT32(14) // DSA trace
+# DBG_MP     BIT32(15) // MP trace
+
 CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
 CFG_DBG_CAAM_BUF ?= 0x0
@@ -93,6 +96,7 @@ $(eval $(call cryphw-enable-drv-hw, RSA))
 $(eval $(call cryphw-enable-drv-hw, ECC))
 $(eval $(call cryphw-enable-drv-hw, DH))
 $(eval $(call cryphw-enable-drv-hw, DSA))
+$(eval $(call cryphw-enable-drv-hw, MP))
 
 # Define the RSA Private Key Format used by the CAAM
 #   Format #1: (n, d)
