@@ -162,12 +162,10 @@ uint16_t soc_revision(void)
 	return imx_soc_revision;
 }
 
-
 /*
- * Returns always the device not closed
+ * Returns if the device is closed (full secure) or not
  */
 bool __weak imx_is_device_closed(void)
 {
 	return false;
 }
-
