@@ -22,6 +22,7 @@
 #define SOC_MX7ULP	0xE1
 #define SOC_MX8QX	0xE2
 #define SOC_MX8QM	0xE3
+#define SOC_MX8M	0x82
 
 #ifndef __ASSEMBLER__
 #include <tee_api_types.h>
@@ -42,6 +43,7 @@ bool soc_is_imx6dq(void);
 bool soc_is_imx6dqp(void);
 bool soc_is_imx7ds(void);
 bool soc_is_imx7ulp(void);
+bool soc_is_imx8mq_b0_layer(void);
 uint16_t soc_revision(void);
 uint32_t imx_soc_type(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);
