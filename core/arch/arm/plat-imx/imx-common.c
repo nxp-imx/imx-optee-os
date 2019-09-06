@@ -8,6 +8,7 @@
 
 #include <config.h>
 #include <console.h>
+#include <drivers/imx_snvs.h>
 #include <io.h>
 #include <imx.h>
 #include <mm/core_mmu.h>
@@ -185,5 +186,14 @@ bool soc_is_imx8mq_b0_layer(void)
 		return true;
 	else
 		return false;
+}
+
+
+/*
+ * Returns always the device not closed
+ */
+bool __weak imx_is_device_closed(void)
+{
+	return false;
 }
 

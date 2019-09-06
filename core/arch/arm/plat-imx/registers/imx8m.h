@@ -28,9 +28,9 @@
 #define SECMEM_SIZE	0x8000
 
 #ifdef CFG_MX8MQ
-#define DIGPROG_OFFSET	  0x06c
-#define OCOTP_SW_INFO_B1  0x40
-#define OCOTP_SW_MAGIC_B1 0xFF0055AA
+#define DIGPROG_OFFSET		0x06c
+#define OCOTP_SW_INFO_B1	0x40
+#define OCOTP_SW_MAGIC_B1	0xFF0055AA
 #endif
 #if defined(CFG_MX8MM) || defined(CFG_MX8MN) || defined(CFG_MX8MP)
 #define DIGPROG_OFFSET	0x800
