@@ -55,6 +55,4 @@ void snvs_set_master_otpmk(void);
  */
 void snvs_set_npswa_en(void);
 
-bool imx_is_device_closed(void);
-
 #endif /* __DRIVERS_IMX_SNVS_H */
