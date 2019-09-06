@@ -23,7 +23,7 @@ static int imx_soc_revision = -1;
 static void imx_digproc(void)
 {
 	uint32_t digprog = 0;
-	vaddr_t __maybe_unused anatop_addr = 0;
+	vaddr_t __maybe_unused base_addr = 0;
 
 #if defined(CFG_MX7ULP)
 	digprog = SOC_MX7ULP << 16;
@@ -32,12 +32,21 @@ static void imx_digproc(void)
 #elif defined(CFG_MX8QM)
 	digprog = SOC_MX8QM << 16;
 #else
-	anatop_addr = core_mmu_get_va(ANATOP_BASE, MEM_AREA_IO_SEC);
+	base_addr = core_mmu_get_va(ANATOP_BASE, MEM_AREA_IO_SEC);
 
-	if (!anatop_addr)
+	if (!base_addr)
 		return;
 
-	digprog = io_read32(anatop_addr + DIGPROG_OFFSET);
+	digprog = io_read32(base_addr + DIGPROG_OFFSET);
+#ifdef SW_INFO_B1
+	base_addr = core_mmu_get_va(OCOTP_BASE, MEM_AREA_IO_SEC);
+
+	if (base_addr && (io_read32(base_addr + SW_INFO_B1) == SW_B1_MAGIC)) {
+		// update soc revision for B1
+		digprog |= 0x1;
+	}
+#endif /* SW_INFO_B1 */
+
 #endif
 	/* Set the CPU type */
 	imx_cpu_type = CPU_TYPE(digprog);
@@ -126,6 +135,22 @@ bool soc_is_imx7ulp(void)
 	return imx_soc_type() == SOC_MX7ULP;
 }
 
+bool soc_is_imx8mq_b0_layer(void)
+{
+	if (imx_soc_type() == SOC_MX8M)
+	{
+		switch (imx_soc_revision)
+		{
+			// B0
+			case 0x410:
+				return true;
+			default:
+				break;
+		}
+	}
+	return false;
+}
+
 uint16_t soc_revision(void)
 {
 	if (imx_soc_revision < 0)
@@ -135,11 +160,8 @@ uint16_t soc_revision(void)
 }
 
 #ifdef CFG_IMX_SNVS
-/**
- * @brief   Returns if the device is closed (full secure) or not
- *
- * @retval  true if closed device
- * @retval  false if not closed device
+/*
+ * Returns if the device is closed (full secure) or not
  */
 bool imx_is_device_closed(void)
 {
@@ -152,6 +174,14 @@ bool imx_is_device_closed(void)
 	if ((val & SNVS_HPSTATUS_CLOSED) && !(val & SNVS_HPSTATUS_BAD))
 		return true;
 
+	return false;
+}
+#else
+/*
+ * Returns always the device not closed
+ */
+bool imx_is_device_closed(void)
+{
 	return false;
 }
 #endif

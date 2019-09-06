@@ -16,9 +16,11 @@
 #define CAAM_BASE	0x30900000
 #define ANATOP_BASE	0x30360000
 #define SNVS_BASE	0x30370000
-
+#define OCOTP_BASE	0x30350000
 #ifdef CFG_MX8MQ
 #define DIGPROG_OFFSET	0x06c
+#define SW_INFO_B1	0x40
+#define SW_B1_MAGIC	0xFF0055AA
 #endif
 #if defined(CFG_MX8MM) || defined(CFG_MX8MN)
 #define DIGPROG_OFFSET	0x800
