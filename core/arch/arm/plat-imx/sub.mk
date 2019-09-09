@@ -26,3 +26,6 @@ srcs-$(CFG_DT) += imx_dt.c
 
 # Build the busfreq module
 subdirs-$(CFG_BUSFREQ) += busfreq
+
+# Build PTA
+subdirs-y += pta
