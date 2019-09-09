@@ -119,6 +119,7 @@ $(eval $(call cryphw-enable-drv-hw, DSA))
 
 ifneq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX) $(CFG_MX8DXL)), y)
 $(eval $(call cryphw-enable-drv-hw, MP))
+CFG_PTA_MP ?= y
 endif
 
 # Define the RSA Private Key Format used by the CAAM
@@ -126,7 +127,6 @@ endif
 #   Format #2: (p, q, d)
 #   Format #3: (p, q, dp, dq, qp)
 CFG_NXP_CAAM_RSA_KEY_FORMAT ?= 3
-
 endif
 
 $(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, RSA ECC DH DSA))
