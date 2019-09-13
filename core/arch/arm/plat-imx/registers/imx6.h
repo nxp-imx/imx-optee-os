@@ -83,6 +83,9 @@
 #define SRC_BASE			0x020D8000
 #define IRAM_BASE			0x00900000
 
+#define SECMEM_BASE			0x00100000
+#define SECMEM_SIZE			0x40000
+
 #define OCOTP_BASE			0x021BC000
 #define OCOTP_SIZE			0x4000
 

@@ -51,4 +51,21 @@ TEE_Result crypto_mp_export_publickey(struct cryptobuf *pubkey);
 TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata);
 #endif /* CFG_CRYPTO_DRV_MP */
 
+#ifdef CFG_CRYPTO_DRV_SM
+/*
+ * Free a full Secure Memory partition and its pages
+ *
+ * @partition  Secure Memory partition
+ */
+TEE_Result caam_sm_free_partition(unsigned int partition);
+
+/*
+ * Secure Memory Page(s)/Partition definition
+ */
+struct crypto_sm_page {
+	unsigned int partition;    /* Partition number */
+	unsigned int page;         /* Page number */
+	unsigned int nb_pages;     /* Number of pages used */
+};
+#endif /* CFG_CRYPTO_DRV_SM */
 #endif /* __CRYPTO_EXTENSTION_H__ */
