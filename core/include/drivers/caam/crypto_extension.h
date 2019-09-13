@@ -68,4 +68,55 @@ struct crypto_sm_page {
 	unsigned int nb_pages;     /* Number of pages used */
 };
 #endif /* CFG_CRYPTO_DRV_SM */
+
+
+#ifdef CFG_CRYPTO_DRV_BLOB
+/*
+ * Blob size padding in bytes
+ */
+#define BLOB_BKEK_SIZE	32
+#define BLOB_MAC_SIZE	16
+#define BLOB_PAD_SIZE	(BLOB_BKEK_SIZE + BLOB_MAC_SIZE)
+
+/*
+ * Blob Key modifier is 128 bits
+ */
+#define BLOB_KEY_MODIFIER_BITS	128
+
+/*
+ * Blob encryption/decryption type
+ */
+enum crypto_blob_type {
+	BLOB_RED = 0,   /* Red Blob mode   - data in plain text */
+	BLOB_BLACK_ECB, /* Black Blob mode - data encrypted in AES ECB */
+	BLOB_BLACK_CCM, /* Black Blod mode - data encrypted in AES CCM */
+};
+
+/*
+ * Blob data structure where
+ * if encapsulation:
+ *       - payload is the input
+ *       - blob is the output
+ * if decapsulation:
+ *       - blob is the input
+ *       - payload is the output
+ */
+struct crypto_blob {
+	enum crypto_blob_type type;                /* Blob Type */
+	uint32_t key[BLOB_KEY_MODIFIER_BITS / 32]; /* Blob Key modifier */
+	struct cryptobuf payload;                  /* Payload */
+	struct cryptobuf blob;                     /* Blob */
+};
+
+#ifdef CFG_CRYPTO_DRV_SM
+/*
+ * Blob encapsulation using CAAM Secure Memory.
+ *
+ * @blob_data  [in/out] Blob data
+ */
+TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
+				    struct crypto_sm_page *sm_page);
+#endif /* CFG_CRYPTO_DRV_SM */
+#endif /* CFG_CRYPTO_DRV_BLOB */
+
 #endif /* __CRYPTO_EXTENSTION_H__ */
