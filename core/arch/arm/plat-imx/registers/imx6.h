@@ -85,6 +85,8 @@
 #define SRC_BASE			0x020D8000
 #define IRAM_BASE			0x00900000
 
+#define SECMEM_BASE			0x00100000
+
 #define OCOTP_BASE			0x021BC000
 
 /* on i.MX6SX 16KB */

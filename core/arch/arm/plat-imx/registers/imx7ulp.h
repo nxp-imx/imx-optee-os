@@ -8,6 +8,8 @@
 
 #include <registers/imx7ulp-crm.h>
 
+#define SECMEM_BASE		0x26000000
+
 #define GIC_BASE		0x40020000
 #define GIC_SIZE		0x8000
 #define GICC_OFFSET		0x2000
