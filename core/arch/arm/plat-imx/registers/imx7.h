@@ -58,6 +58,8 @@
 #define DDRC_SIZE		0x10000
 #define IRAM_BASE		0x00900000
 #define IRAM_S_BASE		0x00180000
+#define SECMEM_BASE		0x00100000
+#define SECMEM_SIZE		0x8000
 
 #define CSU_CSL_START		0x0
 #define CSU_CSL_END		0x100
