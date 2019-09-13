@@ -31,9 +31,6 @@ CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
 CFG_DBG_CAAM_BUF ?= 0x0
 
-# Enable the BLOB module used for the hardware unique key
-CFG_NXP_CAAM_BLOB_DRV ?= y
-
 # Value to round up to when allocating SGT entries
 CFG_CAAM_SGT_ALIGN ?= 1
 
@@ -118,6 +115,7 @@ $(eval $(call cryphw-enable-drv-hw, CIPHER))
 $(eval $(call cryphw-enable-drv-hw, HMAC))
 $(eval $(call cryphw-enable-drv-hw, CMAC))
 $(eval $(call cryphw-enable-drv-hw, SM))
+$(eval $(call cryphw-enable-drv-hw, BLOB))
 
 ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6SX) $(CFG_MX7ULP) $(CFG_MX8ULP)), y)

@@ -135,6 +135,14 @@ static inline void dump_desc(uint32_t *desc)
 	(CMD_LOAD_TYPE | CMD_CLASS(cla) | CMD_IMM | LOAD_DST(dst) |            \
 	 LOAD_LENGTH(len))
 
+/**
+ * @brief  Load Immediate value of length \a len to register \a dst of
+ *         class \a cla starting of register offset \a off
+ */
+#define LD_IMM_OFF(cla, dst, len, off)                                         \
+	(CMD_LOAD_TYPE | CMD_CLASS(cla) | CMD_IMM | LOAD_DST(dst) |            \
+	 LOAD_OFFSET(off) | LOAD_LENGTH(len))
+
 /*
  * Load Immediate value of length len to register dst w/o class
  */
@@ -538,7 +546,7 @@ static inline void dump_desc(uint32_t *desc)
 #define BLACK_KEY_ECB_SIZE(size) ROUNDUP(size, 16)
 
 /*
- * Sequence Inout Pointer of length len
+ * Sequence Input Pointer of length len
  */
 #define SEQ_IN_PTR(len) (CMD_SEQ_IN_TYPE | SEQ_LENGTH(len))
 
@@ -546,5 +554,10 @@ static inline void dump_desc(uint32_t *desc)
  * Sequence Output Pointer of length len
  */
 #define SEQ_OUT_PTR(len) (CMD_SEQ_OUT_TYPE | SEQ_LENGTH(len))
+
+/*
+ * Sequence Output SGT of length len
+ */
+#define SEQ_OUT_SGT_PTR(len) (CMD_SEQ_OUT_TYPE | CMD_SGT | SEQ_LENGTH(len))
 
 #endif /* __CAAM_DESC_HELPER_H__ */
