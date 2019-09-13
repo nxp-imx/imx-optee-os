@@ -23,6 +23,7 @@
 # DBG_ECC    BIT32(11) // ECC trace
 # DBG_DSA    BIT32(12) // DSA trace
 # DBG_MP     BIT32(13)  // MP trace
+# DBG_SM     BIT32(14) // SM trace
 
 CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
@@ -76,6 +77,7 @@ $(eval $(call cryphw-enable-drv-hw, HASH))
 $(eval $(call cryphw-enable-drv-hw, CIPHER))
 $(eval $(call cryphw-enable-drv-hw, HMAC))
 $(eval $(call cryphw-enable-drv-hw, CMAC))
+$(eval $(call cryphw-enable-drv-hw, SM))
 
 ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6SX) $(CFG_MX7ULP)), y)

@@ -87,4 +87,11 @@ TEE_Result caam_hal_ctrl_read_mpmr(vaddr_t ctrl_addr, struct caambuf *mpmr);
  */
 void caam_hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct caambuf *msg_mpmr);
 
+/*
+ * Get the Secure Memory Virtual base address setup in the given job ring
+ *
+ * @ctrl_addr  Controller base address
+ * @jr_offset  Job ring offset
+ */
+vaddr_t caam_hal_ctrl_get_smvaddr(vaddr_t ctrl_addr, paddr_t jr_offset);
 #endif /* __CAAM_HAL_CTRL_H__ */

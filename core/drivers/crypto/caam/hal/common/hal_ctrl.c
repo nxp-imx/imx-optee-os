@@ -11,6 +11,7 @@
 #include <config.h>
 #include <platform_config.h>
 #include <registers/ctrl_regs.h>
+#include <registers/jr_regs.h>
 #include <registers/version_regs.h>
 #include <kernel/panic.h>
 
@@ -247,4 +248,15 @@ void caam_hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct caambuf *msg_mpmr)
 		DMSG("val_scfgr = 0x%" PRIx32,
 		     io_caam_read32(ctrl_addr + SCFGR));
 	}
+}
+
+vaddr_t caam_hal_ctrl_get_smvaddr(vaddr_t ctrl_addr, paddr_t jr_offset)
+{
+	/*
+	 * The Secure Memory Virtual Base Address contains only the upper
+	 * bits of the base address of Secure Memory in this Job Ring's virtual
+	 * address space. Since the base address of Secure Memory must be on a
+	 * 64 kbyte boundary, the least significant 16 bits are omitted.
+	 */
+	return io_caam_read32(ctrl_addr + JRX_SMVBAR(JRX_IDX(jr_offset))) << 16;
 }
