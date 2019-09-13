@@ -44,6 +44,7 @@
 #define DBG_TRACE_MP      BIT32(24) /* MP trace */
 #define DBG_DESC_MP       BIT32(25) /* MP dump descriptor */
 #define DBG_BUF_MP        BIT32(26) /* MP dump Buffer */
+#define DBG_TRACE_SM      BIT32(27) /* Secure Memory trace */
 
 /* HAL */
 #if (CFG_CAAM_DBG & DBG_TRACE_HAL)
@@ -250,6 +251,13 @@
 #define MP_TRACE(...)
 #define MP_DUMPDESC(desc)
 #define MP_DUMPBUF(...)
+#endif
+
+/* Secure Memory */
+#if (CFG_CAAM_DBG & DBG_TRACE_SM)
+#define SM_TRACE DRV_TRACE
+#else
+#define SM_TRACE(...)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_DEBUG)

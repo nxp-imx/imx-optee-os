@@ -13,3 +13,4 @@ subdirs-$(CFG_NXP_CAAM_HASH_DRV) += hash
 subdirs-$(CFG_NXP_CAAM_CIPHER_DRV) += cipher
 subdirs-$(CFG_NXP_CAAM_ACIPHER_DRV) += acipher
 subdirs-$(CFG_NXP_CAAM_MP_DRV) += mp
+subdirs-$(CFG_NXP_CAAM_SM_DRV) += sm

@@ -32,6 +32,7 @@
 # DBG_TRACE_MP     BIT32(24) // MP trace
 # DBG_DESC_MP      BIT32(25) // MP dump descriptor
 # DBG_BUF_MP       BIT32(26) // MP dump Buffer
+# DBG_BUF_SM       BIT32(27) // Secure Memory trace
 CFG_CAAM_DBG ?= 0x2
 
 #
@@ -83,6 +84,7 @@ cryphw-one-enabled = $(call cfg-one-enabled, \
 # Definition of the HW and Cryto Driver Algorithm supported by all i.MX
 $(eval $(call cryphw-enable-drv-hw, HASH))
 $(eval $(call cryphw-enable-drv-hw, CIPHER))
+$(eval $(call cryphw-enable-drv-hw, SM))
 
 ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SX) $(CFG_MX7ULP)), y)
