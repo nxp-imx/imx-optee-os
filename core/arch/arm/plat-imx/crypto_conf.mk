@@ -85,6 +85,7 @@ cryphw-one-enabled = $(call cfg-one-enabled, \
 $(eval $(call cryphw-enable-drv-hw, HASH))
 $(eval $(call cryphw-enable-drv-hw, CIPHER))
 $(eval $(call cryphw-enable-drv-hw, SM))
+$(eval $(call cryphw-enable-drv-hw, BLOB))
 
 ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SX) $(CFG_MX7ULP)), y)
