@@ -97,6 +97,10 @@ endif
 
 $(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, ECC RSA))
 
+ifeq ($(CFG_IMX_DEK_HAB),y)
+CFG_PTA_DEK ?= y
+endif
+
 #
 # Enable Cryptographic Driver interface
 #
