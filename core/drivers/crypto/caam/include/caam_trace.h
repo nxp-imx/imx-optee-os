@@ -20,14 +20,15 @@
 #define DBG_TRACE_HAL    BIT32(0)  /* HAL trace */
 #define DBG_TRACE_CTRL   BIT32(1)  /* Controller trace */
 #define DBG_TRACE_MEM    BIT32(2)  /* Memory utility trace */
-#define DBG_TRACE_PWR    BIT32(3)  /* Power trace */
-#define DBG_TRACE_JR     BIT32(4)  /* Job Ring trace */
-#define DBG_DESC_JR      BIT32(5)  /* Job Ring dump descriptor */
-#define DBG_TRACE_RNG    BIT32(6)  /* RNG trace */
-#define DBG_DESC_RNG     BIT32(7)  /* RNG dump descriptor */
-#define DBG_TRACE_HASH   BIT32(8)  /* Hash trace */
-#define DBG_DESC_HASH    BIT32(9)  /* Hash dump descriptor */
-#define DBG_BUF_HASH     BIT32(10) /* Hash dump Buffer */
+#define DBG_TRACE_SGT    BIT32(3)  /* Scatter Gather trace */
+#define DBG_TRACE_PWR    BIT32(4)  /* Power trace */
+#define DBG_TRACE_JR     BIT32(5)  /* Job Ring trace */
+#define DBG_DESC_JR      BIT32(6)  /* Job Ring dump descriptor */
+#define DBG_TRACE_RNG    BIT32(7)  /* RNG trace */
+#define DBG_DESC_RNG     BIT32(8)  /* RNG dump descriptor */
+#define DBG_TRACE_HASH   BIT32(9)  /* Hash trace */
+#define DBG_DESC_HASH    BIT32(10) /* Hash dump descriptor */
+#define DBG_BUF_HASH     BIT32(11) /* Hash dump Buffer */
 
 /* HAL */
 #if (CFG_CAAM_DBG & DBG_TRACE_HAL)
@@ -48,6 +49,13 @@
 #define MEM_TRACE DRV_TRACE
 #else
 #define MEM_TRACE(...)
+#endif
+
+/* Scatter Gether Table */
+#if (CFG_CAAM_DBG & DBG_TRACE_SGT)
+#define SGT_TRACE DRV_TRACE
+#else
+#define SGT_TRACE(...)
 #endif
 
 /* Power */
