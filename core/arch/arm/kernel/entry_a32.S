@@ -215,6 +215,50 @@ END_FUNC reset_vect_table
 #endif
 	.endm
 
+/*
+ * Use r0-r5, can not push r4-r5 because they will
+ * be lost during the invalidate
+ */
+LOCAL_FUNC arm_cl1_d_invbysetway , :
+	mov		r0, #0
+	/* Select the D$ level */
+	lsl		r0, r0, #1
+	/* Select Cache */
+	mcr		p15, 2, r0, c0, c0, 0
+	isb
+	/* Read the Cache info */
+	mrc		p15, 1, r1, c0, c0, 0
+	/* r2 = maxway number */
+	ubfx		r2, r1, #3, #10
+	/* r4 = 32 - log2(ways), bit position of way index */
+	clz		r4, r2
+	and		r3, r1, #7		/* r3 = log2(linelen) - 4 */
+	add		r3, r3, #4		/* r3 = log2(linelen) */
+	ubfx		r1, r1, #13, #15	/* r1 = max set number */
+	/* r1 = max set number at correct position */
+	lsl		r1, r1, r3
+	mov		r0, #1
+	lsl		r3, r0, r3 	/* decrement set number */
+
+cl1_dcisw_loop_way:
+	/* Shift way number to position */
+	lsl		r2, r2, r4
+	/* Set Max Set Number in r5 */
+	mov		r5, r1
+	/* Combine the set/way and cache level */
+cl1_dcisw_loop:
+	orr		r0, r2, r5
+	/* DCISW Invalidate data line set/way */
+	mcr		p15, 0, r0, c7, c6, 2
+	subs		r5, r5, r3		/* decrement set number */
+	bge		cl1_dcisw_loop
+	lsr		r2, r2, r4
+	subs		r2, r2, #1		/* decrement way number */
+	bge		cl1_dcisw_loop_way
+	dsb
+	mov		pc, lr
+END_FUNC arm_cl1_d_invbysetway
+
 FUNC _start , :
 UNWIND(	.cantunwind)
 
@@ -862,8 +906,7 @@ UNWIND(	.cantunwind)
 
 #if defined (CFG_BOOT_SECONDARY_REQUEST)
 	/* if L1 is not invalidated before, do it here */
-	mov	r0, #DCACHE_OP_INV
-	bl	dcache_op_level1
+	bl	arm_cl1_d_invbysetway
 #endif
 
 	bl	__get_core_pos
