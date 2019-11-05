@@ -9,7 +9,7 @@
 #ifndef __BUSFREQ_IMX6_H__
 #define __BUSFREQ_IMX6_H__
 
-#ifndef ASM
+#ifndef __ASSEMBLER__
 /**
  * @brief   Definition of the structure used during the bus frequency
  *          operation.
