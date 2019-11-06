@@ -19,6 +19,11 @@
 #define DT_STATUS_OK_NSEC  BIT(0)
 #define DT_STATUS_OK_SEC   BIT(1)
 
+#define DT_INFO_INVALID_REG		((paddr_t)-1)
+#define DT_INFO_INVALID_CLOCK		-1
+#define DT_INFO_INVALID_RESET		-1
+#define DT_INFO_INVALID_INTERRUPT	-1
+
 #if defined(CFG_DT)
 
 /*

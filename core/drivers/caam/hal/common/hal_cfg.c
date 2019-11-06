@@ -15,14 +15,14 @@
 #include <libfdt.h>
 
 #else
-
-/* Global includes */
-#include <mm/core_memprot.h>
-
 /* Register includes */
 #include "jr_regs.h"
 
 #endif // CFG_DT
+
+/* Global includes */
+#include <mm/core_memprot.h>
+#include <mm/core_mmu.h>
 
 #ifndef	CFG_LS
 /* Platform includes */
@@ -59,7 +59,7 @@
 
 #ifdef CFG_DT
 static const char *dt_ctrl_match_table = {
-	"fsl,sec-v4.0-ctrl",
+	"fsl,sec-v4.0",
 };
 
 static const char *dt_jr_match_table = {
@@ -148,13 +148,13 @@ static paddr_t dt_find_jr_index(void *fdt, int status, int *start_node)
 enum CAAM_Status hal_cfg_get_conf(struct jr_cfg *jr_cfg)
 {
 	enum CAAM_Status retstatus = CAAM_FAILURE;
-
-	vaddr_t ctrl_base;
+	
+	vaddr_t ctrl_base = 0;
 
 #ifdef CFG_DT
-
+	paddr_t pctrl_base = 0;
 	paddr_t jr_offset;
-	size_t  size;
+	ssize_t  size;
 
 	void *fdt;
 	int  node;
@@ -172,17 +172,33 @@ enum CAAM_Status hal_cfg_get_conf(struct jr_cfg *jr_cfg)
 		goto exit_get_conf;
 	}
 
-	/* Ensure that CAAM Control is secure-status enabled */
-	if (dt_set_secure_status(fdt, node)) {
-		EMSG("Not able to set CAAM Control DTB entry secure\n");
+	/*
+	 * Map CAAM controller base address as Secure IO if not
+	 * already present in the MMU table.
+	 * Then get the virtual address of the CAAM controller
+	 */
+	pctrl_base = _fdt_reg_base_address(fdt, node);
+	if (pctrl_base == DT_INFO_INVALID_REG) {
+		HAL_TRACE("CAAM control base address not defined");
 		goto exit_get_conf;
 	}
 
-	/* Map the device in the system if not already present */
-	if (dt_map_dev(fdt, node, &ctrl_base, &size) < 0) {
-		HAL_TRACE("CAAM device not defined or not enabled\n");
+	size = _fdt_reg_size(fdt, node);
+	if (size < 0) {
+		HAL_TRACE("CAAM control base address size not defined");
 		goto exit_get_conf;
 	}
+
+	if (!core_mmu_add_mapping(MEM_AREA_IO_SEC, pctrl_base, size)) {
+		EMSG("CAAM control base MMU PA mapping failure");
+		goto exit_get_conf;
+	}
+
+	ctrl_base = (vaddr_t)phys_to_virt(pctrl_base, MEM_AREA_IO_SEC);
+	if (!ctrl_base)
+		EMSG("CAAM control base MMU VA mapping failure");
+
+	HAL_TRACE("Map Controller 0x%" PRIxVA, *ctrl_base);
 
 	jr_offset = dt_find_jr_index(fdt, DT_STATUS_OK_SEC, &node);
 	if (jr_offset == 0) {
