@@ -154,6 +154,7 @@ then
 		fi
 		let ++i
 	done
+	exit 0
 fi
 
 if [ "$1" == "all-silence" ]
@@ -170,6 +171,7 @@ then
 		fi
 		let ++i
 	done
+	exit 0
 fi
 
 build $1
