@@ -10,7 +10,7 @@ mx6sl-flavorlist = mx6slevk
 mx6sll-flavorlist = mx6sllevk
 mx6sx-flavorlist = mx6sxsabresd mx6sxsabreauto
 mx6ul-flavorlist = mx6ulevk mx6ul9x9evk
-mx6ull-flavorlist = mx6ullevk
+mx6ull-flavorlist = mx6ullevk mx6ulzevk
 mx7d-flavorlist = mx7dsabresd
 mx7s-flavorlist = mx7swarp7
 mx7ulp-flavorlist = mx7ulpevk
@@ -242,7 +242,7 @@ CFG_BOOT_SECONDARY_REQUEST = n
 CFG_UART_BASE ?= UART1_BASE
 endif
 
-ifneq (,$(filter $(PLATFORM_FLAVOR),mx6ullevk))
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx6ullevk mx6ulzevk))
 CFG_DT ?= y
 CFG_NS_ENTRY_ADDR ?= 0x80800000
 CFG_DT_ADDR ?= 0x83000000

@@ -183,7 +183,8 @@ static int board_imx_tzasc_configure(vaddr_t addr)
 
 	return 0;
 }
-#elif defined(PLATFORM_FLAVOR_mx6ullevk)
+#elif defined(PLATFORM_FLAVOR_mx6ullevk) \
+	|| defined(PLATFORM_FLAVOR_mx6ulzevk)
 static int board_imx_tzasc_configure(vaddr_t addr)
 {
 	tzc_init(addr);
