@@ -29,11 +29,11 @@ boards_list=(
 	mx7swarp7_mbl \
 	mx7dclsom \
 	mx7ulpevk \
-	imx8mqevk \
-	imx8mmevk \
-	imx8mnevk \
-	imx8qxpmek \
-	imx8qmmek \
+	mx8mqevk \
+	mx8mmevk \
+	mx8mnevk \
+	mx8qxpmek \
+	mx8qmmek \
 	ls1021atwr \
 	ls1021aqds \
 	ls1012ardb \
