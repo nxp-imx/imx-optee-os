@@ -732,8 +732,13 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 	fullSize = ctx->blockbuf.filled + dupdate->src.length;
 	size_topost = fullSize % ctx->alg->size_block;
 
-	/* Total size that is a cipher block multiple */
-	size_todo = fullSize - size_topost;
+	if (fullSize < ctx->alg->size_block) {
+		size_topost = dupdate->src.length;
+	} else {
+		size_topost = fullSize % ctx->alg->size_block;
+		/* Total size that is a cipher block multiple */
+		size_todo = fullSize - size_topost;
+	}
 
 	CIPHER_TRACE("FullSize %zu - posted %zu - todo %zu", fullSize,
 		     size_topost, size_todo);
