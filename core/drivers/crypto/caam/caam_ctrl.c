@@ -83,6 +83,13 @@ TEE_Result crypto_driver_init(void)
 		goto exit_init;
 	}
 
+	/* Initialize the Hmac Module */
+	retstatus = caam_hmac_init(jrcfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+
 	/* Initialize the Cipher Module */
 	retstatus = caam_cipher_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {

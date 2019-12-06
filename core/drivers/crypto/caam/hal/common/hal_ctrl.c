@@ -41,6 +41,18 @@ uint8_t caam_hal_ctrl_hash_limit(vaddr_t baseaddr)
 	return UINT8_MAX;
 }
 
+bool caam_hal_ctrl_splitkey(vaddr_t baseaddr)
+{
+	uint32_t val = 0;
+
+	val = io_caam_read32(baseaddr + CAAMVID_MS);
+
+	if (GET_CAAMVID_MS_MAJ_REV(val) < 3)
+		return false;
+
+	return true;
+}
+
 uint8_t caam_hal_ctrl_pknum(vaddr_t baseaddr)
 {
 	uint32_t val = 0;

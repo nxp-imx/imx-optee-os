@@ -40,6 +40,14 @@ uint8_t caam_hal_ctrl_hash_limit(vaddr_t baseaddr);
 uint8_t caam_hal_ctrl_pknum(vaddr_t baseaddr);
 
 /*
+ * Returns if the HW support the split key operation.
+ * Split key is supported if CAAM Version is >= 3
+ *
+ * @baseaddr  Controller base address
+ */
+bool caam_hal_ctrl_splitkey(vaddr_t baseaddr);
+
+/*
  * Returns the CAAM Era
  *
  * @baseaddr  Controller base address

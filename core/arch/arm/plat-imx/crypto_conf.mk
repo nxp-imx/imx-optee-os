@@ -77,6 +77,7 @@ $(eval $(call cryphw-enable-drv-hw, HASH))
 $(eval $(call cryphw-enable-drv-hw, CIPHER))
 $(eval $(call cryphw-enable-drv-hw, SM))
 $(eval $(call cryphw-enable-drv-hw, BLOB))
+$(eval $(call cryphw-enable-drv-hw, HMAC))
 
 ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SX) $(CFG_MX7ULP)), y)
@@ -96,4 +97,5 @@ endif
 # Enable Cryptographic Driver interface
 #
 CFG_CRYPTO_DRV_ACIPHER ?= $(CFG_NXP_CAAM_ACIPHER_DRV)
+$(call force, CFG_CRYPTO_DRV_MAC, $(call cryphw-one-enabled, HMAC))
 endif
