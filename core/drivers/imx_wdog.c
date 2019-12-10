@@ -86,8 +86,8 @@ static TEE_Result imx_wdog_base(vaddr_t *wdog_vbase)
 	};
 #elif defined CFG_MX7ULP
 	static const char * const wdog_path[] = {
-		"/ahb-bridge0@40000000/wdog@403D0000",
-		"/ahb-bridge0@40000000/wdog@40430000",
+		"/bus@40000000/wdog@403D0000",
+		"/bus@40000000/wdog@40430000",
 	};
 #elif defined CFG_MX6SX
 	static const char * const wdog_path[] = {
@@ -124,20 +124,26 @@ static TEE_Result imx_wdog_base(vaddr_t *wdog_vbase)
 			break;
 	}
 
-	if (i == ARRAY_SIZE(wdog_path))
+	if (i == ARRAY_SIZE(wdog_path)) {
+		EMSG("TEE_ERROR_ITEM_NOT_FOUND 0");
 		return TEE_ERROR_ITEM_NOT_FOUND;
+	}
 
 	DMSG("path: %s\n", wdog_path[i]);
 
 	ext_reset = dt_have_prop(fdt, off, "fsl,ext-reset-output");
 
 	pbase = _fdt_reg_base_address(fdt, off);
-	if (pbase == (paddr_t)-1)
+	if (pbase == (paddr_t)-1) {
+		EMSG("TEE_ERROR_ITEM_NOT_FOUND 1");
 		return TEE_ERROR_ITEM_NOT_FOUND;
+	}
 
 	sz = _fdt_reg_size(fdt, off);
-	if (sz < 0)
+	if (sz < 0) {
+		EMSG("TEE_ERROR_ITEM_NOT_FOUND 1");
 		return TEE_ERROR_ITEM_NOT_FOUND;
+	}
 
 	if ((st & DT_STATUS_OK_SEC) && !(st & DT_STATUS_OK_NSEC))
 		mtype = MEM_AREA_IO_SEC;
