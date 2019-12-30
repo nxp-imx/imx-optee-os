@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2020 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -22,8 +22,6 @@
 #include <sm/psci.h>
 #include <stdint.h>
 
-static int suspended_init;
-
 int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		     uint32_t context_id __unused, struct sm_nsec_ctx *nsec)
 {
@@ -34,11 +32,6 @@ int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 							SUSPEND_OCRAM_SIZE);
 	struct imx7_pm_info *p = (struct imx7_pm_info *)suspend_ocram_base;
 	int ret;
-
-	if (!suspended_init) {
-		imx7_suspend_init();
-		suspended_init = 1;
-	}
 
 	sm_save_unbanked_regs(&nsec->ub_regs);
 
