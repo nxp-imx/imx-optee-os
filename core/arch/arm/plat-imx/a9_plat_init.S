@@ -3,7 +3,7 @@
  * Copyright (c) 2014, STMicroelectronics International N.V.
  * Copyright (c) 2016, Wind River Systems.
  * All rights reserved.
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -35,10 +35,10 @@
  * and with ARM registers R0, R1, R2, R3 being scratchable.
  */
 
-#include <arm32.h>
 #include <arm32_macros.S>
 #include <arm32_macros_cortex_a9.S>
 #include <asm.S>
+#include <arm.h>
 #include <kernel/tz_ssvce_def.h>
 #include <platform_config.h>
 
@@ -109,7 +109,7 @@ FUNC plat_cpu_reset_early , :
 	 * - L2 Prefetch hint enable (bit1=1)
 	 *
 	 * NSACR = 0x00020C00
-	 * - NSec cannot change ACTRL.SMP (NS_SMP bit18=0)
+	 * - NSec can change ACTRL.SMP (NS_SMP bit18=0)
 	 * - Nsec can lockdown TLB (TL bit17=1)
 	 * - NSec cannot access PLE (PLE bit16=0)
 	 * - NSec can use SIMD/VFP (CP10/CP11) (bit15:14=2b00, bit11:10=2b11)
@@ -127,7 +127,7 @@ FUNC plat_cpu_reset_early , :
 #endif
 	write_actlr r0
 
-	mov_imm r0, 0x00020C00
+	mov_imm r0, 0x00060C00
 	write_nsacr r0
 
 	read_pcr r0
