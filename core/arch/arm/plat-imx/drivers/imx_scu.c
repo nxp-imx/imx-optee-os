@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  */
 
@@ -44,9 +44,8 @@ static TEE_Result pm_enter_resume(enum pm_op op, uint32_t pm_hint __unused,
 static TEE_Result scu_init(void)
 {
 	scu_configure();
-#ifdef CFG_PSCI_ARM32
 	register_pm_driver_cb(pm_enter_resume, NULL);
-#endif
+
 	return TEE_SUCCESS;
 }
 
