@@ -3,7 +3,7 @@
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * Copyright (c) 2016, Wind River Systems.
  * All rights reserved.
- * Copyright 2019 NXP
+ * Copyright 2019-2020 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -211,7 +211,7 @@ void plat_cpu_reset_late(void)
  */
 void plat_cpu_wakeup_late(void)
 {
-
+	imx_configure_tzasc();
 }
 #endif
 
