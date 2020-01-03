@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   CAAM Cipher Local header.
  */
@@ -9,6 +9,15 @@
 
 #include <drvcrypt.h>
 #include <drvcrypt_cipher.h>
+
+/*
+ * Definition of the maximum number of CAAM Job descriptor entries
+ */
+#ifdef CFG_CAAM_64BIT
+#define MAX_DESC_ENTRIES 22
+#else
+#define MAX_DESC_ENTRIES 16
+#endif
 
 /*
  * Definition of flags tagging which key(s) is required
@@ -44,8 +53,16 @@ struct cipherdata {
 	struct caambuf ctx;          /* CAAM Context Register */
 	struct caamblock blockbuf;   /* Temporary Block buffer */
 	const struct cipheralg *alg; /* Reference to the algo constants */
+
+	/* Additionnal Data for the MAC */
+	unsigned int mode; /* MAC Mode */
+	size_t countdata;  /* MAC Number of input data done */
 };
 
+#define CIPHER_BLOCK_IN	  BIT32(1)
+#define CIPHER_BLOCK_OUT  BIT32(2)
+#define CIPHER_BLOCK_BOTH (CIPHER_BLOCK_IN | CIPHER_BLOCK_OUT)
+#define CIPHER_BLOCK_NONE 0
 /*
  * Update of the cipher operation of complete block except
  * if last block. Last block can be partial block.
@@ -56,11 +73,12 @@ struct cipherdata {
  * @encrypt  Encrypt or decrypt direction
  * @src      Source data to encrypt/decrypt
  * @dst      [out] Destination data encrypted/decrypted
+ * @blocks   Additionnal data block to handle (input/output)
  */
 enum caam_status caam_cipher_block(struct cipherdata *ctx, bool savectx,
 				   uint8_t keyid, bool encrypt,
 				   struct caambuf *src, struct caambuf *dst,
-				   bool blockbuf);
+				   unsigned int blocks);
 
 /*
  * Update of the cipher operation in xts mode.
@@ -68,5 +86,27 @@ enum caam_status caam_cipher_block(struct cipherdata *ctx, bool savectx,
  * @dupdate  Data update object
  */
 TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate);
+
+/*
+ * Initialization of the cipher operation
+ *
+ * @dinit  Data initialization object
+ */
+TEE_Result caam_cipher_initialize(struct drvcrypt_cipher_init *dinit);
+
+/*
+ * Free the SW Cipher data context
+ *
+ * @ctx    Caller context variable
+ */
+void caam_cipher_free(void *ctx);
+
+/*
+ * Copy Software Cipher Context
+ *
+ * @dst_ctx  [out] Reference the context destination
+ * @src_ctx  Reference the context source
+ */
+void caam_cipher_copy_state(void *dst_ctx, void *src_ctx);
 
 #endif /* __LOCAL_H__ */

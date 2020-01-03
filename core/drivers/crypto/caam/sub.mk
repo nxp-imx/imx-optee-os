@@ -12,7 +12,9 @@ srcs-y += caam_desc.c
 ifneq ( ,$(filter y, $(CFG_NXP_CAAM_HASH_DRV) $(CFG_NXP_CAAM_HMAC_DRV)))
 subdirs-y += hash
 endif
+ifneq ( ,$(filter y, $(CFG_NXP_CAAM_CIPHER_DRV) $(CFG_NXP_CAAM_CMAC_DRV)))
 subdirs-$(CFG_NXP_CAAM_CIPHER_DRV) += cipher
+endif
 subdirs-$(CFG_NXP_CAAM_ACIPHER_DRV) += acipher
 subdirs-$(CFG_NXP_CAAM_MP_DRV) += mp
 subdirs-$(CFG_NXP_CAAM_SM_DRV) += sm

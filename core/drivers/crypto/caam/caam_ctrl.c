@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * Brief   CAAM Global Controller.
  */
@@ -92,6 +92,13 @@ TEE_Result crypto_driver_init(void)
 
 	/* Initialize the Cipher Module */
 	retstatus = caam_cipher_init(jrcfg.base);
+	if (retstatus != CAAM_NO_ERROR) {
+		retresult = TEE_ERROR_GENERIC;
+		goto exit_init;
+	}
+
+	/* Initialize the Cipher MAC Module */
+	retstatus = caam_cmac_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;

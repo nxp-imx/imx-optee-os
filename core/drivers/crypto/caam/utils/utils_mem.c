@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   Memory management utilities.
  *         Primitive to allocate, free memory.
@@ -412,6 +412,9 @@ enum caam_status caam_cpy_block_src(struct caamblock *block,
 {
 	enum caam_status ret = CAAM_FAILURE;
 	size_t cpy_size = 0;
+
+	if (!src->data)
+		goto end_cpy;
 
 	/* Check if the temporary buffer is allocated, else allocate it */
 	if (!block->buf.data) {

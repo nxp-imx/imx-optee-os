@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Implementation of Cipher functions
  */
@@ -183,7 +183,7 @@ static enum caam_status do_check_keysize(const struct caamdefkey *def,
 enum caam_status caam_cipher_block(struct cipherdata *ctx, bool savectx,
 				   uint8_t keyid, bool encrypt,
 				   struct caambuf *indata,
-				   struct caambuf *outdata, bool blockbuf)
+				   struct caambuf *outdata, unsigned int blocks)
 {
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct caam_jobctx jobctx = {};
@@ -227,7 +227,7 @@ enum caam_status caam_cipher_block(struct cipherdata *ctx, bool savectx,
 	 * If Source data is a User Data buffer mapped on multiple pages
 	 * create a Scatter/Gather table.
 	 */
-	if (blockbuf)
+	if (blocks & CIPHER_BLOCK_IN)
 		retstatus = caam_sgt_build_block_data(&src_sgt, &ctx->blockbuf,
 						      indata);
 	else
@@ -277,7 +277,7 @@ enum caam_status caam_cipher_block(struct cipherdata *ctx, bool savectx,
 	 * If Output data is a User Data buffer mapped on multiple pages
 	 * create a Scatter/Gather table.
 	 */
-	if (blockbuf)
+	if (blocks & CIPHER_BLOCK_OUT)
 		retstatus = caam_sgt_build_block_data(&dst_sgt, &ctx->blockbuf,
 						      outdata);
 	else
@@ -400,12 +400,6 @@ static TEE_Result do_allocate(void **ctx, uint32_t algo)
 	struct cipherdata *cipherdata = NULL;
 	const struct cipheralg *alg = NULL;
 
-#ifdef CFG_CAAM_64BIT
-#define MAX_DESC_ENTRIES 22
-#else
-#define MAX_DESC_ENTRIES 16
-#endif
-
 	CIPHER_TRACE("Allocate Algo 0x%" PRIX32 " Context (%p)", algo, ctx);
 
 	alg = get_cipheralgo(algo);
@@ -475,12 +469,7 @@ static void do_free_intern(struct cipherdata *ctx)
 	}
 }
 
-/*
- * Free the SW Cipher data context
- *
- * @ctx    Caller context variable
- */
-static void do_free(void *ctx)
+void caam_cipher_free(void *ctx)
 {
 	CIPHER_TRACE("Free Context (%p)", ctx);
 
@@ -490,13 +479,7 @@ static void do_free(void *ctx)
 	}
 }
 
-/*
- * Copy Software Cipher Context
- *
- * @dst_ctx  [out] Reference the context destination
- * @src_ctx  Reference the context source
- */
-static void do_copy_state(void *dst_ctx, void *src_ctx)
+void caam_cipher_copy_state(void *dst_ctx, void *src_ctx)
 {
 	struct cipherdata *dst = dst_ctx;
 	struct cipherdata *src = src_ctx;
@@ -542,12 +525,7 @@ static void do_copy_state(void *dst_ctx, void *src_ctx)
 	}
 }
 
-/*
- * Initialization of the cipher operation
- *
- * @dinit  Data initialization object
- */
-static TEE_Result do_init(struct drvcrypt_cipher_init *dinit)
+TEE_Result caam_cipher_initialize(struct drvcrypt_cipher_init *dinit)
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 	enum caam_status retstatus = CAAM_FAILURE;
@@ -730,8 +708,6 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 
 	/* Calculate the total data to be handled */
 	fullSize = ctx->blockbuf.filled + dupdate->src.length;
-	size_topost = fullSize % ctx->alg->size_block;
-
 	if (fullSize < ctx->alg->size_block) {
 		size_topost = dupdate->src.length;
 	} else {
@@ -757,17 +733,18 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 		 */
 		if (ctx->blockbuf.filled) {
 			srcbuf.data = dupdate->src.data;
-			srcbuf.length = (dupdate->src.length - size_topost);
+			srcbuf.length = dupdate->src.length - size_topost;
 			srcbuf.paddr = psrc;
 
 			dstbuf.data = dst_align.data;
-			dstbuf.length = (dupdate->dst.length - size_topost);
+			dstbuf.length = dupdate->dst.length - size_topost;
 			dstbuf.paddr = dst_align.paddr;
 			dstbuf.nocache = dst_align.nocache;
 
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      ctx->encrypt, &srcbuf,
-						      &dstbuf, true);
+			retstatus =
+				caam_cipher_block(ctx, true, NEED_KEY1,
+						  ctx->encrypt, &srcbuf,
+						  &dstbuf, CIPHER_BLOCK_BOTH);
 
 			ctx->blockbuf.filled = 0;
 		} else {
@@ -781,9 +758,10 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 			dstbuf.paddr = dst_align.paddr;
 			dstbuf.nocache = dst_align.nocache;
 
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      ctx->encrypt, &srcbuf,
-						      &dstbuf, false);
+			retstatus =
+				caam_cipher_block(ctx, true, NEED_KEY1,
+						  ctx->encrypt, &srcbuf,
+						  &dstbuf, CIPHER_BLOCK_NONE);
 		}
 
 		if (retstatus != CAAM_NO_ERROR) {
@@ -822,9 +800,9 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 		dstbuf.paddr = dst_align.paddr + size_indone;
 		dstbuf.nocache = dst_align.nocache;
 
-		retstatus = caam_cipher_block(ctx, false, NEED_KEY1,
-					      ctx->encrypt, &srcbuf, &dstbuf,
-					      false);
+		retstatus =
+			caam_cipher_block(ctx, false, NEED_KEY1, ctx->encrypt,
+					  &srcbuf, &dstbuf, CIPHER_BLOCK_NONE);
 
 		if (retstatus != CAAM_NO_ERROR) {
 			ret = TEE_ERROR_GENERIC;
@@ -944,7 +922,7 @@ static TEE_Result do_update_cipher(struct drvcrypt_cipher_update *dupdate)
 			     offset);
 		retstatus =
 			caam_cipher_block(ctx, true, NEED_KEY1, ctx->encrypt,
-					  &srcbuf, &dstbuf, false);
+					  &srcbuf, &dstbuf, CIPHER_BLOCK_NONE);
 
 		if (retstatus == CAAM_NO_ERROR) {
 			cache_operation(TEE_CACHEINVALIDATE, dstbuf.data,
@@ -973,9 +951,9 @@ static TEE_Result do_update_cipher(struct drvcrypt_cipher_update *dupdate)
 
 		dstbuf.length = dupdate->dst.length - offset;
 
-		retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-					      ctx->encrypt, &srcbuf, &dstbuf,
-					      false);
+		retstatus =
+			caam_cipher_block(ctx, true, NEED_KEY1, ctx->encrypt,
+					  &srcbuf, &dstbuf, CIPHER_BLOCK_NONE);
 
 		if (retstatus == CAAM_NO_ERROR) {
 			if (!dstbuf.nocache)
@@ -1104,12 +1082,12 @@ static void do_final(void *ctx __unused)
  * Registration of the Cipher Driver
  */
 static struct drvcrypt_cipher driver_cipher = {
-	.alloc_ctx = &do_allocate,
-	.free_ctx = &do_free,
-	.init = &do_init,
-	.update = &do_update,
-	.final = &do_final,
-	.copy_state = &do_copy_state,
+	.alloc_ctx = do_allocate,
+	.free_ctx = caam_cipher_free,
+	.init = caam_cipher_initialize,
+	.update = do_update,
+	.final = do_final,
+	.copy_state = caam_cipher_copy_state,
 };
 
 /*

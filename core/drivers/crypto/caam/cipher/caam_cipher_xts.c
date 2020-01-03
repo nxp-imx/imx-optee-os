@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Implementation of Cipher XTS functions
  */
@@ -58,7 +58,7 @@ static enum caam_status do_tweak_block(struct cipherdata *ctx,
 		tmp->data[idx] = srcbuf->data[idx] ^ enc_tweak->data[idx];
 
 	retstatus = caam_cipher_block(ctx, false, NEED_KEY1, ctx->encrypt, tmp,
-				      tmp, false);
+				      tmp, CIPHER_BLOCK_NONE);
 
 	if (retstatus != CAAM_NO_ERROR)
 		return retstatus;
@@ -115,7 +115,7 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 	}
 
 	retstatus = caam_cipher_block(ctx, false, NEED_KEY2, true, &ctx->tweak,
-				      &enc_tweak, false);
+				      &enc_tweak, CIPHER_BLOCK_NONE);
 	if (retstatus != CAAM_NO_ERROR) {
 		CIPHER_TRACE("Tweak encryption error");
 		ret = TEE_ERROR_GENERIC;
@@ -236,7 +236,7 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 
 	/* Finalize by decrypting the tweak back */
 	retstatus = caam_cipher_block(ctx, false, NEED_KEY2, false, &enc_tweak,
-				      &ctx->tweak, false);
+				      &ctx->tweak, CIPHER_BLOCK_NONE);
 	if (retstatus != CAAM_NO_ERROR) {
 		CIPHER_TRACE("Tweak decryption error");
 		ret = TEE_ERROR_GENERIC;
