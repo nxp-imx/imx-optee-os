@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   Crypto MAC interface implementation to enable HW driver.
  */
@@ -20,12 +20,13 @@ TEE_Result drvcrypt_mac_alloc_ctx(struct crypto_mac_ctx **ctx, uint32_t algo)
 
 	assert(ctx);
 
-	if (algo_id >= TEE_MAIN_ALGO_MD5 && algo_id <= TEE_MAIN_ALGO_SHA512) {
+	if (algo_id >= TEE_MAIN_ALGO_MD5 && algo_id <= TEE_MAIN_ALGO_SHA512)
 		mac_alloc = drvcrypt_get_ops(CRYPTO_HMAC);
+	else if (algo_id >= TEE_MAIN_ALGO_AES && algo_id <= TEE_MAIN_ALGO_DES3)
+		mac_alloc = drvcrypt_get_ops(CRYPTO_CMAC);
 
-		if (mac_alloc)
-			ret = mac_alloc(ctx, algo);
-	}
+	if (mac_alloc)
+		ret = mac_alloc(ctx, algo);
 
 	CRYPTO_TRACE("mac alloc_ctx ret 0x%" PRIX32, ret);
 

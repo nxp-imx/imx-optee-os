@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   Crypto Driver exported constants and interfaces.
  */
@@ -51,6 +51,7 @@ enum drvcrypt_algo_id {
 	CRYPTO_HASH = 0, /* HASH driver */
 	CRYPTO_HMAC,	 /* HMAC driver */
 	CRYPTO_CIPHER,	 /* CIPHER driver */
+	CRYPTO_CMAC,	 /* CIPHER MAC driver */
 	CRYPTO_ECC,	 /* Assymetric ECC driver */
 	CRYPTO_RSA,	 /* Asymmetric RSA driver */
 	CRYPTO_MATH,	 /* Mathematical driver */
