@@ -27,7 +27,7 @@
 #define SW_INFO_B1	0x40
 #define SW_B1_MAGIC	0xFF0055AA
 #endif
-#if defined(CFG_MX8MM) || defined(CFG_MX8MN)
+#if defined(CFG_MX8MM) || defined(CFG_MX8MN) || defined(CFG_MX8MP)
 #define DIGPROG_OFFSET	0x800
 #endif
 

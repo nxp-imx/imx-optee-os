@@ -68,6 +68,9 @@ mx8mm-flavorlist = \
 mx8mn-flavorlist = \
 	mx8mnevk
 
+mx8mp-flavorlist = \
+	mx8mpevk
+
 mx8qm-flavorlist = \
 	mx8qmmek \
 
@@ -167,6 +170,12 @@ CFG_DRAM_BASE ?= 0x40000000
 CFG_TEE_CORE_NB_CORE ?= 4
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8mn-flavorlist)))
 $(call force,CFG_MX8MN,y)
+$(call force,CFG_ARM64_core,y)
+CFG_IMX_UART ?= y
+CFG_DRAM_BASE ?= 0x40000000
+CFG_TEE_CORE_NB_CORE ?= 4
+else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8mp-flavorlist)))
+$(call force,CFG_MX8MP,y)
 $(call force,CFG_ARM64_core,y)
 CFG_IMX_UART ?= y
 CFG_DRAM_BASE ?= 0x40000000
@@ -325,6 +334,11 @@ CFG_DDR_SIZE ?= 0x80000000
 CFG_UART_BASE ?= UART2_BASE
 endif
 
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mpevk))
+CFG_DDR_SIZE ?= 0xC0000000
+CFG_UART_BASE ?= UART2_BASE
+endif
+
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8qxpmek mx8qmmek))
 CFG_DDR_SIZE ?= 0x80000000
 CFG_UART_BASE ?= UART0_BASE
@@ -414,7 +428,7 @@ CFG_TZDRAM_SIZE ?= 0x01c00000
 CFG_SHMEM_START ?= ($(CFG_TZDRAM_START) + $(CFG_TZDRAM_SIZE))
 CFG_SHMEM_SIZE ?= 0x00400000
 
-ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MQ)))
+ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8MQ)))
 CFG_IMX_TZC_NSEC_START ?= 0x0
 CFG_IMX_TZC_SEC_START ?= ($(CFG_TZDRAM_START) - $(CFG_DRAM_BASE))
 CFG_IMX_TZC_SHMEM_START ?= ($(CFG_SHMEM_START) - $(CFG_DRAM_BASE))
