@@ -3,37 +3,28 @@
 #
 
 #
-# CAAM Debug Trace
+# CAAM Debug: define 3x32 bits value (same bit used to debug a module)
+# CFG_DBG_CAAM_TRACE  Module print trace
+# CFG_DBG_CAAM_DESC   Module descriptor dump
+# CFG_DBG_CAAM_BUF    Module buffer dump
 #
-# DBG_TRACE_HAL    BIT32(0)  // HAL trace
-# DBG_TRACE_CTRL   BIT32(1)  // Controller trace
-# DBG_TRACE_MEM    BIT32(2)  // Memory utility trace
-# DBG_TRACE_SGT    BIT32(3)  // Scatter Gather trace
-# DBG_TRACE_PWR    BIT32(4)  // Power trace
-# DBG_TRACE_JR     BIT32(5)  // Job Ring trace
-# DBG_DESC_JR      BIT32(6)  // Job Ring dump descriptor
-# DBG_TRACE_RNG    BIT32(7)  // RNG trace
-# DBG_DESC_RNG     BIT32(8)  // RNG dump descriptor
-# DBG_TRACE_HASH   BIT32(9)  // Hash trace
-# DBG_DESC_HASH    BIT32(10) // Hash dump descriptor
-# DBG_BUF_HASH     BIT32(11) // Hash dump Buffer
-# DBG_TRACE_BLOB   BIT32(12) // BLOB trace
-# DBG_DESC_BLOB    BIT32(13) // BLOB dump descriptor
-# DBG_BUF_BLOB     BIT32(14) // BLOB dump Buffer
-# DBG_TRACE_CIPHER BIT32(15) // Cipher trace
-# DBG_DESC_CIPHER  BIT32(16) // Cipher dump descriptor
-# DBG_BUF_CIPHER   BIT32(17) // Cipher dump Buffer
-# DBG_TRACE_ECC    BIT32(18) // ECC trace
-# DBG_DESC_ECC     BIT32(19) // ECC dump descriptor
-# DBG_BUF_ECC      BIT32(20) // ECC dump Buffer
-# DBG_TRACE_RSA    BIT32(21) // RSA trace
-# DBG_DESC_RSA     BIT32(22) // RSA dump descriptor
-# DBG_BUF_RSA      BIT32(23) // RSA dump Buffer
-# DBG_TRACE_MP     BIT32(24) // MP trace
-# DBG_DESC_MP      BIT32(25) // MP dump descriptor
-# DBG_BUF_MP       BIT32(26) // MP dump Buffer
-# DBG_BUF_SM       BIT32(27) // Secure Memory trace
-CFG_CAAM_DBG ?= 0x2
+# DBG_HAL    BIT32(0)  // HAL trace
+# DBG_CTRL   BIT32(1)  // Controller trace
+# DBG_MEM    BIT32(2)  // Memory utility trace
+# DBG_SGT    BIT32(3)  // Scatter Gather trace
+# DBG_PWR    BIT32(4)  // Power trace
+# DBG_JR     BIT32(5)  // Job Ring trace
+# DBG_RNG    BIT32(6)  // RNG trace
+# DBG_HASH   BIT32(7)  // Hash trace
+# DBG_BLOB   BIT32(8)  // BLOB trace
+# DBG_CIPHER BIT32(9)  // Cipher trace
+# DBG_ECC    BIT32(10) // ECC trace
+# DBG_RSA    BIT32(11) // RSA trace
+# DBG_MP     BIT32(12) // MP trace
+# DBG_SM     BIT32(13) // Secure Memory trace
+CFG_DBG_CAAM_TRACE ?= 0x2
+CFG_DBG_CAAM_DESC ?= 0x0
+CFG_DBG_CAAM_BUF ?= 0x0
 
 #
 # CAAM Job Ring configuration

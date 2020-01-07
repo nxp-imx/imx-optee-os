@@ -12,79 +12,73 @@
 #include <trace.h>
 #include <util.h>
 
+#define CAAM_DBG_TRACE(var) (CFG_DBG_CAAM_TRACE & DBG_TRACE_##var)
+#define CAAM_DBG_DESC(var)  (CFG_DBG_CAAM_DESC & DBG_TRACE_##var)
+#define CAAM_DBG_BUF(var)   (CFG_DBG_CAAM_BUF & DBG_TRACE_##var)
+
 /*
  * Debug Macros function of CAAM Debug Level setting
- * The CFG_CAAM_DBG is a bit mask 32 bits value defined
- * as followed:
+ * CFG_DBG_CAAM_TRACE  Module print trace
+ * CFG_DBG_CAAM_DESC   Module descriptor dump
+ * CFG_DBG_CAAM_BUF    Module buffer dump
+ *
+ * A module is represented with the same bit in each configuration value.
+ * Module Bit definition is as follow:
  */
-#define DBG_TRACE_HAL     BIT32(0)  /* HAL trace */
-#define DBG_TRACE_CTRL    BIT32(1)  /* Controller trace */
-#define DBG_TRACE_MEM     BIT32(2)  /* Memory utility trace */
-#define DBG_TRACE_SGT     BIT32(3)  /* Scatter Gather trace */
-#define DBG_TRACE_PWR     BIT32(4)  /* Power trace */
-#define DBG_TRACE_JR      BIT32(5)  /* Job Ring trace */
-#define DBG_DESC_JR       BIT32(6)  /* Job Ring dump descriptor */
-#define DBG_TRACE_RNG     BIT32(7)  /* RNG trace */
-#define DBG_DESC_RNG      BIT32(8)  /* RNG dump descriptor */
-#define DBG_TRACE_HASH    BIT32(9)  /* Hash trace */
-#define DBG_DESC_HASH     BIT32(10) /* Hash dump descriptor */
-#define DBG_BUF_HASH      BIT32(11) /* Hash dump Buffer */
-#define DBG_TRACE_BLOB    BIT32(12) /* BLOB trace */
-#define DBG_DESC_BLOB     BIT32(13) /* BLOB dump descriptor */
-#define DBG_BUF_BLOB      BIT32(14) /* BLOB dump Buffer */
-#define DBG_TRACE_CIPHER  BIT32(15) /* Cipher trace */
-#define DBG_DESC_CIPHER   BIT32(16) /* Cipher dump descriptor */
-#define DBG_BUF_CIPHER    BIT32(17) /* Cipher dump Buffer */
-#define DBG_TRACE_ECC     BIT32(18) /* ECC trace */
-#define DBG_DESC_ECC      BIT32(19) /* ECC dump descriptor */
-#define DBG_BUF_ECC       BIT32(20) /* ECC dump Buffer */
-#define DBG_TRACE_RSA     BIT32(21) /* RSA trace */
-#define DBG_DESC_RSA      BIT32(22) /* RSA dump descriptor */
-#define DBG_BUF_RSA       BIT32(23) /* RSA dump Buffer */
-#define DBG_TRACE_MP      BIT32(24) /* MP trace */
-#define DBG_DESC_MP       BIT32(25) /* MP dump descriptor */
-#define DBG_BUF_MP        BIT32(26) /* MP dump Buffer */
-#define DBG_TRACE_SM      BIT32(27) /* Secure Memory trace */
+#define DBG_TRACE_HAL	 BIT32(0)  /* HAL trace */
+#define DBG_TRACE_CTRL	 BIT32(1)  /* Controller trace */
+#define DBG_TRACE_MEM	 BIT32(2)  /* Memory utility trace */
+#define DBG_TRACE_SGT	 BIT32(3)  /* Scatter Gather trace */
+#define DBG_TRACE_PWR	 BIT32(4)  /* Power trace */
+#define DBG_TRACE_JR	 BIT32(5)  /* Job Ring trace */
+#define DBG_TRACE_RNG	 BIT32(6)  /* RNG trace */
+#define DBG_TRACE_HASH	 BIT32(7)  /* Hash trace */
+#define DBG_TRACE_BLOB	 BIT32(8)  /* BLOB trace */
+#define DBG_TRACE_CIPHER BIT32(9)  /* Cipher trace */
+#define DBG_TRACE_ECC	 BIT32(10) /* ECC trace */
+#define DBG_TRACE_RSA	 BIT32(11) /* RSA trace */
+#define DBG_TRACE_MP	 BIT32(12) /* MP trace */
+#define DBG_TRACE_SM	 BIT32(13) /* Secure Memory trace */
 
 /* HAL */
-#if (CFG_CAAM_DBG & DBG_TRACE_HAL)
+#if CAAM_DBG_TRACE(HAL)
 #define HAL_TRACE DRV_TRACE
 #else
 #define HAL_TRACE(...)
 #endif
 
 /* Controller */
-#if (CFG_CAAM_DBG & DBG_TRACE_CTRL)
+#if CAAM_DBG_TRACE(CTRL)
 #define CTRL_TRACE DRV_TRACE
 #else
 #define CTRL_TRACE(...)
 #endif
 
 /* Memory Utility */
-#if (CFG_CAAM_DBG & DBG_TRACE_MEM)
+#if CAAM_DBG_TRACE(MEM)
 #define MEM_TRACE DRV_TRACE
 #else
 #define MEM_TRACE(...)
 #endif
 
 /* Scatter Gether Table */
-#if (CFG_CAAM_DBG & DBG_TRACE_SGT)
+#if CAAM_DBG_TRACE(SGT)
 #define SGT_TRACE DRV_TRACE
 #else
 #define SGT_TRACE(...)
 #endif
 
 /* Power */
-#if (CFG_CAAM_DBG & DBG_TRACE_PWR)
+#if CAAM_DBG_TRACE(PWR)
 #define PWR_TRACE DRV_TRACE
 #else
 #define PWR_TRACE(...)
 #endif
 
 /* Job Ring */
-#if (CFG_CAAM_DBG & DBG_TRACE_JR)
+#if CAAM_DBG_TRACE(JR)
 #define JR_TRACE DRV_TRACE
-#if (CFG_CAAM_DBG & DBG_DESC_JR)
+#if CAAM_DBG_DESC(JR)
 #define JR_DUMPDESC(desc)                                                      \
 	do {                                                                   \
 		JR_TRACE("Descriptor");                                        \
@@ -99,9 +93,9 @@
 #endif
 
 /* RNG */
-#if (CFG_CAAM_DBG & DBG_TRACE_RNG)
+#if CAAM_DBG_TRACE(RNG)
 #define RNG_TRACE DRV_TRACE
-#if (CFG_CAAM_DBG & DBG_DESC_RNG)
+#if CAAM_DBG_DESC(RNG)
 #define RNG_DUMPDESC(desc)                                                     \
 	do {                                                                   \
 		RNG_TRACE("RNG Descriptor");                                   \
@@ -116,9 +110,9 @@
 #endif
 
 /* Hash */
-#if (CFG_CAAM_DBG & DBG_TRACE_HASH)
+#if CAAM_DBG_TRACE(HASH)
 #define HASH_TRACE DRV_TRACE
-#if (CFG_CAAM_DBG & DBG_DESC_HASH)
+#if CAAM_DBG_DESC(HASH)
 #define HASH_DUMPDESC(desc)                                                    \
 	do {                                                                   \
 		HASH_TRACE("HASH Descriptor");                                 \
@@ -127,7 +121,7 @@
 #else
 #define HASH_DUMPDESC(desc)
 #endif
-#if (CFG_CAAM_DBG & DBG_BUF_HASH)
+#if CAAM_DBG_BUF(HASH)
 #define HASH_DUMPBUF DRV_DUMPBUF
 #else
 #define HASH_DUMPBUF(...)
@@ -139,9 +133,9 @@
 #endif
 
 /* BLOB */
-#if (CFG_CAAM_DBG & DBG_TRACE_BLOB)
+#if CAAM_DBG_TRACE(BLOB)
 #define BLOB_TRACE DRV_TRACE
-#if (CFG_CAAM_DBG & DBG_DESC_BLOB)
+#if CAAM_DBG_DESC(BLOB)
 #define BLOB_DUMPDESC(desc)                                                    \
 	do {                                                                   \
 		BLOB_TRACE("BLOB Descriptor");                                 \
@@ -150,7 +144,7 @@
 #else
 #define BLOB_DUMPDESC(desc)
 #endif
-#if (CFG_CAAM_DBG & DBG_BUF_BLOB)
+#if CAAM_DBG_BUF(BLOB)
 #define BLOB_DUMPBUF DRV_DUMPBUF
 #else
 #define BLOB_DUMPBUF(...)
@@ -162,9 +156,9 @@
 #endif
 
 /* Cipher */
-#if (CFG_CAAM_DBG & DBG_TRACE_CIPHER)
+#if CAAM_DBG_TRACE(CIPHER)
 #define CIPHER_TRACE DRV_TRACE
-#if (CFG_CAAM_DBG & DBG_DESC_CIPHER)
+#if CAAM_DBG_DESC(CIPHER)
 #define CIPHER_DUMPDESC(desc)                                                  \
 	do {                                                                   \
 		CIPHER_TRACE("CIPHER Descriptor");                             \
@@ -173,7 +167,7 @@
 #else
 #define CIPHER_DUMPDESC(desc)
 #endif
-#if (CFG_CAAM_DBG & DBG_BUF_CIPHER)
+#if CAAM_DBG_BUF(CIPHER)
 #define CIPHER_DUMPBUF DRV_DUMPBUF
 #else
 #define CIPHER_DUMPBUF(...)
@@ -185,9 +179,9 @@
 #endif
 
 /* ECC */
-#if (CFG_CAAM_DBG & DBG_TRACE_ECC)
+#if CAAM_DBG_TRACE(ECC)
 #define ECC_TRACE DRV_TRACE
-#if (CFG_CAAM_DBG & DBG_DESC_ECC)
+#if CAAM_DBG_DESC(ECC)
 #define ECC_DUMPDESC(desc)                                                     \
 	do {                                                                   \
 		ECC_TRACE("ECC Descriptor");                                   \
@@ -196,7 +190,7 @@
 #else
 #define ECC_DUMPDESC(desc)
 #endif
-#if (CFG_CAAM_DBG & DBG_BUF_ECC)
+#if CAAM_DBG_BUF(ECC)
 #define ECC_DUMPBUF DRV_DUMPBUF
 #else
 #define ECC_DUMPBUF(...)
@@ -208,9 +202,9 @@
 #endif
 
 /* RSA */
-#if (CFG_CAAM_DBG & DBG_TRACE_RSA)
+#if CAAM_DBG_TRACE(RSA)
 #define RSA_TRACE DRV_TRACE
-#if (CFG_CAAM_DBG & DBG_DESC_RSA)
+#if CAAM_DBG_DESC(RSA)
 #define RSA_DUMPDESC(desc)                                                     \
 	do {                                                                   \
 		RSA_TRACE("RSA Descriptor");                                   \
@@ -219,7 +213,7 @@
 #else
 #define RSA_DUMPDESC(desc)
 #endif
-#if (CFG_CAAM_DBG & DBG_BUF_RSA)
+#if CAAM_DBG_BUF(RSA)
 #define RSA_DUMPBUF DRV_DUMPBUF
 #else
 #define RSA_DUMPBUF(...)
@@ -231,9 +225,9 @@
 #endif
 
 /* MP */
-#if (CFG_CAAM_DBG & DBG_TRACE_MP)
+#if CAAM_DBG_TRACE(MP)
 #define MP_TRACE DRV_TRACE
-#if (CFG_CAAM_DBG & DBG_DESC_MP)
+#if CAAM_DBG_DESC(MP)
 #define MP_DUMPDESC(desc)                                                      \
 	do {                                                                   \
 		MP_TRACE("MP Descriptor");                                     \
@@ -242,7 +236,7 @@
 #else
 #define MP_DUMPDESC(desc)
 #endif
-#if (CFG_CAAM_DBG & DBG_BUF_MP)
+#if CAAM_DBG_BUF(MP)
 #define MP_DUMPBUF DRV_DUMPBUF
 #else
 #define MP_DUMPBUF(...)
@@ -254,7 +248,7 @@
 #endif
 
 /* Secure Memory */
-#if (CFG_CAAM_DBG & DBG_TRACE_SM)
+#if CAAM_DBG_TRACE(SM)
 #define SM_TRACE DRV_TRACE
 #else
 #define SM_TRACE(...)
