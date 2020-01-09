@@ -47,7 +47,8 @@
 
 	.endm
 
-	/* r11 must be MMDC base address */
+	/* r11 must be MMDC0 base address */
+	/* r12 must be MMDC1 base address */
 	.macro reset_read_fifo
 
 	/* reset read FIFO, RST_RD_FIFO */
@@ -96,6 +97,7 @@
 	.endm
 
 	/* r11 must be MMDC base address */
+	/* r12 must be MMDC1 base address */
 	.macro mmdc_out_and_auto_self_refresh
 
 	/* let DDR out of self-refresh */
@@ -183,6 +185,8 @@
 	ldrne	r10, [r0, #PM_INFO_IOMUXC_P_OFF]
 	ldreq	r11, [r0, #PM_INFO_MMDC0_V_OFF]
 	ldrne	r11, [r0, #PM_INFO_MMDC0_P_OFF]
+	ldreq	r12, [r0, #PM_INFO_MMDC1_V_OFF]
+	ldrne	r12, [r0, #PM_INFO_MMDC1_P_OFF]
 
 	/* resume mmdc iomuxc settings */
 	ldr	r6, [r0, #PM_INFO_MMDC_IO_NUM_OFF]
@@ -236,8 +240,6 @@
 	beq	15b
 
 	resume_iomuxc_gpr
-
-	ldr		r12, [r0, #PM_INFO_MMDC1_P_OFF]
 	reset_read_fifo
 
 	/* let DDR out of self-refresh */
