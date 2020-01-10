@@ -474,7 +474,7 @@ ObjCSpaceBeforeProtocolList: true
 
 # Taken from git's rules
 #PenaltyBreakAssignment: 10 # Unknown to clang-format-4.0
-PenaltyBreakBeforeFirstCallParameter: 30
+PenaltyBreakBeforeFirstCallParameter: 80
 PenaltyBreakComment: 10
 PenaltyBreakFirstLessLess: 0
 PenaltyBreakString: 10
