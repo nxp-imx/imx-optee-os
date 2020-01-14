@@ -32,7 +32,7 @@ TEE_Result crypto_acipher_alloc_dh_keypair(struct dh_keypair *key,
 }
 
 TEE_Result crypto_acipher_gen_dh_key(struct dh_keypair *key, struct bignum *q,
-				     size_t key_size)
+				     size_t xbits, size_t key_size)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 	struct drvcrypt_dh *dh = NULL;
@@ -42,9 +42,13 @@ TEE_Result crypto_acipher_gen_dh_key(struct dh_keypair *key, struct bignum *q,
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
+	if (key_size != 8 * crypto_bignum_num_bytes(key->p))
+		return TEE_ERROR_BAD_PARAMETERS;
+
+
 	dh = drvcrypt_get_ops(CRYPTO_DH);
 	if (dh)
-		ret = dh->gen_keypair(key, q, key_size);
+		ret = dh->gen_keypair(key, q, xbits);
 
 	CRYPTO_TRACE("DH Keypair (%zu bits) generate ret = 0x%" PRIx32,
 		     key_size, ret);
