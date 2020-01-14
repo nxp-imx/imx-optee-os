@@ -54,6 +54,7 @@ enum drvcrypt_algo_id {
 	CRYPTO_CMAC,	 /* CIPHER MAC driver */
 	CRYPTO_ECC,	 /* Assymetric ECC driver */
 	CRYPTO_RSA,	 /* Asymmetric RSA driver */
+	CRYPTO_DH,	 /* Assymetric DH driver */
 	CRYPTO_MATH,	 /* Mathematical driver */
 	CRYPTO_MAX_ALGO	 /* Maximum number of algo supported */
 };

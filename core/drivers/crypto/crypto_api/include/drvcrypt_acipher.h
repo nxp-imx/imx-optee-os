@@ -159,4 +159,27 @@ static inline TEE_Result drvcrypt_register_rsa(struct drvcrypt_rsa *ops)
 	return drvcrypt_register(CRYPTO_RSA, (void *)ops);
 }
 
+/*
+ * Crypto Library DH driver operations
+ */
+struct drvcrypt_dh {
+	/* Allocates the DH keypair */
+	TEE_Result (*alloc_keypair)(struct dh_keypair *key, size_t size_bits);
+	/* Generates the DH keypair */
+	TEE_Result (*gen_keypair)(struct dh_keypair *key, struct bignum *q,
+				  size_t size_bits);
+	/* DH Shared Secret */
+	TEE_Result (*shared_secret)(struct drvcrypt_secret_data *sdata);
+};
+
+/*
+ * Register a DH processing driver in the crypto API
+ *
+ * @ops - Driver operations in the HW layer
+ */
+static inline TEE_Result drvcrypt_register_dh(struct drvcrypt_dh *ops)
+{
+	return drvcrypt_register(CRYPTO_DH, (void *)ops);
+}
+
 #endif /* __DRVCRYPT_ACIPHER_H__ */
