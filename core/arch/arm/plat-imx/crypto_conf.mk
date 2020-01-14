@@ -24,6 +24,7 @@
 # DBG_DSA    BIT32(12) // DSA trace
 # DBG_MP     BIT32(13)  // MP trace
 # DBG_SM     BIT32(14) // SM trace
+# DBG_DH     BIT32(15) // DH Trace
 
 CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
@@ -86,6 +87,7 @@ $(eval $(call cryphw-enable-drv-hw, RSA))
 $(eval $(call cryphw-enable-drv-hw, ECC))
 $(eval $(call cryphw-enable-drv-hw, DSA))
 $(eval $(call cryphw-enable-drv-hw, MP))
+$(eval $(call cryphw-enable-drv-hw, DH))
 
 # Define the RSA Private Key Format used by the CAAM
 #   Format #1: (n, d)
@@ -100,8 +102,7 @@ CFG_CRYPTO_SM2_KEP = n
 CFG_PTA_MP ?= y
 endif
 
-$(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, RSA ECC DSA))
-$(call force, CFG_CRYPTO_DRV_MAC, $(call cryphw-one-enabled, HMAC CMAC))
+$(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, ECC RSA DH))
 
 ifeq ($(CFG_IMX_DEK_HAB),y)
 CFG_PTA_DEK ?= y

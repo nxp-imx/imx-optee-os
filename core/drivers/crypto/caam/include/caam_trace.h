@@ -40,6 +40,7 @@
 #define DBG_TRACE_DSA	 BIT32(12) /* DSA trace */
 #define DBG_TRACE_MP	 BIT32(13) /* MP trace */
 #define DBG_TRACE_SM	 BIT32(14) /* Secure Memory trace */
+#define DBG_TRACE_DH	 BIT32(15) /* DH trace */
 
 /* HAL */
 #if CAAM_DBG_TRACE(HAL)
@@ -253,6 +254,29 @@
 #define SM_TRACE DRV_TRACE
 #else
 #define SM_TRACE(...)
+#endif
+
+/* DH */
+#if CAAM_DBG_TRACE(DH)
+#define DH_TRACE DRV_TRACE
+#if CAAM_DBG_DESC(DH)
+#define DH_DUMPDESC(desc)                                                      \
+	{                                                                      \
+		DH_TRACE("DH Descriptor");                                     \
+		DRV_DUMPDESC(desc);                                            \
+	}
+#else
+#define DH_DUMPDESC(desc)
+#endif
+#if CAAM_DBG_BUF(DH)
+#define DH_DUMPBUF DRV_DUMPBUF
+#else
+#define DH_DUMPBUF(...)
+#endif
+#else
+#define DH_TRACE(...)
+#define DH_DUMPDESC(desc)
+#define DH_DUMPBUF(...)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_DEBUG)
