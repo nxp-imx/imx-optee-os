@@ -52,6 +52,7 @@ enum drvcrypt_algo_id {
 	CRYPTO_HMAC,	 /* HMAC driver */
 	CRYPTO_CMAC,	 /* CMAC driver */
 	CRYPTO_RSA,      /* Asymmetric RSA driver */
+	CRYPTO_DH,	 /* Assymetric DH driver */
 	CRYPTO_MATH,	 /* Mathematical driver */
 	CRYPTO_CIPHER,   /* Cipher driver */
 	CRYPTO_ECC,      /* Asymmetric ECC driver */
