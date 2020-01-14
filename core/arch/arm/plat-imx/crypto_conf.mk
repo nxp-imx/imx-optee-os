@@ -22,6 +22,7 @@
 # DBG_RSA    BIT32(11) // RSA trace
 # DBG_MP     BIT32(12) // MP trace
 # DBG_SM     BIT32(13) // Secure Memory trace
+# DBG_DH     BIT32(14) // DH Trace
 CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
 CFG_DBG_CAAM_BUF ?= 0x0
@@ -85,10 +86,11 @@ ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 $(eval $(call cryphw-enable-drv-hw, ECC))
 $(eval $(call cryphw-enable-drv-hw, RSA))
 $(eval $(call cryphw-enable-drv-hw, MP))
+$(eval $(call cryphw-enable-drv-hw, DH))
 CFG_PTA_MP ?= y
 endif
 
-$(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, ECC RSA))
+$(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, ECC RSA DH))
 
 ifeq ($(CFG_IMX_DEK_HAB),y)
 CFG_PTA_DEK ?= y
