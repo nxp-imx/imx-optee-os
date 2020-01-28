@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   CAAM RSA manager.
  *         Implementation of RSA functions
@@ -1559,6 +1559,7 @@ static TEE_Result do_encrypt(struct drvcrypt_rsa_ed *rsa_data)
 	switch (rsa_data->rsa_id) {
 	case RSA_NOPAD:
 	case RSASSA_PKCS_V1_5:
+	case RSASSA_PSS:
 		ret = do_caam_encrypt(rsa_data, RSA_ENCRYPT(NO));
 		break;
 
@@ -1589,6 +1590,7 @@ static TEE_Result do_decrypt(struct drvcrypt_rsa_ed *rsa_data)
 	switch (rsa_data->rsa_id) {
 	case RSA_NOPAD:
 	case RSASSA_PKCS_V1_5:
+	case RSASSA_PSS:
 		ret = do_caam_decrypt(rsa_data, RSA_DECRYPT(NO));
 		break;
 
