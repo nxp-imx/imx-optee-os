@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   RSA Signature Software common implementation.
  *         Functions preparing and/or verifying the signature
@@ -725,6 +725,8 @@ static TEE_Result rsassa_pss_sign(struct drvcrypt_rsa_ssa *ssa_data)
 	struct rsa_keypair *key = NULL;
 	struct cryptobuf EM = {};
 	size_t modBits = 0;
+	struct drvcrypt_rsa_ed rsa_data = {};
+	struct drvcrypt_rsa *rsa = NULL;
 
 	key = ssa_data->key.key;
 
@@ -754,14 +756,31 @@ static TEE_Result rsassa_pss_sign(struct drvcrypt_rsa_ssa *ssa_data)
 	CRYPTO_TRACE("EMSA PSS Encode returned 0x%08" PRIx32, ret);
 
 	/*
-	 * RSA NO PAD  Encrypt/Decrypt are doing the same operation
+	 * RSA Encrypt/Decrypt are doing the same operation
 	 * expect that the decrypt takes a RSA Private key in parameter
 	 */
-	ret = crypto_acipher_rsanopad_decrypt(ssa_data->key.key, EM.data,
-					      EM.length,
-					      ssa_data->signature.data,
-					      &ssa_data->signature.length);
+	if (ret == TEE_SUCCESS) {
+		rsa_data.key.key = ssa_data->key.key;
+		rsa_data.key.isprivate = true;
+		rsa_data.key.n_size = ssa_data->key.n_size;
 
+		rsa = drvcrypt_get_ops(CRYPTO_RSA);
+		if (rsa) {
+			/* Prepare the decryption data parameters */
+			rsa_data.rsa_id = RSASSA_PSS;
+			rsa_data.message.data = ssa_data->signature.data;
+			rsa_data.message.length = ssa_data->signature.length;
+			rsa_data.cipher.data = EM.data;
+			rsa_data.cipher.length = EM.length;
+
+			ret = rsa->decrypt(&rsa_data);
+
+			/* Set the message decrypted size */
+			ssa_data->signature.length = rsa_data.message.length;
+		} else {
+			ret = TEE_ERROR_NOT_IMPLEMENTED;
+		}
+	}
 	free(EM.data);
 
 	return ret;
@@ -780,6 +799,8 @@ static TEE_Result rsassa_pss_verify(struct drvcrypt_rsa_ssa *ssa_data)
 	struct cryptobuf EM = {};
 	size_t modBits = 0;
 	size_t emLen = 0;
+	struct drvcrypt_rsa_ed rsa_data = {};
+	struct drvcrypt_rsa *rsa = NULL;
 
 	key = ssa_data->key.key;
 
@@ -805,13 +826,33 @@ static TEE_Result rsassa_pss_verify(struct drvcrypt_rsa_ssa *ssa_data)
 		     EM.length);
 
 	/*
-	 * RSA NO PAD  Encrypt/Decrypt are doing the same operation
+	 * RSA Encrypt/Decrypt are doing the same operation
 	 * expect that the encrypt takes a RSA Public key in parameter
 	 */
 	emLen = EM.length;
-	ret = crypto_acipher_rsanopad_encrypt(key, ssa_data->signature.data,
-					      ssa_data->signature.length,
-					      EM.data, &emLen);
+
+	rsa_data.key.key = ssa_data->key.key;
+	rsa_data.key.isprivate = false;
+	rsa_data.key.n_size = ssa_data->key.n_size;
+
+	rsa = drvcrypt_get_ops(CRYPTO_RSA);
+	if (rsa) {
+		/* Prepare the encryption data parameters */
+		rsa_data.rsa_id = RSASSA_PSS;
+		rsa_data.message.data = ssa_data->signature.data;
+		rsa_data.message.length = ssa_data->signature.length;
+		rsa_data.cipher.data = EM.data;
+		rsa_data.cipher.length = EM.length;
+
+		ret = rsa->encrypt(&rsa_data);
+
+		/* Set the cipher size */
+		EM.length = rsa_data.cipher.length;
+	} else {
+		ret = TEE_ERROR_NOT_IMPLEMENTED;
+		goto end_pss_verify;
+	}
+
 	if (ret == TEE_SUCCESS) {
 		if (emLen != EM.length) {
 			CRYPTO_TRACE("EM Length expected %zu got %zu", emLen,
@@ -826,6 +867,7 @@ static TEE_Result rsassa_pss_verify(struct drvcrypt_rsa_ssa *ssa_data)
 		ret = TEE_ERROR_SIGNATURE_INVALID;
 	}
 
+end_pss_verify:
 	free(EM.data);
 
 	return ret;

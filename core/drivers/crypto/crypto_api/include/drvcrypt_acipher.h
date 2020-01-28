@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   Asymmetric Cipher interface calling the HW crypto driver.
  */
@@ -66,10 +66,11 @@ static inline TEE_Result drvcrypt_register_ecc(struct drvcrypt_ecc *ops)
  * Assymetric Cipher RSA Algorithm enumerate
  */
 enum drvcrypt_rsa_id {
-	RSA_NOPAD = 0,    /* RSA Algo mode NO PAD */
-	RSA_OAEP,         /* RSA Algo mode OAEP */
-	RSA_PKCS_V1_5,    /* RSA Algo mode PKCSv1.5 */
+	RSA_NOPAD = 0,	  /* RSA Algo mode NO PAD */
+	RSA_OAEP,	  /* RSA Algo mode OAEP */
+	RSA_PKCS_V1_5,	  /* RSA Algo mode PKCSv1.5 */
 	RSASSA_PKCS_V1_5, /* RSA Signature Algo mode PKCSv1.5 */
+	RSASSA_PSS,	  /* RSA Signature Algo mode PSS */
 };
 
 /*
