@@ -77,6 +77,7 @@ mx8qm-flavorlist = \
 
 mx8qx-flavorlist = \
 	mx8qxpmek \
+	mx8dxmek \
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
@@ -361,6 +362,12 @@ CFG_UART_BASE ?= UART0_BASE
 $(call force,CFG_TZC380,n)
 endif
 
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx8dxmek))
+CFG_DDR_SIZE ?= 0x40000000
+CFG_UART_BASE ?= UART0_BASE
+$(call force,CFG_MX8DX,y)
+endif
+
 # i.MX6 Solo/SL/SoloX/DualLite/Dual/Quad specific config
 ifeq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) $(CFG_MX6S) \
 	$(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6SX)), y)
@@ -441,7 +448,7 @@ endif
 CFG_TZC380 ?= y
 ifeq ($(CFG_ARM64_core),y)
 #few special case to handle
-ifeq ($(CFG_MX8MP),y)
+ifneq (,$(filter y, $(CFG_MX8MP) $(CFG_MX8DX)))
 # New device will have base addresses within the first 1GB of DDR
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x16000000)
 else
