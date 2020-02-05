@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018 NXP
+ * Copyright 2018, 2020 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -160,7 +160,7 @@ int imx7d_lowpower_idle(uint32_t power_state __unused,
 			(struct imx7_pm_info *)cpuidle_ocram_base;
 	uint32_t type = (power_state & PSCI_POWER_STATE_TYPE_MASK) >>
 		PSCI_POWER_STATE_TYPE_SHIFT;
-	static uint32_t gic_inited;
+	static unsigned int gic_inited;
 	uint32_t cpu_id = get_core_pos();
 
 	imx_pen_lock(cpu_id);
