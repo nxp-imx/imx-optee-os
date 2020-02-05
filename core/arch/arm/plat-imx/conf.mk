@@ -18,7 +18,7 @@ mx8m-flavorlist = mx8mqevk
 mx8mm-flavorlist = mx8mmevk
 mx8mn-flavorlist = mx8mnevk
 mx8qm-flavorlist = mx8qmmek mx8qmlpddr4arm2
-mx8qx-flavorlist = mx8qxpmek mx8qxplpddr4arm2
+mx8qx-flavorlist = mx8qxpmek mx8qxplpddr4arm2 mx8dxmek
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
@@ -459,6 +459,11 @@ endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8qxpmek))
 CFG_DDR_SIZE ?= 0x80000000
+CFG_UART_BASE ?= UART0_BASE
+endif
+
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx8dxmek))
+CFG_DDR_SIZE ?= 0x40000000
 CFG_UART_BASE ?= UART0_BASE
 endif
 
