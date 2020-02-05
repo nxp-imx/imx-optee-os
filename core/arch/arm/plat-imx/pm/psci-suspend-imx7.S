@@ -1,13 +1,12 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2020 NXP
  */
 
 #include <arm.h>
 #include <arm32_macros.S>
 #include <asm.S>
 #include <generated/imx_pm_asm_defines.h>
-#include <imx-regs.h>
 #include <kernel/cache_helpers.h>
 #include <kernel/tz_proc_def.h>
 #include <kernel/tz_ssvce_def.h>
