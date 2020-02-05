@@ -29,6 +29,7 @@ boards_list=(
 	mx7swarp7_mbl \
 	mx7dclsom \
 	mx7ulpevk \
+	mx8dxmek \
 	mx8mqevk \
 	mx8mmevk \
 	mx8mnevk \
