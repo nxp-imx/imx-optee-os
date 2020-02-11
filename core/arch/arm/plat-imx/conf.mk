@@ -335,8 +335,9 @@ CFG_UART_BASE ?= UART2_BASE
 endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mpevk))
-CFG_DDR_SIZE ?= 0xC0000000
+CFG_DDR_SIZE ?= 0x180000000ULL
 CFG_UART_BASE ?= UART2_BASE
+$(call force,CFG_CORE_LARGE_PHYS_ADDR,y)
 endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8qxpmek mx8qmmek))
