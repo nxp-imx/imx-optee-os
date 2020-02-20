@@ -439,8 +439,14 @@ supported-ta-targets = ta_arm64
 endif
 
 CFG_TZC380 ?= y
-
+ifeq ($(CFG_ARM64_core),y)
+# put optee end of ddr for AARCH64
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) - 0x02000000 + $(CFG_DDR_SIZE))
+else
+# put optee at DDR base address + 64MB for AARCH32
+CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x04000000)
+endif
+
 CFG_TZDRAM_SIZE ?= 0x01c00000
 CFG_SHMEM_START ?= ($(CFG_TZDRAM_START) + $(CFG_TZDRAM_SIZE))
 CFG_SHMEM_SIZE ?= 0x00400000
