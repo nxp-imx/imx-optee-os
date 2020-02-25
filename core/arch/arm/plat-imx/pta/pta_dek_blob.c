@@ -33,7 +33,14 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 						   TEE_PARAM_TYPE_VALUE_INPUT,
 						   TEE_PARAM_TYPE_VALUE_INPUT);
 
-	if (param_types != exp_param_types)
+	/* Keep backward compatibility with old API. */
+	uint32_t old_exp_param_types =
+		TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT,
+				TEE_PARAM_TYPE_MEMREF_OUTPUT,
+				TEE_PARAM_TYPE_NONE, TEE_PARAM_TYPE_NONE);
+
+	if (param_types != exp_param_types &&
+	    param_types != old_exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	/* Verify the input payload length that must be 128/192/256 bits */
@@ -58,9 +65,16 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 	dek_blob.payload.length = params[0].memref.size;
 	dek_blob.blob.data = params[1].memref.buffer;
 	dek_blob.blob.length = params[1].memref.size;
-	sm_page.page = params[2].value.a;
-	sm_page.nb_pages = params[2].value.b;
-	sm_page.partition = params[3].value.a;
+	if (param_types == exp_param_types) {
+		sm_page.page = params[2].value.a;
+		sm_page.nb_pages = params[2].value.b;
+		sm_page.partition = params[3].value.a;
+	} else {
+		/* Default behavior is to use Page 2 from Partition 1 */
+		sm_page.page = 2;
+		sm_page.nb_pages = 1;
+		sm_page.partition = 1;
+	}
 
 	memset((void *)dek_blob.blob.data, 0x0, dek_blob.blob.length);
 
@@ -125,22 +139,6 @@ static TEE_Result dek_blob_free_partition(uint32_t param_types,
 }
 
 /*
- * Pseudo TA open session. Checks if TA is initiator.
- */
-static TEE_Result
-pta_dek_open_session(uint32_t param_types __unused,
-		     TEE_Param pParams[TEE_NUM_PARAMS] __unused,
-		     void **sess_ctx __unused)
-{
-	struct tee_ta_session *s = tee_ta_get_calling_session();
-
-	if (!s)
-		return TEE_ERROR_ACCESS_DENIED;
-
-	return TEE_SUCCESS;
-}
-
-/*
  * Called when a pseudo TA is invoked.
  *
  * sess_ctx       Session Identifier
@@ -164,5 +162,4 @@ static TEE_Result invokeCommandEntryPoint(void *sess_ctx __unused,
 
 pseudo_ta_register(.uuid = PTA_DEK_BLOB_UUID, .name = PTA_NAME,
 		   .flags = PTA_DEFAULT_FLAGS,
-		   .open_session_entry_point = pta_dek_open_session,
 		   .invoke_command_entry_point = invokeCommandEntryPoint);
