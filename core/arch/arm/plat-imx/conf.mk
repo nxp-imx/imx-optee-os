@@ -469,6 +469,10 @@ CFG_CRYPTO_DRIVER ?= y
 # DRV_DBG_TRACE BIT32(0) // Driver trace
 # DRV_DBG_BUF   BIT32(1) // Driver dump Buffer
 CFG_CRYPTO_DRIVER_DEBUG ?= 0
+# Enable DEK Blob feature by default on i.MX 8mscale family.
+ifneq (,$(filter y, $(CFG_MX8MQ) $(CFG_MX8MM) $(CFG_MX8MN)))
+CFG_IMX_DEK_HAB ?=y
+endif
 else
 $(call force,CFG_CRYPTO_DRIVER,n)
 $(call force,CFG_WITH_SOFTWARE_PRNG,y)
