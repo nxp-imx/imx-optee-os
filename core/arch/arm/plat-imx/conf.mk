@@ -450,6 +450,9 @@ endif
 
 CFG_TZC380 ?= y
 ifeq ($(CFG_ARM64_core),y)
+# Enable FDT Overlay for i.MX8 SoC
+CFG_DT ?= y
+CFG_EXTERNAL_DTB_OVERLAY = y
 #few special case to handle
 ifneq (,$(filter y, $(CFG_MX8MP) $(CFG_MX8DX) $(CFG_MX8DXL)))
 # New device will have base addresses within the first 1GB of DDR
