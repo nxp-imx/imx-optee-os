@@ -8,11 +8,14 @@
 #include <caam_hal_cfg.h>
 #include <caam_hal_jr.h>
 #include <caam_jr.h>
+#include <config.h>
+#include <kernel/boot.h>
 #include <kernel/dt.h>
 #include <kernel/interrupt.h>
 #include <libfdt.h>
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
+#include <stdio.h>
 
 static const char *dt_caam_match_table = {
 	"fsl,sec-v4.0",
@@ -129,6 +132,20 @@ void caam_hal_cfg_disable_jobring_dt(void *fdt, struct caam_jrcfg *jrcfg)
 			if (dt_enable_secure_status(fdt, node))
 				panic();
 			break;
+		}
+	}
+
+	if (IS_ENABLED(CFG_EXTERNAL_DTB_OVERLAY)) {
+		if (node == -FDT_ERR_NOTFOUND) {
+			char target[64];
+			int ret;
+
+			ret = snprintf(target, sizeof(target),
+				       DTB_JR_PATH "@%lx", jrcfg->offset);
+			if (ret < 0 || (size_t)ret >= sizeof(target))
+				panic();
+			if (dt_overlay_disable_node(target))
+				panic();
 		}
 	}
 }
