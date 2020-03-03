@@ -76,7 +76,7 @@ struct ns_entry_context *boot_core_hpen(void);
 
 /* Returns embedded DTB if present, then external DTB if found, then NULL */
 void *get_dt(void);
-
+int dt_overlay_disable_node(char *target);
 /* Returns embedded DTB location if present, otherwise NULL */
 void *get_embedded_dt(void);
 

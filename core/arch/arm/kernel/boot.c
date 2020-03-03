@@ -721,6 +721,44 @@ static int add_optee_dt_node(struct dt_descriptor *dt)
 	return 0;
 }
 
+#ifdef CFG_EXTERNAL_DTB_OVERLAY
+int dt_overlay_disable_node(char *target)
+{
+	char frag[32];
+	int offs;
+	int ret;
+	struct dt_descriptor *dt = &external_dt;
+
+	offs = fdt_path_offset(dt->blob, "/");
+	if (offs < 0)
+		return -1;
+
+	ret = snprintf(frag, sizeof(frag), "fragment@%d", dt->frag_id);
+	if (ret < 0 || (size_t)ret >= sizeof(frag))
+		return -1;
+
+	offs = fdt_add_subnode(dt->blob, offs, frag);
+	if (offs < 0)
+		return offs;
+
+	dt->frag_id += 1;
+
+	ret = fdt_setprop_string(dt->blob, offs, "target-path", target);
+	if (ret < 0)
+		return -1;
+
+	offs = fdt_add_subnode(dt->blob, offs, "__overlay__");
+	if (offs < 0)
+		return offs;
+
+	offs = fdt_setprop_string(dt->blob, offs, "status", "disabled");
+	if (offs < 0)
+		return offs;
+
+	return 0;
+}
+#endif
+
 #ifdef CFG_PSCI_ARM32
 static int append_psci_compatible(void *fdt, int offs, const char *str)
 {
