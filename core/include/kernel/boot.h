@@ -88,6 +88,9 @@ void *get_embedded_dt(void);
 /* Returns external DTB if present, otherwise NULL */
 void *get_external_dt(void);
 
+/* Disable a subnode in the DT overlay */
+int dt_overlay_disable_node(char *target);
+
 /*
  * get_aslr_seed() - return a random seed for core ASLR
  * @fdt:	Pointer to a device tree if CFG_DT_ADDR=y
