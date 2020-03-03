@@ -106,6 +106,9 @@ void *get_external_dt(void);
 /* Returns TOS_FW_CONFIG DTB if present, otherwise NULL */
 void *get_tos_fw_config_dt(void);
 
+/* Disable a subnode in the DT overlay */
+int dt_overlay_disable_node(char *target);
+
 /*
  * get_aslr_seed() - return a random seed for core ASLR
  * @fdt:	Pointer to a device tree if CFG_DT_ADDR=y
