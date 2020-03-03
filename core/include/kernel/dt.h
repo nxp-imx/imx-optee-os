@@ -302,6 +302,9 @@ int add_dt_path_subnode(struct dt_descriptor *dt, const char *path,
 int add_res_mem_dt_node(struct dt_descriptor *dt, const char *name,
 			paddr_t pa, size_t size);
 
+/* Disable a subnode in the DT overlay */
+int dt_overlay_disable_node(char *target);
+
 #else /* !CFG_DT */
 
 static inline const struct dt_driver *dt_find_compatible_driver(
