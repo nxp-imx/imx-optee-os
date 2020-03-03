@@ -337,6 +337,9 @@ void reinit_manifest_dt(void);
 /* Returns TOS_FW_CONFIG DTB or SP manifest DTB if present, otherwise NULL */
 void *get_manifest_dt(void);
 
+/* Disable a subnode in the DT overlay */
+int dt_overlay_disable_node(char *target);
+
 #else /* !CFG_DT */
 
 static inline const struct dt_driver *dt_find_compatible_driver(
