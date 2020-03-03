@@ -9,6 +9,16 @@
 
 #include <caam_jr.h>
 
+#if defined(CFG_MX8MM) || defined(CFG_MX8MN) || defined(CFG_MX8MP) ||          \
+	defined(CFG_MX8MQ)
+#define DTB_JR_PATH "/soc@0/bus@30800000/crypto@30900000/jr"
+#elif defined(CFG_MX8QM) || defined(CFG_MX8QXP) || defined(CFG_MX8DXL)
+#define DTB_JR_PATH "/bus@31400000/crypto@31400000/jr"
+#else
+/* Currently not supported on i.MX 6 and 7 */
+#define DTB_JR_PATH ""
+#endif
+
 /*
  * Returns the Job Ring Configuration to be used by the TEE
  *
