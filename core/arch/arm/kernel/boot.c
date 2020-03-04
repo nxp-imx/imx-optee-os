@@ -654,11 +654,7 @@ static int init_dt_overlay(struct dt_descriptor *dt, int __maybe_unused dt_size)
 		return ret;
 	}
 
-#ifdef CFG_DT_ADDR
 	return fdt_create_empty_tree(dt->blob, dt_size);
-#else
-	return -1;
-#endif
 }
 #else
 static int add_dt_overlay_fragment(struct dt_descriptor *dt __unused, int offs)
