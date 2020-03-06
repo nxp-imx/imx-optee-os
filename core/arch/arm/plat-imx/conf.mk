@@ -185,6 +185,7 @@ CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 6
 $(call force,CFG_NXP_CAAM,n)
+$(call force,CFG_TZC380,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qx-flavorlist)))
 $(call force,CFG_MX8QX,y)
 $(call force,CFG_ARM64_core,y)
@@ -343,7 +344,6 @@ endif
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8qxpmek mx8qmmek))
 CFG_DDR_SIZE ?= 0x80000000
 CFG_UART_BASE ?= UART0_BASE
-$(call force,CFG_TZC380,n)
 endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8dxmek))
