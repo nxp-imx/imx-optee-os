@@ -2,7 +2,7 @@
 /*
  * Copyright 2018-2020 NXP
  *
- * CAAM Prime Numbering.
+ * CAAM RSA Prime Numbering.
  * Implementation of Prime Number functions
  */
 #include <caam_common.h>
@@ -17,23 +17,23 @@
 
 #include "local.h"
 
-#define RSA_TRY_FAIL    0x42
+#define RSA_TRY_FAIL	0x42
 #define RETRY_TOO_SMALL 0x2A
 
-#define STATUS_GOOD_Q   0xCA
+#define STATUS_GOOD_Q 0xCA
 
 #define MR_PRIME_SIZE 1536
 
 #define MAX_RETRY_PRIME_GEN 5000
 
 #ifdef CFG_CAAM_64BIT
-#define SETUP_RSA_DESC_ENTRIES   20
-#define GEN_RSA_DESC_ENTRIES     62
-#define CHECK_P_Q_DESC_ENTRIES   32
+#define SETUP_RSA_DESC_ENTRIES 20
+#define GEN_RSA_DESC_ENTRIES   62
+#define CHECK_P_Q_DESC_ENTRIES 32
 #else
-#define SETUP_RSA_DESC_ENTRIES   17
-#define GEN_RSA_DESC_ENTRIES     58
-#define CHECK_P_Q_DESC_ENTRIES   29
+#define SETUP_RSA_DESC_ENTRIES 17
+#define GEN_RSA_DESC_ENTRIES   58
+#define CHECK_P_Q_DESC_ENTRIES 29
 #endif
 
 /*
@@ -369,7 +369,7 @@ static void search_smallprime(size_t size, struct caambuf *prime)
  * @small_prime  Pre-generated small prime value
  * @desc_prime   Physical address of the prime generator descriptor
  */
-static enum caam_status do_desc_setup(uint32_t *desc, struct prime_data *data,
+static enum caam_status do_desc_setup(uint32_t *desc, struct prime_rsa *data,
 				      const struct caambuf *small_prime,
 				      const paddr_t desc_prime)
 {
@@ -452,7 +452,7 @@ static enum caam_status do_desc_setup(uint32_t *desc, struct prime_data *data,
  * @do_prime_q  Generate Prime Q
  * @desc_next   Physical address of the next descriptor (can be NULL)
  */
-static void do_desc_prime(uint32_t *desc, struct prime_data *data,
+static void do_desc_prime(uint32_t *desc, struct prime_rsa *data,
 			  const struct caambuf *small_prime, bool do_prime_q,
 			  const paddr_t desc_next)
 {
@@ -719,7 +719,7 @@ static void do_checks_primes(uint32_t *desc, const struct caambuf *p,
 	RSA_DUMPDESC(desc);
 }
 
-enum caam_status caam_prime_gen(struct prime_data *data)
+enum caam_status caam_prime_rsa_gen(struct prime_rsa *data)
 {
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct caambuf small_prime = { };
