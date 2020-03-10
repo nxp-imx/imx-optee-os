@@ -20,6 +20,7 @@
 # DBG_CIPHER BIT32(9)  // Cipher trace
 # DBG_BLOB   BIT32(10) // BLOB trace
 # DBG_ECC    BIT32(11) // ECC trace
+# DBG_DSA    BIT32(12) // DSA trace
 
 CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
@@ -78,6 +79,7 @@ ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6SX) $(CFG_MX7ULP)), y)
 $(eval $(call cryphw-enable-drv-hw, RSA))
 $(eval $(call cryphw-enable-drv-hw, ECC))
+$(eval $(call cryphw-enable-drv-hw, DSA))
 
 # Define the RSA Private Key Format used by the CAAM
 #   Format #1: (n, d)
@@ -90,12 +92,11 @@ CFG_CRYPTO_SM2_DSA = n
 CFG_CRYPTO_SM2_KEP = n
 endif
 
-$(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, RSA ECC))
+$(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, RSA ECC DSA))
 $(call force, CFG_CRYPTO_DRV_MAC, $(call cryphw-one-enabled, HMAC CMAC))
 
 #
 # Enable Cryptographic Driver interface
 #
 CFG_CRYPTO_DRV_ACIPHER ?= $(CFG_NXP_CAAM_ACIPHER_DRV)
-
 endif

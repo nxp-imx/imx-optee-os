@@ -28,4 +28,21 @@ struct prime_data {
  */
 enum caam_status caam_prime_gen(struct prime_data *data);
 
+/*
+ * Prime generator structure for DSA
+ */
+struct prime_dsa {
+	struct caambuf *g; /* Generator g */
+	struct caambuf *p; /* Prime p */
+	struct caambuf *q; /* Prime q */
+};
+
+/*
+ * Generate DSA Prime Number
+ * Algorithm based on the Chapter A.1.2 of the FIPS.186-4 specification
+ *
+ * @data  [in/out] Prime generation data
+ */
+enum caam_status caam_prime_dsa_gen(struct prime_dsa *data);
+
 #endif /* __LOCAL_H__ */
