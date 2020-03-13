@@ -480,14 +480,10 @@ static struct drvcrypt_dh driver_dh = {
 	.shared_secret = do_shared_secret,
 };
 
-/*
- * Initialize the DH module
- *
- * @ctrl_addr   Controller base address
- */
-enum caam_status caam_dh_init(vaddr_t ctrl_addr)
+enum caam_status caam_dh_init(struct caam_jrcfg *caam_jrcfg)
 {
 	enum caam_status retstatus = CAAM_FAILURE;
+	vaddr_t jr_base = caam_jrcfg->base + caam_jrcfg->offset;
 
 	if (caam_hal_ctrl_pknum(ctrl_addr) &&
 	    drvcrypt_register_dh(&driver_dh) == TEE_SUCCESS)

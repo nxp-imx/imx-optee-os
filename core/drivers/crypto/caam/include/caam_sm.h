@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   CAAM Secure Memory module header.
  */
@@ -68,5 +68,5 @@ static inline enum caam_status caam_sm_init(struct caam_jrcfg *jrcfg __unused)
 {
 	return CAAM_NO_ERROR;
 }
-#endif /* CFG_NXP_CAAM_MP_DRV */
+#endif /* CFG_NXP_CAAM_SM_DRV */
 #endif /* __CAAM_SM_H__ */

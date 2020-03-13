@@ -191,7 +191,6 @@ $(call force,CFG_IMX_SNVS,n)
 CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 6
-$(call force,CFG_NXP_CAAM,n)
 $(call force,CFG_TZC380,n)
 $(call force,CFG_IMX_SC,y)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qx-flavorlist)))
@@ -201,7 +200,6 @@ $(call force,CFG_IMX_SNVS,n)
 CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 4
-$(call force,CFG_NXP_CAAM,n)
 $(call force,CFG_TZC380,n)
 $(call force,CFG_IMX_SC,y)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8dxl-flavorlist)))
@@ -487,11 +485,6 @@ CFG_MMAP_REGIONS ?= 24
 # Almost all platforms include CAAM HW Modules, except the
 # ones forced to be disabled
 CFG_NXP_CAAM ?= y
-
-# Disable CAAM driver for MX8Q
-ifneq (,$(filter y, $(CFG_MX8QM) $(CFG_MX8QX)))
-CFG_NXP_CAAM = n
-endif
 
 ifeq ($(CFG_NXP_CAAM),y)
 # If NXP CAAM driver is enable for MX8Q, SC driver init is done by CAAM driver
