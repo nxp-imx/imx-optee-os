@@ -34,6 +34,16 @@ CFG_DBG_CAAM_BUF ?= 0x0
 # CFG_NXP_CAAM_BLOB_DRV ?= y
 
 #
+# Due to the CAAM DMA behaviour on iMX8QM & iMX8QX, 4 bytes need to be add to
+# the buffer size when aligned memory allocation is done
+#
+ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX)),y)
+$(call force, CFG_CAAM_SIZE_ALIGN,4)
+else
+$(call force, CFG_CAAM_SIZE_ALIGN,1)
+endif
+
+#
 # CAAM Job Ring configuration
 #  - Normal boot settings
 #  - HAB support boot settings
