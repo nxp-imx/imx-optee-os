@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   CAAM Configuration header.
  */
@@ -22,10 +22,19 @@ enum caam_status caam_hal_cfg_get_conf(struct caam_jrcfg *jrcfg);
 
 /*
  * Setup the Non-Secure Job Ring
+ * Soc specific function
  *
  * @jrcfg   Job Ring configuration
  */
 void caam_hal_cfg_setup_nsjobring(struct caam_jrcfg *jrcfg);
+
+/*
+ * Setup the Non-Secure Job Ring
+ * Common function
+ *
+ * @jrcfg   Job Ring configuration
+ */
+void caam_hal_cfg_common_setup_nsjobring(struct caam_jrcfg *jrcfg);
 
 #ifdef CFG_DT
 /*
