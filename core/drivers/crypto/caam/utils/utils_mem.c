@@ -33,8 +33,8 @@ static inline void touch_page(vaddr_t addr)
  * Allocate an area of given size in bytes. Add the memory allocator
  * information in the newly allocated area.
  *
- * @size   Size in bytes to allocate
- * @type   Type of area to allocate (refer to MEM_TYPE_*)
+ * @size      Size in bytes to allocate
+ * @type      Type of area to allocate (refer to MEM_TYPE_*)
  */
 static void *mem_alloc(size_t size, uint8_t type)
 {
@@ -45,6 +45,10 @@ static void *mem_alloc(size_t size, uint8_t type)
 
 	if (type & MEM_TYPE_ALIGN) {
 		size_t cacheline_size = dcache_get_line_size();
+
+		if (ROUNDUP_OVERFLOW(alloc_size, CFG_CAAM_SIZE_ALIGN,
+				     &alloc_size))
+			return NULL;
 
 		if (ROUNDUP_OVERFLOW(alloc_size, cacheline_size, &alloc_size))
 			return NULL;
