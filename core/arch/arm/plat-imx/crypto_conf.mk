@@ -33,30 +33,39 @@ CFG_DBG_CAAM_BUF ?= 0x0
 # Enable the BLOB module used for the hardware unique key
 # CFG_NXP_CAAM_BLOB_DRV ?= y
 
-#
+ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX)),y)
 # Due to the CAAM DMA behaviour on iMX8QM & iMX8QX, 4 bytes need to be add to
 # the buffer size when aligned memory allocation is done
-#
-ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX)),y)
 $(call force, CFG_CAAM_SIZE_ALIGN,4)
-else
+#
+# CAAM Job Ring configuration
+#  - Normal boot settings
+#  - HAB support boot settings
+#
+$(call force, CFG_JR_BLOCK_SIZE,0x10000)
+$(call force,CFG_JR_INDEX,2)  # Job Ring 2
+$(call force,CFG_JR_INT,485)  # CAAM_INT2 = 485
+else ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8MQ)))
 $(call force, CFG_CAAM_SIZE_ALIGN,1)
-endif
-
 #
 # CAAM Job Ring configuration
 #  - Normal boot settings
 #  - HAB support boot settings
 #
 $(call force, CFG_JR_BLOCK_SIZE,0x1000)
-
-ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8MQ)))
 # On i.MX8 mscale devices OP-TEE runs before u-boot.
 # HAB can still be reuse in u-boot to authenticate linux
 # Use another Job ring other than the one used by HAB.
 $(call force, CFG_JR_INDEX,2)  # Default JR index used
 $(call force, CFG_JR_INT,146)  # Default JR IT Number (114 + 32) = 146
 else
+$(call force, CFG_CAAM_SIZE_ALIGN,1)
+#
+# CAAM Job Ring configuration
+#  - Normal boot settings
+#  - HAB support boot settings
+#
+$(call force, CFG_JR_BLOCK_SIZE,0x1000)
 $(call force, CFG_JR_INDEX,0)  # Default JR index used
 $(call force, CFG_JR_INT,137)  # Default JR IT Number (105 + 32) = 137
 endif
@@ -104,7 +113,10 @@ ifneq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) \
 $(eval $(call cryphw-enable-drv-hw, RSA))
 $(eval $(call cryphw-enable-drv-hw, ECC))
 $(eval $(call cryphw-enable-drv-hw, DSA))
+ifneq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX) $(CFG_MX8DX) $(CFG_MX8DXL)), y)
 $(eval $(call cryphw-enable-drv-hw, MP))
+CFG_PTA_MP ?= y
+endif
 $(eval $(call cryphw-enable-drv-hw, DH))
 
 # Define the RSA Private Key Format used by the CAAM
@@ -117,7 +129,6 @@ CFG_CRYPTO_SM2_PKE = n
 CFG_CRYPTO_SM2_DSA = n
 CFG_CRYPTO_SM2_KEP = n
 
-CFG_PTA_MP ?= y
 endif
 
 $(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, ECC RSA DH))
