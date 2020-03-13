@@ -47,8 +47,16 @@ CFG_NXP_CAAM_SGT_V1 ?= y
 #
 $(call force, CFG_JR_BLOCK_SIZE,0x1000)
 
+ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8MQ)))
+# On i.MX8 mscale devices OP-TEE runs before u-boot.
+# HAB can still be reuse in u-boot to authenticate linux
+# Use another Job ring other than the one used by HAB.
+$(call force, CFG_JR_INDEX,2)  # Default JR index used
+$(call force, CFG_JR_INT,146)  # Default JR IT Number (114 + 32) = 146
+else
 $(call force, CFG_JR_INDEX,0)  # Default JR index used
 $(call force, CFG_JR_INT,137)  # Default JR IT Number (105 + 32) = 137
+endif
 
 #
 # Configuration of the Crypto Driver
