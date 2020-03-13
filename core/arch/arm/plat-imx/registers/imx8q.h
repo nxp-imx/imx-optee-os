@@ -12,7 +12,9 @@
 #define UART1_BASE	   0x5a070000
 #define UART2_BASE	   0x5a080000
 #define UART3_BASE	   0x5a090000
-#define CAAM_BASE	   0x30900000
 #define SC_IPC_BASE_SECURE 0x5d1b0000
+#define CAAM_BASE	   0x31400000
+#define SECMEM_BASE	   0x31800000
+#define SECMEM_SIZE	   0x10000
 
 #endif /* __IMX8Q_H__ */
