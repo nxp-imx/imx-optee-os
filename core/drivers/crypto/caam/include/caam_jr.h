@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   CAAM Job Rings module header.
  */
@@ -8,6 +8,7 @@
 #define __CAAM_JR_H__
 
 #include <caam_jr_status.h>
+#include <types_ext.h>
 
 /*
  * Job context to enqueue/dequeue

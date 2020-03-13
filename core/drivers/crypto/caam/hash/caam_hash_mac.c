@@ -393,15 +393,16 @@ static TEE_Result caam_hmac_allocate(struct crypto_mac_ctx **ctx, uint32_t algo)
 	return TEE_SUCCESS;
 }
 
-enum caam_status caam_hmac_init(vaddr_t ctrl_addr)
+enum caam_status caam_hmac_init(struct caam_jrcfg *caam_jrcfg)
 {
 	enum caam_status retstatus = CAAM_NO_ERROR;
+	vaddr_t jr_base = caam_jrcfg->base + caam_jrcfg->offset;
 
-	caam_hash_limit = caam_hal_ctrl_hash_limit(ctrl_addr);
+	caam_hash_limit = caam_hal_ctrl_hash_limit(jr_base);
 
 	if (caam_hash_limit != UINT8_MAX) {
 		/* Check if the HW support the HMAC Split key */
-		if (caam_hal_ctrl_splitkey(ctrl_addr))
+		if (caam_hal_ctrl_splitkey(jr_base))
 			if (drvcrypt_register_hmac(&caam_hmac_allocate) !=
 			    TEE_SUCCESS)
 				retstatus = CAAM_FAILURE;

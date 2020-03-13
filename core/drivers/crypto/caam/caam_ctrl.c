@@ -77,14 +77,14 @@ TEE_Result crypto_driver_init(void)
 	}
 
 	/* Initialize the Hash Module */
-	retstatus = caam_hash_init(jrcfg.base);
+	retstatus = caam_hash_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
 
 	/* Initialize the Hmac Module */
-	retstatus = caam_hmac_init(jrcfg.base);
+	retstatus = caam_hmac_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
@@ -105,28 +105,28 @@ TEE_Result crypto_driver_init(void)
 	}
 
 	/* Initialize the MATH Module */
-	retstatus = caam_math_init(jrcfg.base);
+	retstatus = caam_math_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
 
 	/* Initialize the ECC Module */
-	retstatus = caam_ecc_init(jrcfg.base);
+	retstatus = caam_ecc_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
 
 	/* Initialize the RSA Module */
-	retstatus = caam_rsa_init(jrcfg.base);
+	retstatus = caam_rsa_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
 
 	/* Initialize the DH Module */
-	retstatus = caam_dh_init(jrcfg.base);
+	retstatus = caam_dh_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
