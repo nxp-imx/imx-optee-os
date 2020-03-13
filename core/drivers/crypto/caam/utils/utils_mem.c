@@ -83,18 +83,25 @@ struct __packed mem_info {
  * Allocate an area of given size in bytes. Add the memory allocator
  * information in the newly allocated area.
  *
- * @size   Size in bytes to allocate
- * @type   Type of area to allocate (refer to MEM_TYPE_*)
+ * @size_in   Size in bytes to allocate
+ * @type      Type of area to allocate (refer to MEM_TYPE_*)
  */
-static void *mem_alloc(size_t size, uint8_t type)
+static void *mem_alloc(size_t size_in, uint8_t type)
 {
 	struct mem_info *info = NULL;
 	vaddr_t ret_addr = 0;
 	void *ptr = NULL;
 	size_t alloc_size = 0;
+	size_t size = 0;
 	uint32_t cacheline_size = 0;
 
 	MEM_TRACE("alloc %zu bytes of type %" PRIu8, size, type);
+
+	/* Roundup needed to respect CAAM DMA behaviour */
+	if (type & MEM_TYPE_ALIGN)
+		size = ROUNDUP(size_in, CFG_CAAM_SIZE_ALIGN);
+	else
+		size = size_in;
 
 	/*
 	 * The mem_info header is added just before the returned
