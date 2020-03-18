@@ -33,3 +33,4 @@ srcs-$(CFG_IMX_SC) += imx_mu.c
 
 subdirs-y += crypto
 subdirs-$(CFG_IMX_SNVS) += snvs
+subdirs-$(CFG_IMX_SC) += sc
