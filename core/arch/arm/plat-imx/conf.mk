@@ -199,6 +199,7 @@ CFG_TEE_CORE_NB_CORE ?= 6
 $(call force,CFG_NXP_CAAM,n)
 $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_TZC380,n)
+$(call force,CFG_IMX_SC,y)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qx-flavorlist)))
 $(call force,CFG_MX8QX,y)
 $(call force,CFG_ARM64_core,y)
@@ -209,6 +210,7 @@ CFG_TEE_CORE_NB_CORE ?= 4
 $(call force,CFG_NXP_CAAM,n)
 $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_TZC380,n)
+$(call force,CFG_IMX_SC,y)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8dxl-flavorlist)))
 $(call force,CFG_MX8DXL,y)
 $(call force,CFG_ARM64_core,y)
@@ -512,6 +514,11 @@ CFG_NXP_CAAM = n
 endif
 
 ifeq ($(CFG_NXP_CAAM),y)
+# If NXP CAAM driver is enable for MX8Q, SC driver init is done by CAAM driver
+ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX)), y)
+$(call force,CFG_IMX_SC_EXTERN_INIT,y)
+endif
+
 # As NXP CAAM Driver is enabled, disable the small local CAAM driver
 # used just to release Job Rings to Non-Secure world
 $(call force,CFG_IMX_CAAM,n)
