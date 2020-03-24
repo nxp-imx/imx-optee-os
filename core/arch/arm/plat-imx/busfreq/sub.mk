@@ -1,7 +1,7 @@
 
 incdirs-y += ../registers
 
-srcs-y += busfreq.c
+srcs-y += busfreq.c utils.S
 
 srcs-$(CFG_MX6) += busfreq_imx6.c
 asm-defines-$(CFG_MX6) += busfreq_imx6_defines.c
