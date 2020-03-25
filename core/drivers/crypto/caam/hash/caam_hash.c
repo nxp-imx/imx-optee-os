@@ -7,8 +7,8 @@
 #include <caam_hal_ctrl.h>
 #include <caam_hash.h>
 #include <caam_jr.h>
+#include <caam_utils_dmaobj.h>
 #include <caam_utils_mem.h>
-#include <caam_utils_sgt.h>
 #include <caam_utils_status.h>
 #include <drvcrypt.h>
 #include <drvcrypt_hash.h>
@@ -392,8 +392,7 @@ TEE_Result caam_hash_hmac_update(struct hashctx *ctx, const uint8_t *data,
 	size_t size_topost = 0;
 	size_t size_todo = 0;
 	size_t size_inmade = 0;
-	struct caamsgtbuf src_sgt = { .sgt_type = false };
-	struct caambuf indata = { .data = (uint8_t *)data, .length = len };
+	struct caamdmaobj src = {};
 
 	HASH_TRACE("Hash/HMAC Update (%p) %p - %zu", ctx, data, len);
 
@@ -403,32 +402,27 @@ TEE_Result caam_hash_hmac_update(struct hashctx *ctx, const uint8_t *data,
 	alg = ctx->alg;
 	alg_type = alg->type;
 
-	if (data) {
-		indata.paddr = virt_to_phys((void *)data);
-		if (!indata.paddr) {
-			HASH_TRACE("Bad input data virtual address");
-			return TEE_ERROR_BAD_PARAMETERS;
-		}
-
-		if (!caam_mem_is_cached_buf(indata.data, indata.length))
-			indata.nocache = 1;
-	}
-
 	if (!ctx->ctx.data)
 		return TEE_ERROR_GENERIC;
 
-	HASH_TRACE("Update Type 0x%" PRIX32 " - Input @%p-%zu", alg_type,
-		   indata.data, indata.length);
+	HASH_TRACE("Update Type 0x%" PRIX32 " - Input @%p-%zu", alg_type, data,
+		   len);
 
 	/* Calculate the total data to be handled */
-	fullsize = ctx->blockbuf.filled + indata.length;
+	fullsize = ctx->blockbuf.filled + len;
 	size_topost = fullsize % alg->size_block;
 	size_todo = fullsize - size_topost;
-	size_inmade = indata.length - size_topost;
+	size_inmade = len - size_topost;
 	HASH_TRACE("FullSize %zu - posted %zu - todo %zu", fullsize,
 		   size_topost, size_todo);
 
 	if (size_todo) {
+		if (data) {
+			ret = caam_dmaobj_init_input(&src, data, size_inmade);
+			if (ret)
+				goto exit_update;
+		}
+
 		desc = ctx->descriptor;
 		caam_desc_init(desc);
 		caam_desc_add_word(desc, DESC_HEADER(0));
@@ -459,59 +453,16 @@ TEE_Result caam_hash_hmac_update(struct hashctx *ctx, const uint8_t *data,
 			ctx->ctx.length = alg->size_ctx;
 		}
 
-		/* Set the exact size of input data to use */
-		indata.length = size_inmade;
-
-		if (ctx->blockbuf.filled)
-			retstatus = caam_sgt_build_block_data(&src_sgt,
-							      &ctx->blockbuf,
-							      &indata);
-		else
-			retstatus = caam_sgt_build_block_data(&src_sgt, NULL,
-							      &indata);
-
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_GENERIC;
-			goto out;
+		if (ctx->blockbuf.filled) {
+			caam_desc_add_word(desc, FIFO_LD(CLASS_2, MSG, NOACTION,
+							 ctx->blockbuf.filled));
+			caam_desc_add_ptr(desc, ctx->blockbuf.buf.paddr);
+			cache_operation(TEE_CACHECLEAN, ctx->blockbuf.buf.data,
+					ctx->blockbuf.filled);
 		}
 
-		if (src_sgt.sgt_type) {
-			if (src_sgt.length > FIFO_LOAD_MAX) {
-				caam_desc_add_word(desc,
-						   FIFO_LD_SGT_EXT(CLASS_2, MSG,
-								   LAST_C2));
-				caam_desc_add_ptr(desc,
-						  virt_to_phys(src_sgt.sgt));
-				caam_desc_add_word(desc, src_sgt.length);
-			} else {
-				caam_desc_add_word(desc,
-						   FIFO_LD_SGT(CLASS_2, MSG,
-							       LAST_C2,
-							       src_sgt.length));
-				caam_desc_add_ptr(desc,
-						  virt_to_phys(src_sgt.sgt));
-			}
-			caam_sgt_cache_op(TEE_CACHECLEAN, &src_sgt);
-		} else {
-			if (src_sgt.length > FIFO_LOAD_MAX) {
-				caam_desc_add_word(desc,
-						   FIFO_LD_EXT(CLASS_2, MSG,
-							       LAST_C2));
-				caam_desc_add_ptr(desc, src_sgt.buf->paddr);
-				caam_desc_add_word(desc, src_sgt.length);
-			} else {
-				caam_desc_add_word(desc,
-						   FIFO_LD(CLASS_2, MSG,
-							   LAST_C2,
-							   src_sgt.length));
-				caam_desc_add_ptr(desc, src_sgt.buf->paddr);
-			}
-
-			if (!src_sgt.buf->nocache)
-				cache_operation(TEE_CACHECLEAN,
-						src_sgt.buf->data,
-						src_sgt.length);
-		}
+		caam_desc_fifo_load(desc, &src, CLASS_2, MSG, LAST_C2);
+		caam_dmaobj_cache_push(&src);
 
 		ctx->blockbuf.filled = 0;
 
@@ -539,27 +490,24 @@ TEE_Result caam_hash_hmac_update(struct hashctx *ctx, const uint8_t *data,
 	} else {
 		ret = TEE_SUCCESS;
 
-		if (size_topost) {
-			/* All input data must be saved */
+		/* All input data must be saved */
+		if (size_topost)
 			size_inmade = 0;
-		}
 	}
 
 	if (size_topost && data) {
-		/*
-		 * Set the full data size of the input buffer.
-		 * indata.length has been changed when creating the SGT
-		 * object.
-		 */
-		indata.length = len;
 		HASH_TRACE("Posted %zu of input len %zu made %zu", size_topost,
-			   indata.length, size_inmade);
-		ret = caam_cpy_block_src(&ctx->blockbuf, &indata, size_inmade);
+			   len, size_inmade);
+
+		struct caambuf srcdata = {
+			.data = (uint8_t *)data,
+			.length = len,
+		};
+		ret = caam_cpy_block_src(&ctx->blockbuf, &srcdata, size_inmade);
 	}
 
-out:
-	if (src_sgt.sgt_type)
-		caam_sgtbuf_free(&src_sgt);
+exit_update:
+	caam_dmaobj_free(&src);
 
 	if (ret != TEE_SUCCESS)
 		do_free_intern(ctx);
@@ -575,9 +523,7 @@ TEE_Result caam_hash_hmac_final(struct hashctx *ctx, uint8_t *digest,
 	const struct hashalg *alg = NULL;
 	struct caam_jobctx jobctx = { };
 	uint32_t *desc = NULL;
-	bool realloc = false;
-	struct caambuf digest_align = { };
-	struct caamsgtbuf sgtdigest = { .sgt_type = false };
+	struct caamdmaobj dig = {};
 
 	HASH_TRACE("Hash/HMAC Final (%p)", ctx);
 
@@ -589,39 +535,12 @@ TEE_Result caam_hash_hmac_final(struct hashctx *ctx, uint8_t *digest,
 	if (!ctx->ctx.data)
 		return TEE_ERROR_GENERIC;
 
-	if (alg->size_digest > len) {
-		HASH_TRACE("Digest buffer size %" PRId8 " too short (%zu)",
-			   alg->size_digest, len);
-
-		retstatus = caam_alloc_align_buf(&digest_align,
-						 alg->size_digest);
-		if (retstatus != CAAM_NO_ERROR) {
-			HASH_TRACE("Digest reallocation error");
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto out;
-		}
-		realloc = true;
-	} else {
-		retstatus = caam_set_or_alloc_align_buf(digest, &digest_align,
-							len, &realloc);
-
-		if (retstatus != CAAM_NO_ERROR) {
-			HASH_TRACE("Digest reallocation error");
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto out;
-		}
-
-		retstatus = caam_sgt_build_block_data(&sgtdigest, NULL,
-						      &digest_align);
-
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto out;
-		}
-	}
+	ret = caam_dmaobj_init_output(&dig, digest, len, alg->size_digest);
+	if (ret)
+		goto exit_final;
 
 	HASH_TRACE("Final Type 0x%" PRIX32 " - Digest @%p-%zu", alg->type,
-		   digest_align.data, len);
+		   dig.dmabuf.data, len);
 
 	desc = ctx->descriptor;
 	caam_desc_init(desc);
@@ -672,21 +591,8 @@ TEE_Result caam_hash_hmac_final(struct hashctx *ctx, uint8_t *digest,
 	ctx->blockbuf.filled = 0;
 
 	/* Save the final digest */
-	if (sgtdigest.sgt_type) {
-		caam_desc_add_word(desc, ST_SGT_NOIMM(CLASS_2, REG_CTX,
-						      alg->size_digest));
-		caam_desc_add_ptr(desc, virt_to_phys(sgtdigest.sgt));
-
-		caam_sgt_cache_op(TEE_CACHEFLUSH, &sgtdigest);
-	} else {
-		caam_desc_add_word(desc, ST_NOIMM(CLASS_2, REG_CTX,
-						  alg->size_digest));
-		caam_desc_add_ptr(desc, digest_align.paddr);
-
-		if (digest_align.nocache == 0)
-			cache_operation(TEE_CACHEFLUSH, digest_align.data,
-					alg->size_digest);
-	}
+	caam_desc_store(desc, &dig, CLASS_2, REG_CTX);
+	caam_dmaobj_cache_push(&dig);
 
 	HASH_DUMPDESC(desc);
 
@@ -694,16 +600,9 @@ TEE_Result caam_hash_hmac_final(struct hashctx *ctx, uint8_t *digest,
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		/* Ensure that hash data are correct in cache */
-		if (digest_align.nocache == 0)
-			cache_operation(TEE_CACHEINVALIDATE, digest_align.data,
-					alg->size_digest);
+		caam_dmaobj_copy_to_orig(&dig);
 
-		if (realloc)
-			memcpy(digest, digest_align.data, len);
-
-		HASH_DUMPBUF("Digest", digest_align.data,
-			     (size_t)alg->size_digest);
+		HASH_DUMPBUF("Digest", digest, (size_t)alg->size_digest);
 
 		ret = TEE_SUCCESS;
 	} else {
@@ -711,12 +610,8 @@ TEE_Result caam_hash_hmac_final(struct hashctx *ctx, uint8_t *digest,
 		ret = job_status_to_tee_result(jobctx.status);
 	}
 
-out:
-	if (realloc)
-		caam_free_buf(&digest_align);
-
-	if (sgtdigest.sgt_type)
-		caam_sgtbuf_free(&sgtdigest);
+exit_final:
+	caam_dmaobj_free(&dig);
 
 	return ret;
 }
