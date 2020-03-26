@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2020 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  *
@@ -89,107 +89,47 @@ void imx_wdog_restart(void)
 KEEP_PAGER(imx_wdog_restart);
 
 #if defined(CFG_DT) && !defined(CFG_EXTERNAL_DTB_OVERLAY)
+static const char *const dt_ctrl_match_table[] = {
+	"fsl,imx21-wdt",
+	"fsl,imx7ulp-wdt",
+};
+
 static TEE_Result imx_wdog_base(vaddr_t *wdog_vbase)
 {
-	enum teecore_memtypes mtype;
-	void *fdt;
-	paddr_t pbase;
-	vaddr_t vbase;
-	ssize_t sz;
-	int off;
-	int st;
-	uint32_t i;
-
-#ifdef CFG_MX7
-	static const char * const wdog_path[] = {
-		"/soc/aips-bus@30000000/wdog@30280000",
-		"/soc/aips-bus@30000000/wdog@30290000",
-		"/soc/aips-bus@30000000/wdog@302a0000",
-		"/soc/aips-bus@30000000/wdog@302b0000",
-	};
-#elif defined CFG_MX7ULP
-	static const char * const wdog_path[] = {
-		"/bus@40000000/wdog@403D0000",
-		"/bus@40000000/wdog@40430000",
-	};
-#elif defined CFG_MX6SX
-	static const char * const wdog_path[] = {
-		"/soc/aips-bus@2000000/wdog@20bc000",
-		"/soc/aips-bus@2000000/wdog@20c0000",
-		"/soc/aips-bus@2200000/wdog@2288000",
-	};
-#elif defined CFG_MX6SLL
-	static const char * const wdog_path[] = {
-		"/soc/aips-bus@2000000/watchdog@20bc000",
-		"/soc/aips-bus@2000000/watchdog@20c0000",
-	};
-#else
-	static const char * const wdog_path[] = {
-		"/soc/aips-bus@2000000/wdog@20bc000",
-		"/soc/aips-bus@2000000/wdog@20c0000",
-	};
-#endif
+	int off = -1;
+	vaddr_t vbase = 0;
+	void *fdt = NULL;
+	size_t size = 0;
+	unsigned int i = 0;
 
 	fdt = get_dt();
-	if (!fdt) {
-		EMSG("No DTB\n");
+
+	if (!fdt)
 		return TEE_ERROR_NOT_SUPPORTED;
-	}
 
-	/* search the first usable wdog */
-	for (i = 0; i < ARRAY_SIZE(wdog_path); i++) {
-		off = fdt_path_offset(fdt, wdog_path[i]);
-		if (off < 0)
-			continue;
-
-		st = _fdt_get_status(fdt, off);
-		if (st & DT_STATUS_OK_SEC)
+	for (i = 0; i < ARRAY_SIZE(dt_ctrl_match_table); i++) {
+		off = fdt_node_offset_by_compatible(fdt, 0,
+						    dt_ctrl_match_table[i]);
+		if (off >= 0)
 			break;
 	}
 
-	if (i == ARRAY_SIZE(wdog_path)) {
-		EMSG("TEE_ERROR_ITEM_NOT_FOUND 0");
+	if (off < 0) {
+		EMSG("imx-wdog node not found err = 0x%" PRIx32, off);
 		return TEE_ERROR_ITEM_NOT_FOUND;
 	}
-
-	DMSG("path: %s\n", wdog_path[i]);
 
 	ext_reset = dt_have_prop(fdt, off, "fsl,ext-reset-output");
 
-	pbase = _fdt_reg_base_address(fdt, off);
-	if (pbase == (paddr_t)-1) {
-		EMSG("TEE_ERROR_ITEM_NOT_FOUND 1");
-		return TEE_ERROR_ITEM_NOT_FOUND;
+	/* Map the device in the system if not already present */
+	if (dt_map_dev(fdt, off, &vbase, &size) < 0) {
+		EMSG("imx-wdog device not defined or not enabled");
+		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
-	sz = _fdt_reg_size(fdt, off);
-	if (sz < 0) {
-		EMSG("TEE_ERROR_ITEM_NOT_FOUND 1");
-		return TEE_ERROR_ITEM_NOT_FOUND;
-	}
-
-	if ((st & DT_STATUS_OK_SEC) && !(st & DT_STATUS_OK_NSEC))
-		mtype = MEM_AREA_IO_SEC;
-	else
-		mtype = MEM_AREA_IO_NSEC;
-
-	/*
-	 * Check to see whether it has been mapped using
-	 * register_phys_mem or not.
-	 */
-	vbase = (vaddr_t)phys_to_virt(pbase, mtype);
 	if (!vbase) {
-		if (!core_mmu_add_mapping(mtype, pbase, sz)) {
-			EMSG("Failed to map %zu bytes at PA 0x%"PRIxPA,
-			     (size_t)sz, pbase);
-			return TEE_ERROR_GENERIC;
-		}
-	}
-
-	vbase = (vaddr_t)phys_to_virt(pbase, mtype);
-	if (!vbase) {
-		EMSG("Failed to get VA for PA 0x%"PRIxPA, pbase);
-		return TEE_ERROR_GENERIC;
+		EMSG("Unable to get the imx-wdog base address");
+		return TEE_ERROR_ITEM_NOT_FOUND;
 	}
 
 	*wdog_vbase = vbase;
