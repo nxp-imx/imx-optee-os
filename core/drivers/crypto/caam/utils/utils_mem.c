@@ -14,15 +14,6 @@
 #include <string.h>
 
 /*
- * CAAM Descriptor address alignment
- */
-#ifdef ARM64
-#define DESC_START_ALIGN	(64 / 8)
-#else
-#define DESC_START_ALIGN	(32 / 8)
-#endif
-
-/*
  * Check if pointer p is aligned with align
  */
 #define IS_PTR_ALIGN(p, align)	(((uintptr_t)(p) & ((align) - 1)) == 0)
@@ -59,6 +50,7 @@ static uint32_t read_cacheline_size(void)
 	return value;
 }
 
+#define MEM_TYPE_NORMAL 0      /* Normal allocation */
 #define MEM_TYPE_ZEROED	BIT(0) /* Buffer filled with 0's */
 #define MEM_TYPE_ALIGN	BIT(1) /* Address and size aligned on a cache line */
 
@@ -295,6 +287,11 @@ void caam_free_desc(uint32_t **ptr)
 {
 	mem_free(*ptr);
 	*ptr = NULL;
+}
+
+enum caam_status caam_alloc_buf(struct caambuf *buf, size_t size)
+{
+	return mem_alloc_buf(buf, size, MEM_TYPE_NORMAL);
 }
 
 enum caam_status caam_calloc_buf(struct caambuf *buf, size_t size)
