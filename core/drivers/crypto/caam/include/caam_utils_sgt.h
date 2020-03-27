@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   Scatter-Gather Table management utilities header.
  */
@@ -41,8 +41,8 @@ void caam_sgt_set_entry(struct caamsgt *sgt, vaddr_t paddr, size_t len,
  * Build a SGT object with @block and @data buffer.
  * If @block is defined, create a SGT with block buffer as first SGT entry
  * and then the @data.
- * If the @data buffer is a User buffer mapped on multiple Small Page,
- * convert it in SGT entries corresponding to physical Small Page.
+ * If the @data buffer is a buffer mapped on non-contiguous physical areas,
+ * convert it in SGT entries.
  *
  * @sgtbuf [out] SGT object built
  * @block  If not NULL, data block to be handled first
@@ -51,5 +51,18 @@ void caam_sgt_set_entry(struct caamsgt *sgt, vaddr_t paddr, size_t len,
 enum caam_status caam_sgt_build_block_data(struct caamsgtbuf *sgtbuf,
 					   struct caamblock *block,
 					   struct caambuf *data);
+
+/*
+ * Build a SGT object with @data buffer.
+ * If the @data buffer is a buffer mapped on non-contiguous physical areas,
+ * convert it in SGT entries.
+ *
+ * @sgtbuf [out] SGT object built
+ * @data   Operation data
+ * @pabufs Physical Areas list of the @data buffer
+ */
+enum caam_status caam_sgt_build_data(struct caamsgtbuf *sgtbuf,
+				     struct caambuf *data,
+				     struct caambuf *pabufs);
 
 #endif /* __CAAM_UTILS_SGT_H__ */

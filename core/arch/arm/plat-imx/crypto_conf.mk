@@ -24,6 +24,7 @@
 # DBG_SM     BIT32(13) // Secure Memory trace
 # DBG_DH     BIT32(14) // DH Trace
 # DBG_DSA    BIT32(15) // DSA trace
+# DBG_DMAOBJ BIT32(16) // DMA Object Trace
 CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
 CFG_DBG_CAAM_BUF ?= 0x0

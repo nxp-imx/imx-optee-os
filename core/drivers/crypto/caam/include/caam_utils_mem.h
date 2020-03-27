@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   Memory management utilities.
  *         Primitive to allocate, free memory.
@@ -53,6 +53,14 @@ void caam_free_desc(uint32_t **ptr);
  * @size  size in bytes of the memory to allocate
  */
 enum caam_status caam_calloc_buf(struct caambuf *buf, size_t size);
+
+/*
+ * Allocate internal driver buffer.
+ *
+ * @buf   [out] buffer allocated
+ * @size  size in bytes of the memory to allocate
+ */
+enum caam_status caam_alloc_buf(struct caambuf *buf, size_t size);
 
 /*
  * Allocate internal driver buffer aligned with a cache line and initialize

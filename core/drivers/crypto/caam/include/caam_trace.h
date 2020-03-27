@@ -41,6 +41,7 @@
 #define DBG_TRACE_SM	 BIT32(13) /* Secure Memory trace */
 #define DBG_TRACE_DH	 BIT32(14) /* DH trace */
 #define DBG_TRACE_DSA	 BIT32(15) /* DSA trace */
+#define DBG_TRACE_DMAOBJ BIT32(16) /* DMA Object trace */
 
 /* HAL */
 #if CAAM_DBG_TRACE(HAL)
@@ -300,6 +301,13 @@
 #define DSA_TRACE(...)
 #define DSA_DUMPDESC(desc)
 #define DSA_DUMPBUF(...)
+#endif
+
+/* DMA Object */
+#if CAAM_DBG_TRACE(DMAOBJ)
+#define DMAOBJ_TRACE DRV_TRACE
+#else
+#define DMAOBJ_TRACE(...)
 #endif
 
 #if (TRACE_LEVEL >= TRACE_DEBUG)

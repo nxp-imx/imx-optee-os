@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2020 NXP
  *
  * Brief   Scatter-Gatter Table management utilities.
  */
@@ -24,7 +24,21 @@ void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt)
 
 	cache_operation(TEE_CACHECLEAN, (void *)insgt->sgt,
 			insgt->number * sizeof(struct caamsgt));
+
+	SGT_TRACE("SGT @%p %d entries", insgt, insgt->number);
 	for (idx = 0; idx < insgt->number; idx++) {
+		if (insgt->sgt[idx].len_f_e & BS_ENTRY_EXT) {
+			SGT_TRACE("SGT EXT @%p", insgt->buf[idx].data);
+			caam_sgt_cache_op(op, (void *)insgt->buf[idx].data);
+
+			/*
+			 * Extension entry is the last entry of the
+			 * current SGT, even if there are entries
+			 * after, they are not used.
+			 */
+			break;
+		}
+
 		if (!insgt->buf[idx].nocache)
 			cache_operation(op, (void *)insgt->buf[idx].data,
 					insgt->buf[idx].length);
@@ -176,4 +190,52 @@ exit_build_block:
 		caam_free(pabufs);
 
 	return retstatus;
+}
+
+enum caam_status caam_sgt_build_data(struct caamsgtbuf *sgtbuf,
+				     struct caambuf *data,
+				     struct caambuf *pabufs)
+{
+	enum caam_status retstatus = CAAM_FAILURE;
+
+	/*
+	 * If data is mapped on non-contiguous physical areas,
+	 * a SGT object of the number of physical area is built.
+	 *
+	 * Otherwise create a buffer object.
+	 */
+	if (sgtbuf->number > 1) {
+		sgtbuf->sgt_type = true;
+		sgtbuf->length = 0;
+
+		SGT_TRACE("Allocate %d SGT entries", sgtbuf->number);
+		retstatus = caam_sgtbuf_alloc(sgtbuf);
+
+		if (retstatus != CAAM_NO_ERROR)
+			return retstatus;
+
+		/* Build the SGT table based on the physical area list */
+		caam_sgt_fill_table(pabufs, sgtbuf, 0, sgtbuf->number);
+
+		sgtbuf->paddr = virt_to_phys(sgtbuf->sgt);
+	} else {
+		/*
+		 * Only the data buffer is to be used and it's not
+		 * split on mutliple physical pages
+		 */
+		sgtbuf->sgt_type = false;
+
+		retstatus = caam_sgtbuf_alloc(sgtbuf);
+		if (retstatus != CAAM_NO_ERROR)
+			return retstatus;
+
+		sgtbuf->buf->data = data->data;
+		sgtbuf->buf->length = data->length;
+		sgtbuf->buf->paddr = data->paddr;
+		sgtbuf->buf->nocache = data->nocache;
+		sgtbuf->length = data->length;
+		sgtbuf->paddr = sgtbuf->buf->paddr;
+	}
+
+	return CAAM_NO_ERROR;
 }
