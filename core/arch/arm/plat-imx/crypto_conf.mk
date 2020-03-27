@@ -25,6 +25,7 @@
 # DBG_MP     BIT32(13)  // MP trace
 # DBG_SM     BIT32(14) // SM trace
 # DBG_DH     BIT32(15) // DH Trace
+# DBG_DMAOBJ BIT32(16) // DMA Object Trace
 
 CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
