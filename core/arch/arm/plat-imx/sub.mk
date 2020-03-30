@@ -23,6 +23,7 @@ subdirs-y += pm
 subdirs-y += drivers
 srcs-$(CFG_IMX_OCRAM) += imx_ocram.c
 srcs-$(CFG_DT) += imx_dt.c
+srcs-$(CFG_RPMB_FS) += imx_rpmb.c
 
 # Build the busfreq module
 subdirs-$(CFG_BUSFREQ) += busfreq
