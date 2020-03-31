@@ -7,6 +7,7 @@
 #ifndef __LOCAL_H__
 #define __LOCAL_H__
 
+#include <caam_utils_dmaobj.h>
 #include <drvcrypt.h>
 #include <drvcrypt_cipher.h>
 
@@ -59,10 +60,6 @@ struct cipherdata {
 	size_t countdata;  /* MAC Number of input data done */
 };
 
-#define CIPHER_BLOCK_IN	  BIT32(1)
-#define CIPHER_BLOCK_OUT  BIT32(2)
-#define CIPHER_BLOCK_BOTH (CIPHER_BLOCK_IN | CIPHER_BLOCK_OUT)
-#define CIPHER_BLOCK_NONE 0
 /*
  * Update of the cipher operation of complete block except
  * if last block. Last block can be partial block.
@@ -73,12 +70,11 @@ struct cipherdata {
  * @encrypt  Encrypt or decrypt direction
  * @src      Source data to encrypt/decrypt
  * @dst      [out] Destination data encrypted/decrypted
- * @blocks   Additionnal data block to handle (input/output)
  */
 enum caam_status caam_cipher_block(struct cipherdata *ctx, bool savectx,
 				   uint8_t keyid, bool encrypt,
-				   struct caambuf *src, struct caambuf *dst,
-				   unsigned int blocks);
+				   struct caamdmaobj *src,
+				   struct caamdmaobj *dst);
 
 /*
  * Update of the cipher operation in xts mode.
