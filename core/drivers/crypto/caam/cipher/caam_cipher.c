@@ -9,7 +9,6 @@
 #include <caam_io.h>
 #include <caam_jr.h>
 #include <caam_utils_mem.h>
-#include <caam_utils_sgt.h>
 #include <mm/core_memprot.h>
 #include <string.h>
 #include <tee/cache.h>
@@ -165,19 +164,12 @@ static enum caam_status do_check_keysize(const struct caamdefkey *def,
 
 enum caam_status caam_cipher_block(struct cipherdata *ctx, bool savectx,
 				   uint8_t keyid, bool encrypt,
-				   struct caambuf *indata,
-				   struct caambuf *outdata,
-				   enum caam_cipher_block blocks)
+				   struct caamdmaobj *src,
+				   struct caamdmaobj *dst)
 {
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct caam_jobctx jobctx = { };
 	uint32_t *desc = ctx->descriptor;
-	struct caamsgtbuf src_sgt = {
-		.sgt_type = false
-	};
-	struct caamsgtbuf dst_sgt = {
-		.sgt_type = false
-	};
 
 	caam_desc_init(desc);
 	caam_desc_add_word(desc, DESC_HEADER(0));
@@ -208,100 +200,18 @@ enum caam_status caam_cipher_block(struct cipherdata *ctx, bool savectx,
 				   CIPHER_INITFINAL(ctx->alg->type, encrypt));
 	}
 
-	/*
-	 * Load the source data.
-	 * If there is a block of data saved during the previous streaming
-	 * updates add it first.
-	 * If Source data is a User Data buffer mapped on multiple pages
-	 * create a Scatter/Gather table.
-	 */
-	if (blocks == CIPHER_BLOCK_IN || blocks == CIPHER_BLOCK_BOTH)
-		retstatus = caam_sgt_build_block_data(&src_sgt, &ctx->blockbuf,
-						      indata);
-	else
-		retstatus = caam_sgt_build_block_data(&src_sgt, NULL, indata);
-
-	if (retstatus != CAAM_NO_ERROR)
-		goto exit_cipher_block;
-
-	if (src_sgt.sgt_type) {
-		if (src_sgt.length > FIFO_LOAD_MAX) {
-			caam_desc_add_word(desc, FIFO_LD_SGT_EXT(CLASS_1, MSG,
-								 LAST_C1));
-			caam_desc_add_ptr(desc, virt_to_phys(src_sgt.sgt));
-			caam_desc_add_word(desc, src_sgt.length);
-		} else {
-			caam_desc_add_word(desc,
-					   FIFO_LD_SGT(CLASS_1, MSG, LAST_C1,
-						       src_sgt.length));
-			caam_desc_add_ptr(desc, virt_to_phys(src_sgt.sgt));
-		}
-		caam_sgt_cache_op(TEE_CACHECLEAN, &src_sgt);
-	} else {
-		if (src_sgt.length > FIFO_LOAD_MAX) {
-			caam_desc_add_word(desc,
-					   FIFO_LD_EXT(CLASS_1, MSG, LAST_C1));
-			caam_desc_add_ptr(desc, src_sgt.buf->paddr);
-			caam_desc_add_word(desc, src_sgt.length);
-		} else {
-			caam_desc_add_word(desc, FIFO_LD(CLASS_1, MSG, LAST_C1,
-							 src_sgt.length));
-			caam_desc_add_ptr(desc, src_sgt.buf->paddr);
-		}
-
-		if (!src_sgt.buf->nocache)
-			cache_operation(TEE_CACHECLEAN, src_sgt.buf->data,
-					src_sgt.length);
+	/* Load the source data if any */
+	if (src) {
+		caam_desc_fifo_load(desc, src, CLASS_1, MSG, LAST_C1);
+		caam_dmaobj_cache_push(src);
 	}
 
-	/* No output data - just create/update operation context */
-	if (!outdata)
-		goto handle_context;
-
-	/*
-	 * Output data storage.
-	 * In case of streaming, part of the output data is stored in the
-	 * backup block for the next operation.
-	 * If Output data is a User Data buffer mapped on multiple pages
-	 * create a Scatter/Gather table.
-	 */
-	if (blocks == CIPHER_BLOCK_OUT || blocks == CIPHER_BLOCK_BOTH)
-		retstatus = caam_sgt_build_block_data(&dst_sgt, &ctx->blockbuf,
-						      outdata);
-	else
-		retstatus = caam_sgt_build_block_data(&dst_sgt, NULL, outdata);
-
-	if (retstatus != CAAM_NO_ERROR)
-		goto exit_cipher_block;
-
-	if (dst_sgt.sgt_type) {
-		if (dst_sgt.length > FIFO_LOAD_MAX) {
-			caam_desc_add_word(desc, FIFO_ST_SGT_EXT(MSG_DATA));
-			caam_desc_add_ptr(desc, virt_to_phys(dst_sgt.sgt));
-			caam_desc_add_word(desc, dst_sgt.length);
-		} else {
-			caam_desc_add_word(desc, FIFO_ST_SGT(MSG_DATA,
-							     dst_sgt.length));
-			caam_desc_add_ptr(desc, virt_to_phys(dst_sgt.sgt));
-		}
-		caam_sgt_cache_op(TEE_CACHEFLUSH, &dst_sgt);
-	} else {
-		if (dst_sgt.length > FIFO_LOAD_MAX) {
-			caam_desc_add_word(desc, FIFO_ST_EXT(MSG_DATA));
-			caam_desc_add_ptr(desc, dst_sgt.buf->paddr);
-			caam_desc_add_word(desc, dst_sgt.length);
-		} else {
-			caam_desc_add_word(desc,
-					   FIFO_ST(MSG_DATA, dst_sgt.length));
-			caam_desc_add_ptr(desc, dst_sgt.buf->paddr);
-		}
-
-		if (!dst_sgt.buf->nocache)
-			cache_operation(TEE_CACHEFLUSH, dst_sgt.buf->data,
-					dst_sgt.length);
+	/* Store the output data if any */
+	if (dst) {
+		caam_desc_fifo_store(desc, dst, MSG_DATA);
+		caam_dmaobj_cache_push(dst);
 	}
 
-handle_context:
 	if (ctx->ctx.length && ctx->alg->size_ctx) {
 		if (savectx) {
 			/* Store the context */
@@ -327,13 +237,6 @@ handle_context:
 			     retstatus, jobctx.status);
 		retstatus = CAAM_FAILURE;
 	}
-
-exit_cipher_block:
-	if (src_sgt.sgt_type)
-		caam_sgtbuf_free(&src_sgt);
-
-	if (dst_sgt.sgt_type)
-		caam_sgtbuf_free(&dst_sgt);
 
 	return retstatus;
 }
@@ -669,35 +572,19 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct cipherdata *ctx = dupdate->ctx;
-	struct caambuf srcbuf = { };
-	struct caambuf dstbuf = { };
-	paddr_t psrc = 0;
+	struct caamdmaobj *src = NULL;
+	struct caamdmaobj *dst = NULL;
+	struct caamdmaobj insrc = {};
+	struct caamdmaobj indst = {};
+	struct caamdmaobj srcblock = {};
+	struct caamdmaobj dstblock = {};
 	size_t fullSize = 0;
 	size_t size_topost = 0;
 	size_t size_todo = 0;
 	size_t size_indone = 0;
-	bool realloc = false;
-	struct caambuf dst_align = { };
 
 	CIPHER_TRACE("Length=%zu - %s", dupdate->src.length,
 		     ctx->encrypt ? "Encrypt" : "Decrypt");
-
-	retstatus = caam_set_or_alloc_align_buf(dupdate->dst.data, &dst_align,
-						dupdate->dst.length, &realloc);
-	if (retstatus != CAAM_NO_ERROR) {
-		CIPHER_TRACE("Destination buffer reallocation error");
-		ret = TEE_ERROR_OUT_OF_MEMORY;
-		goto out;
-	}
-
-	psrc = virt_to_phys(dupdate->src.data);
-
-	/* Check the payload/cipher physical addresses */
-	if (!psrc) {
-		CIPHER_TRACE("Bad Addr (src 0x%" PRIxPA ")", psrc);
-		ret = TEE_ERROR_GENERIC;
-		goto out;
-	}
 
 	/* Calculate the total data to be handled */
 	fullSize = ctx->blockbuf.filled + dupdate->src.length;
@@ -715,111 +602,115 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 	/* If there is full block to do, do them first */
 	if (size_todo) {
 		size_indone = size_todo - ctx->blockbuf.filled;
+		ret = caam_dmaobj_init_input(&insrc, dupdate->src.data,
+					     size_indone);
+		if (ret)
+			goto end_streaming;
 
-		if (!caam_mem_is_cached_buf(dupdate->src.data,
-					    dupdate->src.length))
-			srcbuf.nocache = 1;
+		ret = caam_dmaobj_init_output(&indst, dupdate->dst.data,
+					      size_indone, size_indone);
+		if (ret)
+			goto end_streaming;
 
 		/*
 		 * If there are data saved in the temporary buffer,
 		 * redo it to generate and increment cipher context.
 		 */
 		if (ctx->blockbuf.filled) {
-			srcbuf.data = dupdate->src.data;
-			srcbuf.length = (dupdate->src.length - size_topost);
-			srcbuf.paddr = psrc;
+			ret = caam_dmaobj_add_first_block(&srcblock,
+							  &ctx->blockbuf,
+							  &insrc);
+			if (ret)
+				goto end_streaming;
 
-			dstbuf.data = dst_align.data;
-			dstbuf.length = (dupdate->dst.length - size_topost);
-			dstbuf.paddr = dst_align.paddr;
-			dstbuf.nocache = dst_align.nocache;
-
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      ctx->encrypt, &srcbuf,
-						      &dstbuf,
-						      CIPHER_BLOCK_BOTH);
+			ret = caam_dmaobj_add_first_block(&dstblock,
+							  &ctx->blockbuf,
+							  &indst);
+			if (ret)
+				goto end_streaming;
 
 			ctx->blockbuf.filled = 0;
+
+			src = &srcblock;
+			dst = &dstblock;
 		} else {
-			/* Do all complete blocks of input source */
-			srcbuf.data = dupdate->src.data;
-			srcbuf.length = size_todo;
-			srcbuf.paddr = psrc;
-
-			dstbuf.data = dst_align.data;
-			dstbuf.length = size_todo;
-			dstbuf.paddr = dst_align.paddr;
-			dstbuf.nocache = dst_align.nocache;
-
-			retstatus =
-				caam_cipher_block(ctx, true, NEED_KEY1,
-						  ctx->encrypt, &srcbuf,
-						  &dstbuf, CIPHER_BLOCK_NONE);
+			src = &insrc;
+			dst = &indst;
 		}
+
+		retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
+					      ctx->encrypt, src, dst);
 
 		if (retstatus != CAAM_NO_ERROR) {
 			ret = TEE_ERROR_GENERIC;
-			goto out;
+			goto end_streaming;
 		}
+
+		/*
+		 * Copy only the output corresponding to the
+		 * encryption/decryption of the input data.
+		 * Additional block is used to ensure that a complete
+		 * cipher block is done.
+		 */
+		caam_dmaobj_copy_to_orig(&indst);
+		caam_dmaobj_free(&insrc);
+		caam_dmaobj_free(&indst);
 
 		CIPHER_DUMPBUF("Source", dupdate->src.data,
 			       dupdate->src.length - size_topost);
-		CIPHER_DUMPBUF("Result", dst_align.data,
+		CIPHER_DUMPBUF("Result", dupdate->dst.data,
 			       dupdate->dst.length - size_topost);
 	}
 
 	if (size_topost) {
-		struct caambuf cpysrc = {
-			.data = dupdate->src.data,
-			.length = dupdate->src.length
-		};
-
 		CIPHER_TRACE("Save input data %zu bytes (done %zu)",
 			     size_topost, size_indone);
+		struct caambuf cpysrc = { .data = dupdate->src.data,
+					  .length = dupdate->src.length };
 
 		retstatus = caam_cpy_block_src(&ctx->blockbuf, &cpysrc,
 					       size_indone);
 		if (retstatus != CAAM_NO_ERROR) {
 			ret = TEE_ERROR_GENERIC;
-			goto out;
+			goto end_streaming;
 		}
 
-		/* Do partial blocks of input source */
-		srcbuf.data = ctx->blockbuf.buf.data;
-		srcbuf.length = ctx->blockbuf.filled;
-		srcbuf.paddr = ctx->blockbuf.buf.paddr;
-		srcbuf.nocache = ctx->blockbuf.buf.nocache;
+		ret = caam_dmaobj_init_input(&insrc,
+					     dupdate->src.data + size_indone,
+					     dupdate->src.length - size_indone);
+		if (ret)
+			goto end_streaming;
 
-		dstbuf.data = dst_align.data + size_indone;
-		dstbuf.length = ctx->blockbuf.filled;
-		dstbuf.paddr = dst_align.paddr + size_indone;
-		dstbuf.nocache = dst_align.nocache;
+		ret = caam_dmaobj_init_output(&indst,
+					      dupdate->dst.data + size_indone,
+					      ctx->blockbuf.filled,
+					      ctx->blockbuf.filled);
+		if (ret)
+			goto end_streaming;
 
 		retstatus = caam_cipher_block(ctx, false, NEED_KEY1,
-					      ctx->encrypt, &srcbuf, &dstbuf,
-					      CIPHER_BLOCK_NONE);
+					      ctx->encrypt, &insrc, &indst);
 
 		if (retstatus != CAAM_NO_ERROR) {
 			ret = TEE_ERROR_GENERIC;
-			goto out;
+			goto end_streaming;
 		}
 
-		CIPHER_DUMPBUF("Source", srcbuf.data, srcbuf.length);
-		CIPHER_DUMPBUF("Result", dstbuf.data, dstbuf.length);
+		caam_dmaobj_copy_to_orig(&indst);
+
+		CIPHER_DUMPBUF("Source", ctx->blockbuf.buf.data,
+			       ctx->blockbuf.filled);
+		CIPHER_DUMPBUF("Result", dupdate->dst.data + size_indone,
+			       ctx->blockbuf.filled);
 	}
-
-	if (!dst_align.nocache)
-		cache_operation(TEE_CACHEINVALIDATE, dst_align.data,
-				dupdate->dst.length);
-
-	if (realloc)
-		memcpy(dupdate->dst.data, dst_align.data, dupdate->dst.length);
 
 	ret = TEE_SUCCESS;
 
-out:
-	if (realloc)
-		caam_free_buf(&dst_align);
+end_streaming:
+	caam_dmaobj_free(&insrc);
+	caam_dmaobj_free(&indst);
+	caam_dmaobj_free(&srcblock);
+	caam_dmaobj_free(&dstblock);
 
 	return ret;
 }
@@ -835,10 +726,8 @@ static TEE_Result do_update_cipher(struct drvcrypt_cipher_update *dupdate)
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct cipherdata *ctx = dupdate->ctx;
-	struct caambuf srcbuf = { };
-	struct caambuf dstbuf = { };
-	bool realloc = false;
-	struct caambuf dst_align = { };
+	struct caamdmaobj src = {};
+	struct caamdmaobj dst = {};
 	unsigned int nb_buf = 0;
 	size_t offset = 0;
 
@@ -856,81 +745,35 @@ static TEE_Result do_update_cipher(struct drvcrypt_cipher_update *dupdate)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	/*
-	 * If the output memory area is cacheable and the size of
-	 * buffer is bigger than MAX_CIPHER_BUFFER, calculate
-	 * the number of buffer to do (prevent output reallocation
-	 * of a big buffer)
-	 */
-	if (dupdate->dst.length > MAX_CIPHER_BUFFER &&
-	    caam_mem_is_cached_buf(dupdate->dst.data, dupdate->dst.length)) {
-		nb_buf = dupdate->dst.length / MAX_CIPHER_BUFFER;
+	nb_buf = dupdate->dst.length / MAX_CIPHER_BUFFER;
+	for (; nb_buf; nb_buf--) {
+		ret = caam_dmaobj_init_input(&src, dupdate->src.data + offset,
+					     MAX_CIPHER_BUFFER);
+		if (ret)
+			goto end_cipher;
 
-		retstatus = caam_alloc_align_buf(&dst_align, MAX_CIPHER_BUFFER);
-		if (retstatus != CAAM_NO_ERROR) {
-			CIPHER_TRACE("Destination buffer allocation error");
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto out;
-		}
-		realloc = true;
-	} else {
-		retstatus = caam_set_or_alloc_align_buf(dupdate->dst.data,
-							&dst_align,
-							dupdate->dst.length,
-							&realloc);
-		if (retstatus != CAAM_NO_ERROR) {
-			CIPHER_TRACE("Destination buffer reallocation error");
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto out;
-		}
-	}
+		ret = caam_dmaobj_init_output(&dst, dupdate->dst.data + offset,
+					      dupdate->dst.length - offset,
+					      MAX_CIPHER_BUFFER);
+		if (ret)
+			goto end_cipher;
 
-	srcbuf.data = dupdate->src.data;
-	srcbuf.length = dupdate->src.length;
-	srcbuf.paddr = virt_to_phys(dupdate->src.data);
-	if (!caam_mem_is_cached_buf(dupdate->src.data, dupdate->src.length))
-		srcbuf.nocache = 1;
-
-	/* Check the payload/cipher physical addresses */
-	if (!srcbuf.paddr) {
-		CIPHER_TRACE("Physical Address error");
-		ret = TEE_ERROR_GENERIC;
-		goto out;
-	}
-
-	dstbuf.data = dst_align.data;
-	dstbuf.paddr = dst_align.paddr;
-	dstbuf.nocache = dst_align.nocache;
-
-	/*
-	 * Prepare to do Maximum Cipher Buffer size in case
-	 * there input data is more than the supported maximum
-	 * cipher size
-	 */
-	srcbuf.length = MAX_CIPHER_BUFFER;
-	dstbuf.length = MAX_CIPHER_BUFFER;
-
-	while (nb_buf--) {
-		srcbuf.data += offset;
-		srcbuf.paddr += offset;
-
-		CIPHER_TRACE("Do nb_buf=%u, offset %zu", nb_buf, offset);
-
+		CIPHER_TRACE("Do nb_buf=%" PRId32 ", offset %zu", nb_buf,
+			     offset);
 		retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-					      ctx->encrypt, &srcbuf, &dstbuf,
-					      CIPHER_BLOCK_NONE);
+					      ctx->encrypt, &src, &dst);
 
 		if (retstatus != CAAM_NO_ERROR) {
 			ret = TEE_ERROR_GENERIC;
-			goto out;
+			goto end_cipher;
 		}
 
-		cache_operation(TEE_CACHEINVALIDATE, dstbuf.data,
-				dstbuf.length);
-
-		memcpy(dupdate->dst.data + offset, dstbuf.data, dstbuf.length);
+		caam_dmaobj_copy_to_orig(&dst);
 
 		offset += MAX_CIPHER_BUFFER;
+
+		caam_dmaobj_free(&src);
+		caam_dmaobj_free(&dst);
 	}
 
 	/*
@@ -940,36 +783,34 @@ static TEE_Result do_update_cipher(struct drvcrypt_cipher_update *dupdate)
 	if (dupdate->src.length - offset > 0) {
 		CIPHER_TRACE("Do Last %zu offset %zu",
 			     dupdate->src.length - offset, offset);
-		srcbuf.data += offset;
-		srcbuf.length = dupdate->src.length - offset;
-		srcbuf.paddr += offset;
 
-		dstbuf.length = dupdate->dst.length - offset;
+		ret = caam_dmaobj_init_input(&src, dupdate->src.data + offset,
+					     dupdate->src.length - offset);
+		if (ret)
+			goto end_cipher;
+
+		ret = caam_dmaobj_init_output(&dst, dupdate->dst.data + offset,
+					      dupdate->dst.length - offset,
+					      dupdate->dst.length - offset);
+		if (ret)
+			goto end_cipher;
 
 		retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-					      ctx->encrypt, &srcbuf, &dstbuf,
-					      CIPHER_BLOCK_NONE);
+					      ctx->encrypt, &src, &dst);
 
-		if (retstatus == CAAM_NO_ERROR) {
-			if (!dstbuf.nocache)
-				cache_operation(TEE_CACHEINVALIDATE,
-						dstbuf.data, dstbuf.length);
-
-			if (realloc)
-				memcpy(dupdate->dst.data + offset, dstbuf.data,
-				       dstbuf.length);
-
-			ret = TEE_SUCCESS;
-		} else {
+		if (retstatus != CAAM_NO_ERROR) {
 			ret = TEE_ERROR_GENERIC;
+			goto end_cipher;
 		}
-	} else {
-		ret = TEE_SUCCESS;
+
+		caam_dmaobj_copy_to_orig(&dst);
 	}
 
-out:
-	if (realloc == 1)
-		caam_free_buf(&dst_align);
+	ret = TEE_SUCCESS;
+
+end_cipher:
+	caam_dmaobj_free(&src);
+	caam_dmaobj_free(&dst);
 
 	return ret;
 }

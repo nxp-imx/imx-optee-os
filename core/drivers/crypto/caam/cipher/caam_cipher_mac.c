@@ -8,7 +8,6 @@
 #include <caam_common.h>
 #include <caam_jr.h>
 #include <caam_utils_mem.h>
-#include <caam_utils_sgt.h>
 #include <caam_utils_status.h>
 #include <drvcrypt_mac.h>
 #include <mm/core_memprot.h>
@@ -134,27 +133,6 @@ static const struct cipheralg *get_macalgo(uint32_t algo)
 }
 
 /*
- * Increment the buffer of @inc value.
- * Check if the next data is crossing a small page to get the
- * physical address of the next data with the virt_to_phys function.
- * Otherwise increment the buffer's physical address of @inc value.
- *
- * @buf   Buffer to increment
- * @inc   Increment
- */
-static inline void inc_mac_buffer(struct caambuf *buf, size_t inc)
-{
-	vaddr_t prev = (vaddr_t)buf->data;
-
-	buf->data += inc;
-
-	if ((prev & SMALL_PAGE_MASK) + inc > SMALL_PAGE_MASK)
-		buf->paddr = virt_to_phys(buf->data);
-	else
-		buf->paddr += inc;
-}
-
-/*
  * MAC update of the cipher operation of complete block except
  * if last block. Last block can be partial block.
  *
@@ -165,12 +143,13 @@ static TEE_Result do_update_mac(struct drvcrypt_cipher_update *dupdate)
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct cipherdata *ctx = dupdate->ctx;
-	struct caambuf srcbuf = { };
-	struct caambuf dst_align = { };
+	struct caamdmaobj src = {};
+	struct caamdmaobj srcblock = {};
+	struct caamdmaobj dst = {};
 	size_t full_size = 0;
 	size_t size_topost = 0;
 	size_t size_todo = 0;
-	bool realloc = false;
+	uint8_t *srcdata = NULL;
 
 	CIPHER_TRACE("Length=%zu - %s", dupdate->src.length,
 		     ctx->encrypt ? "Encrypt" : "Decrypt");
@@ -188,19 +167,8 @@ static TEE_Result do_update_mac(struct drvcrypt_cipher_update *dupdate)
 	CIPHER_TRACE("FullSize %zu - posted %zu - todo %zu", full_size,
 		     size_topost, size_todo);
 
-	if (dupdate->src.length) {
-		srcbuf.data = dupdate->src.data;
-		srcbuf.paddr = virt_to_phys(dupdate->src.data);
-
-		if (!srcbuf.paddr) {
-			CIPHER_TRACE("Bad src address");
-			return TEE_ERROR_GENERIC;
-		}
-
-		if (!caam_mem_is_cached_buf(dupdate->src.data,
-					    dupdate->src.length))
-			srcbuf.nocache = 1;
-	}
+	if (dupdate->src.length)
+		srcdata = dupdate->src.data;
 
 	if (!size_todo) {
 		/*
@@ -212,84 +180,82 @@ static TEE_Result do_update_mac(struct drvcrypt_cipher_update *dupdate)
 			memcpy(dupdate->dst.data, ctx->ctx.data,
 			       MIN(dupdate->dst.length, ctx->alg->size_ctx));
 
-		goto out;
+		goto final_mac_update;
 	}
 
 	if (dupdate->last) {
-		retstatus = caam_set_or_alloc_align_buf(dupdate->dst.data,
-							&dst_align,
-							ctx->alg->size_ctx,
-							&realloc);
-		if (retstatus != CAAM_NO_ERROR) {
-			CIPHER_TRACE("Dest buffer reallocation error");
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto out_free;
-		}
+		ret = caam_dmaobj_init_output(&dst, dupdate->dst.data,
+					      dupdate->dst.length,
+					      ctx->alg->size_ctx);
+		if (ret)
+			goto end_mac;
 	}
 
 	/* Check if there is some data saved to complete the buffer */
 	if (ctx->blockbuf.filled) {
-		srcbuf.length = ctx->alg->size_block - ctx->blockbuf.filled;
+		ret = caam_dmaobj_init_input(&src, srcdata,
+					     ctx->alg->size_block -
+						     ctx->blockbuf.filled);
+		if (ret)
+			goto end_mac;
 
-		if (dupdate->last)
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      true, &srcbuf, &dst_align,
-						      CIPHER_BLOCK_IN);
-		else
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      true, &srcbuf, NULL,
-						      CIPHER_BLOCK_IN);
+		ret = caam_dmaobj_add_first_block(&srcblock, &ctx->blockbuf,
+						  &src);
+		if (ret)
+			goto end_mac;
 
+		srcdata += ctx->alg->size_block - ctx->blockbuf.filled;
 		ctx->blockbuf.filled = 0;
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_GENERIC;
-			goto out_free;
-		}
-
 		size_todo -= ctx->alg->size_block;
 
-		if (size_todo || size_topost)
-			inc_mac_buffer(&srcbuf, srcbuf.length);
-	}
+		if (dupdate->last && !size_todo) {
+			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
+						      true, &srcblock, &dst);
+			caam_dmaobj_copy_to_orig(&dst);
+			goto final_mac_update;
+		} else {
+			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
+						      true, &srcblock, NULL);
+		}
 
-	srcbuf.length = ctx->alg->size_block;
+		if (retstatus != CAAM_NO_ERROR) {
+			ret = TEE_ERROR_GENERIC;
+			goto end_mac;
+		}
+
+		caam_dmaobj_free(&src);
+	}
 
 	while (size_todo) {
-		if (dupdate->last)
+		ret = caam_dmaobj_init_input(&src, srcdata,
+					     ctx->alg->size_block);
+		if (ret)
+			goto end_mac;
+
+		if (dupdate->last) {
 			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      true, &srcbuf, &dst_align,
-						      CIPHER_BLOCK_NONE);
-		else
+						      true, &src, &dst);
+			caam_dmaobj_copy_to_orig(&dst);
+		} else {
 			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      true, &srcbuf, NULL,
-						      CIPHER_BLOCK_NONE);
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_GENERIC;
-			goto out_free;
+						      true, &src, NULL);
 		}
 
-		size_todo -= ctx->alg->size_block;
+		if (retstatus != CAAM_NO_ERROR)
+			return TEE_ERROR_GENERIC;
 
-		if (size_todo || size_topost)
-			inc_mac_buffer(&srcbuf, srcbuf.length);
+		size_todo -= ctx->alg->size_block;
+		srcdata += ctx->alg->size_block;
+
+		caam_dmaobj_free(&src);
 	};
 
-	if (dst_align.data) {
-		if (!dst_align.nocache)
-			cache_operation(TEE_CACHEINVALIDATE, dst_align.data,
-					dst_align.length);
-
-		if (realloc)
-			memcpy(dupdate->dst.data, dst_align.data,
-			       MIN(dupdate->dst.length, dst_align.length));
-	}
-
-out:
+final_mac_update:
 	ret = TEE_SUCCESS;
 
 	if (size_topost) {
 		struct caambuf cpysrc = {
-			.data = srcbuf.data,
+			.data = srcdata,
 			.length = size_topost
 		};
 
@@ -301,9 +267,10 @@ out:
 			ret = TEE_ERROR_GENERIC;
 	}
 
-out_free:
-	if (realloc)
-		caam_free_buf(&dst_align);
+end_mac:
+	caam_dmaobj_free(&srcblock);
+	caam_dmaobj_free(&src);
+	caam_dmaobj_free(&dst);
 
 	return ret;
 }
@@ -311,30 +278,22 @@ out_free:
 /*
  * Build and run the CMAC descriptor (AES only)
  *
- * @ctx     Cipher data context
- * @srcbuf  Input data
+ * @ctx     Cipher Data context
+ * @src     Input data
  * @dstbuf  [out] Output data if last block
  * @last    Last block flag
  */
-static TEE_Result run_cmac_desc(struct cipherdata *ctx, struct caambuf *srcbuf,
-				struct caambuf *dstbuf, bool last)
+static TEE_Result run_cmac_desc(struct cipherdata *ctx, struct caamdmaobj *src,
+				struct caamdmaobj *dst, bool last)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct caam_jobctx jobctx = { };
 	uint32_t *desc = NULL;
-	struct caamsgtbuf src_sgt = { .sgt_type = false };
-	struct caamsgtbuf dst_sgt = { .sgt_type = false };
 
 	desc = ctx->descriptor;
 	caam_desc_init(desc);
 	caam_desc_add_word(desc, DESC_HEADER(0));
-
-	if (last) {
-		retstatus = caam_sgt_build_block_data(&dst_sgt, NULL, dstbuf);
-		if (retstatus != CAAM_NO_ERROR)
-			return TEE_ERROR_GENERIC;
-	}
 
 	if (ctx->alg->require_key & NEED_KEY1) {
 		/* Build the descriptor */
@@ -368,17 +327,15 @@ static TEE_Result run_cmac_desc(struct cipherdata *ctx, struct caambuf *srcbuf,
 		if (!ctx->ctx.data) {
 			retstatus = caam_alloc_align_buf(&ctx->ctx,
 							 ctx->alg->size_ctx);
-			if (retstatus != CAAM_NO_ERROR) {
-				ret = TEE_ERROR_OUT_OF_MEMORY;
-				goto out;
-			}
+			if (retstatus != CAAM_NO_ERROR)
+				return TEE_ERROR_OUT_OF_MEMORY;
 		}
 	}
 
 	/* Check first if there is some pending data from previous updates */
 	if (ctx->blockbuf.filled) {
 		/* Add the temporary buffer */
-		if (srcbuf->length)
+		if (src)
 			caam_desc_add_word(desc,
 					   FIFO_LD_EXT(CLASS_1, MSG, NOACTION));
 		else
@@ -393,31 +350,9 @@ static TEE_Result run_cmac_desc(struct cipherdata *ctx, struct caambuf *srcbuf,
 				ctx->blockbuf.filled);
 	}
 
-	if (srcbuf->length) {
-		retstatus = caam_sgt_build_block_data(&src_sgt, NULL, srcbuf);
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_GENERIC;
-			goto out;
-		}
-
-		if (src_sgt.sgt_type) {
-			/* Add the input data multiple of blocksize */
-			caam_desc_add_word(desc, FIFO_LD_SGT_EXT(CLASS_1, MSG,
-								 LAST_C1));
-			caam_desc_add_ptr(desc, virt_to_phys(src_sgt.sgt));
-			caam_desc_add_word(desc, srcbuf->length);
-
-			caam_sgt_cache_op(TEE_CACHECLEAN, &src_sgt);
-		} else {
-			/* Add the input data multiple of blocksize */
-			caam_desc_add_word(desc,
-					   FIFO_LD_EXT(CLASS_1, MSG, LAST_C1));
-			caam_desc_add_ptr(desc, srcbuf->paddr);
-			caam_desc_add_word(desc, srcbuf->length);
-
-			cache_operation(TEE_CACHECLEAN, srcbuf->data,
-					srcbuf->length);
-		}
+	if (src) {
+		caam_desc_fifo_load(desc, src, CLASS_1, MSG, LAST_C1);
+		caam_dmaobj_cache_push(src);
 	} else {
 		if (last && !ctx->blockbuf.filled) {
 			/*
@@ -433,22 +368,8 @@ static TEE_Result run_cmac_desc(struct cipherdata *ctx, struct caambuf *srcbuf,
 	ctx->blockbuf.filled = 0;
 
 	if (last) {
-		if (dst_sgt.sgt_type) {
-			caam_desc_add_word(desc, ST_SGT_NOIMM(CLASS_1, REG_CTX,
-							      dst_sgt.length));
-			caam_desc_add_ptr(desc, virt_to_phys(dst_sgt.sgt));
-
-			caam_sgt_cache_op(TEE_CACHEFLUSH, &dst_sgt);
-		} else {
-			caam_desc_add_word(desc, ST_NOIMM(CLASS_1, REG_CTX,
-							  dst_sgt.length));
-			caam_desc_add_ptr(desc, dst_sgt.buf->paddr);
-
-			if (!dst_sgt.buf->nocache)
-				cache_operation(TEE_CACHEFLUSH,
-						dst_sgt.buf->data,
-						dst_sgt.length);
-		}
+		caam_desc_store(desc, dst, CLASS_1, REG_CTX);
+		caam_dmaobj_cache_push(dst);
 	} else {
 		/* Store the context */
 		caam_desc_add_word(desc, ST_NOIMM_OFF(CLASS_1, REG_CTX,
@@ -469,21 +390,10 @@ static TEE_Result run_cmac_desc(struct cipherdata *ctx, struct caambuf *srcbuf,
 
 	if (retstatus == CAAM_NO_ERROR) {
 		ret = TEE_SUCCESS;
-
-		if (!dstbuf->nocache)
-			cache_operation(TEE_CACHEINVALIDATE, dstbuf->data,
-					dstbuf->length);
 	} else {
 		CIPHER_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
 	}
-
-out:
-	if (src_sgt.sgt_type)
-		caam_sgtbuf_free(&src_sgt);
-
-	if (dst_sgt.sgt_type)
-		caam_sgtbuf_free(&dst_sgt);
 
 	return ret;
 }
@@ -502,46 +412,25 @@ static TEE_Result do_update_cmac(struct drvcrypt_cipher_update *dupdate)
 	size_t size_topost = 0;
 	size_t size_todo = 0;
 	size_t size_inmade = 0;
-	struct caambuf srcbuf = { };
-	struct caambuf dst_align = { };
-	enum caam_status retstatus = CAAM_FAILURE;
-	bool realloc = false;
+	struct caamdmaobj src = {};
+	struct caamdmaobj dst = {};
 
 	CIPHER_TRACE("Length=%zu - %s", dupdate->src.length,
 		     dupdate->encrypt ? "Encrypt" : "Decrypt");
 
-	if (dupdate->src.length) {
-		srcbuf.data = dupdate->src.data;
-		srcbuf.length = dupdate->src.length;
-		srcbuf.paddr = virt_to_phys(dupdate->src.data);
-
-		if (!srcbuf.paddr) {
-			CIPHER_TRACE("Bad Src address");
-			return TEE_ERROR_GENERIC;
-		}
-
-		if (!caam_mem_is_cached_buf(dupdate->src.data,
-					    dupdate->src.length))
-			srcbuf.nocache = 1;
-	}
-
 	if (dupdate->last) {
-		retstatus = caam_set_or_alloc_align_buf(dupdate->dst.data,
-							&dst_align,
-							dupdate->dst.length,
-							&realloc);
-		if (retstatus != CAAM_NO_ERROR) {
-			CIPHER_TRACE("Destination buffer reallocation error");
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto out;
-		}
+		ret = caam_dmaobj_init_output(&dst, dupdate->dst.data,
+					      dupdate->dst.length,
+					      dupdate->dst.length);
+		if (ret)
+			return ret;
 	}
 
 	/* Calculate the total data to be handled */
-	full_size = ctx->blockbuf.filled + srcbuf.length;
+	full_size = ctx->blockbuf.filled + dupdate->src.length;
 	if (!dupdate->last) {
 		if (full_size < ctx->alg->size_block) {
-			size_topost = srcbuf.length;
+			size_topost = dupdate->src.length;
 		} else {
 			size_topost = full_size % ctx->alg->size_block;
 
@@ -562,21 +451,27 @@ static TEE_Result do_update_cmac(struct drvcrypt_cipher_update *dupdate)
 		     size_topost, size_todo);
 
 	if (size_todo || dupdate->last) {
-		size_inmade = srcbuf.length - size_topost;
-		srcbuf.length = size_inmade;
+		size_inmade = dupdate->src.length - size_topost;
+		if (size_inmade) {
+			ret = caam_dmaobj_init_input(&src, dupdate->src.data,
+						     size_inmade);
+			if (ret)
+				goto end_cmac;
 
-		ret = run_cmac_desc(ctx, &srcbuf, &dst_align, dupdate->last);
+			ret = run_cmac_desc(ctx, &src, &dst, dupdate->last);
+		} else {
+			ret = run_cmac_desc(ctx, NULL, &dst, dupdate->last);
+		}
 
-		srcbuf.length = dupdate->src.length;
-
-		if (ret == TEE_SUCCESS && dupdate->last && realloc)
-			memcpy(dupdate->dst.data, dst_align.data,
-			       dupdate->dst.length);
+		if (ret == TEE_SUCCESS && dupdate->last)
+			caam_dmaobj_copy_to_orig(&dst);
 	} else {
 		ret = TEE_SUCCESS;
 	}
 
 	if (size_topost) {
+		struct caambuf srcbuf = { .data = dupdate->src.data,
+					  .length = dupdate->src.length };
 		CIPHER_TRACE("Post %zu of input len %zu made %zu", size_topost,
 			     srcbuf.length, size_inmade);
 		if (caam_cpy_block_src(&ctx->blockbuf, &srcbuf, size_inmade) !=
@@ -584,9 +479,9 @@ static TEE_Result do_update_cmac(struct drvcrypt_cipher_update *dupdate)
 			ret = TEE_ERROR_GENERIC;
 	}
 
-out:
-	if (realloc)
-		caam_free_buf(&dst_align);
+end_cmac:
+	caam_dmaobj_free(&src);
+	caam_dmaobj_free(&dst);
 
 	return ret;
 }
