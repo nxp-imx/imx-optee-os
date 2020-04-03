@@ -33,6 +33,34 @@ struct caam_jrcfg {
 };
 
 /*
+ * The CAAM physical address is decorrelated from the CPU addressing mode.
+ * CAAM can manage 32 or 64 bits address depending on its version and the
+ * device.
+ */
+/*
+ * Definition of input and output ring object
+ */
+#ifdef CFG_CAAM_64BIT
+struct caam_inring_entry {
+	uint64_t desc; /* Physical address of the descriptor */
+};
+
+struct __packed caam_outring_entry {
+	uint64_t desc;	 /* Physical address of the descriptor */
+	uint32_t status; /* Status of the executed job */
+};
+#else
+struct caam_inring_entry {
+	uint32_t desc; /* Physical address of the descriptor */
+};
+
+struct __packed caam_outring_entry {
+	uint32_t desc;	 /* Physical address of the descriptor */
+	uint32_t status; /* Status of the executed job */
+};
+#endif /* CFG_CAAM_64BIT */
+
+/*
  * Initialization of the CAAM Job Ring module
  *
  * @jrcfg  Job Ring Configuration
