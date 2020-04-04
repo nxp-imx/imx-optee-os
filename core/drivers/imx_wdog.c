@@ -89,7 +89,7 @@ void imx_wdog_restart(void)
 KEEP_PAGER(imx_wdog_restart);
 
 #if defined(CFG_DT) && !defined(CFG_EXTERNAL_DTB_OVERLAY)
-static const char *const dt_ctrl_match_table[] = {
+static const char *const dt_match_table[] = {
 	"fsl,imx21-wdt",
 	"fsl,imx7ulp-wdt",
 };
@@ -107,9 +107,16 @@ static TEE_Result imx_wdog_base(vaddr_t *wdog_vbase)
 	if (!fdt)
 		return TEE_ERROR_NOT_SUPPORTED;
 
-	for (i = 0; i < ARRAY_SIZE(dt_ctrl_match_table); i++) {
-		off = fdt_node_offset_by_compatible(fdt, 0,
-						    dt_ctrl_match_table[i]);
+	for (i = 0; i < ARRAY_SIZE(dt_match_table); i++) {
+		off = fdt_node_offset_by_compatible(fdt, 0, dt_match_table[i]);
+
+		for (; off != -FDT_ERR_NOTFOUND;
+		     off = fdt_node_offset_by_compatible(fdt, off,
+							 dt_match_table[i])) {
+			if (_fdt_get_status(fdt, off) != DT_STATUS_DISABLED)
+				break;
+		}
+
 		if (off >= 0)
 			break;
 	}
