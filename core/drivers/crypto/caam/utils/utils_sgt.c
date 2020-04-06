@@ -107,91 +107,6 @@ static void caam_sgt_fill_table(struct caambuf *buf, struct caamsgtbuf *sgt,
 
 }
 
-enum caam_status caam_sgt_build_block_data(struct caamsgtbuf *sgtbuf,
-					   struct caamblock *block,
-					   struct caambuf *data)
-{
-	enum caam_status retstatus = CAAM_FAILURE;
-	int nb_pa_area = 0;
-	unsigned int sgtidx = 0;
-	struct caambuf *pabufs = NULL;
-
-	/* Get the number of physical areas used by the input buffer @data */
-	nb_pa_area = caam_mem_get_pa_area(data, &pabufs);
-	if (nb_pa_area == -1)
-		return CAAM_FAILURE;
-
-	/*
-	 * If the block buffer is present, we need a SGT object
-	 * with a minimum of 2 entries. In plus, if the data is mapped
-	 * on non-contiguous physical areas, we need a SGT object with
-	 * the number of physical area + one entry for the block buffer.
-	 *
-	 * If the block buffer is not present and data is mapped
-	 * on non-contiguous physical areas, a SGT object of the
-	 * number of physical area is needed.
-	 *
-	 * Otherwise no SGT object is needed.
-	 */
-	if (nb_pa_area > 1)
-		sgtbuf->number = nb_pa_area;
-
-	if (block) {
-		if (nb_pa_area > 1)
-			sgtbuf->number += 1;
-		else
-			sgtbuf->number = 2;
-	}
-
-	if (sgtbuf->number) {
-		sgtbuf->sgt_type = true;
-		sgtbuf->length = 0;
-
-		SGT_TRACE("Allocate %d SGT entries", sgtbuf->number);
-		retstatus = caam_sgtbuf_alloc(sgtbuf);
-
-		if (retstatus != CAAM_NO_ERROR)
-			goto exit_build_block;
-
-		/*
-		 * The first entry to create in the SGT is the
-		 * block buffer if present.
-		 */
-		if (block) {
-			sgtbuf->buf[0].data = block->buf.data;
-			sgtbuf->buf[0].length = block->filled;
-			sgtbuf->buf[0].paddr = block->buf.paddr;
-			sgtbuf->buf[0].nocache = block->buf.nocache;
-			sgtbuf->length = sgtbuf->buf[0].length;
-
-			CAAM_SGT_ENTRY(&sgtbuf->sgt[0], sgtbuf->buf[0].paddr,
-				       sgtbuf->buf[0].length);
-
-			sgtidx++;
-		}
-
-		/* Add the data in the SGT table */
-		caam_sgt_fill_table(pabufs, sgtbuf, sgtidx, nb_pa_area);
-	} else {
-		/*
-		 * Only the data buffer is to be used and it's not
-		 * split on User Pages
-		 */
-		sgtbuf->sgt_type = false;
-		sgtbuf->number = 1;
-		sgtbuf->buf = data;
-		sgtbuf->length = data->length;
-	}
-
-	retstatus = CAAM_NO_ERROR;
-
-exit_build_block:
-	if (pabufs)
-		caam_free(pabufs);
-
-	return retstatus;
-}
-
 enum caam_status caam_sgt_build_data(struct caamsgtbuf *sgtbuf,
 				     struct caambuf *data,
 				     struct caambuf *pabufs)
@@ -235,6 +150,41 @@ enum caam_status caam_sgt_build_data(struct caamsgtbuf *sgtbuf,
 		sgtbuf->buf->nocache = data->nocache;
 		sgtbuf->length = data->length;
 		sgtbuf->paddr = sgtbuf->buf->paddr;
+	}
+
+	return CAAM_NO_ERROR;
+}
+
+void caam_sgtbuf_free(struct caamsgtbuf *data)
+{
+	if (data->sgt_type)
+		caam_free(data->sgt);
+	else
+		caam_free(data->buf);
+
+	data->sgt = NULL;
+	data->buf = NULL;
+}
+
+enum caam_status caam_sgtbuf_alloc(struct caamsgtbuf *data)
+{
+	if (!data)
+		return CAAM_BAD_PARAM;
+
+	if (data->sgt_type) {
+		data->sgt =
+			caam_calloc(data->number * (sizeof(struct caamsgt) +
+						    sizeof(struct caambuf)));
+		data->buf = (void *)(((uint8_t *)data->sgt) +
+				     (data->number * sizeof(struct caamsgt)));
+	} else {
+		data->buf = caam_calloc(data->number * sizeof(struct caambuf));
+		data->sgt = NULL;
+	}
+
+	if (!data->buf || (!data->sgt && data->sgt_type)) {
+		caam_sgtbuf_free(data);
+		return CAAM_OUT_MEMORY;
 	}
 
 	return CAAM_NO_ERROR;

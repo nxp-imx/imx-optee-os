@@ -8,7 +8,6 @@
 #include <caam_trace.h>
 #include <caam_utils_dmaobj.h>
 #include <caam_utils_mem.h>
-#include <caam_utils_sgt.h>
 #include <caam_utils_status.h>
 #include <mm/core_memprot.h>
 #include <string.h>

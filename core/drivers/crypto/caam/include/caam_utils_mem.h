@@ -87,20 +87,6 @@ enum caam_status caam_alloc_align_buf(struct caambuf *buf, size_t size);
 void caam_free_buf(struct caambuf *buf);
 
 /*
- * Free data of type struct caamsgtbuf
- *
- * @data    Data object to free
- */
-void caam_sgtbuf_free(struct caamsgtbuf *data);
-
-/*
- * Allocate data of type struct caamsgtbuf
- *
- * @data    [out] Data object allocated
- */
-enum caam_status caam_sgtbuf_alloc(struct caamsgtbuf *data);
-
-/*
  * Initialize struct caambuf with buffer reference, eventually
  * reallocating the buffer if not matching cache line alignment.
  *
@@ -148,13 +134,4 @@ int caam_mem_get_pa_area(struct caambuf *buf, struct caambuf **pabufs);
  */
 bool caam_mem_is_cached_buf(void *buf, size_t size);
 
-/*
- * Copy source data into the destination buffer removing non-significant
- * first zeros (left zeros).
- * If all source @src buffer is zero, left only one zero in the destination.
- *
- * @dst    [out] Destination buffer
- * @src    Source to copy
- */
-void caam_mem_cpy_ltrim_buf(struct caambuf *dst, struct caambuf *src);
 #endif /* __CAAM_UTILS_MEM_H__ */
