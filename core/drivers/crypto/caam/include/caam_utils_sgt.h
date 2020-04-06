@@ -7,8 +7,44 @@
 #ifndef __CAAM_UTILS_SGT_H__
 #define __CAAM_UTILS_SGT_H__
 
-#include <caam_common.h>
+#include <caam_types.h>
 #include <utee_types.h>
+
+/*
+ * Scatter/Gather Table type for input and output data
+ */
+struct caamsgt {
+	uint32_t ptr_ms;  /* W0 - Address pointer (MS 8 LSBs) */
+	uint32_t ptr_ls;  /* W1 - Address pointer (LS 32 bits) */
+	uint32_t len_f_e; /* W2 - Length 30bits, 1bit Final, 1bit Extension */
+	uint32_t offset;  /* W3- Offset in memory buffer (13 LSBs) */
+};
+
+/*
+ * Data buffer encoded in SGT format
+ */
+struct caamsgtbuf {
+	struct caamsgt *sgt; /* SGT Array */
+	struct caambuf *buf; /* Buffer Array */
+	unsigned int number; /* Number of SGT/Buf */
+	size_t length;	     /* Total length of the data encoded */
+	paddr_t paddr;	     /* Physical address to use in CAAM descriptor */
+	bool sgt_type;	     /* Define the data format */
+};
+
+/*
+ * Allocate data of type struct caamsgtbuf
+ *
+ * @data    [out] Data object allocated
+ */
+enum caam_status caam_sgtbuf_alloc(struct caamsgtbuf *data);
+
+/*
+ * Free data of type struct caamsgtbuf
+ *
+ * @data    Data object to free
+ */
+void caam_sgtbuf_free(struct caamsgtbuf *data);
 
 /*
  * Cache operation on SGT table
@@ -37,21 +73,6 @@ void caam_sgt_set_entry(struct caamsgt *sgt, vaddr_t paddr, size_t len,
 	caam_sgt_set_entry(sgt, paddr, len, 0, true, false)
 #define CAAM_SGT_ENTRY_EXT(sgt, paddr, len)                                    \
 	caam_sgt_set_entry(sgt, paddr, len, 0, false, true)
-
-/*
- * Build a SGT object with @block and @data buffer.
- * If @block is not null, create a SGT with block buffer as first SGT entry
- * and then the @data.
- * If the @data buffer is a buffer mapped on non-contiguous physical areas,
- * convert it in SGT entries.
- *
- * @sgtbuf [out] SGT object built
- * @block  If not NULL, data block to be handled first
- * @data   Operation data
- */
-enum caam_status caam_sgt_build_block_data(struct caamsgtbuf *sgtbuf,
-					   struct caamblock *block,
-					   struct caambuf *data);
 
 /*
  * Build a SGT object with @data buffer.

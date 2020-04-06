@@ -323,41 +323,6 @@ void caam_free_buf(struct caambuf *buf)
 	}
 }
 
-void caam_sgtbuf_free(struct caamsgtbuf *data)
-{
-	if (data->sgt_type)
-		caam_free(data->sgt);
-	else
-		caam_free(data->buf);
-
-	data->sgt = NULL;
-	data->buf = NULL;
-}
-
-enum caam_status caam_sgtbuf_alloc(struct caamsgtbuf *data)
-{
-	if (!data)
-		return CAAM_BAD_PARAM;
-
-	if (data->sgt_type) {
-		data->sgt =
-			caam_calloc(data->number * (sizeof(struct caamsgt) +
-						    sizeof(struct caambuf)));
-		data->buf = (void *)(((uint8_t *)data->sgt) +
-				     (data->number * sizeof(struct caamsgt)));
-	} else {
-		data->buf = caam_calloc(data->number * sizeof(struct caambuf));
-		data->sgt = NULL;
-	}
-
-	if (!data->buf || (!data->sgt && data->sgt_type)) {
-		caam_sgtbuf_free(data);
-		return CAAM_OUT_MEMORY;
-	}
-
-	return CAAM_NO_ERROR;
-}
-
 bool caam_mem_is_cached_buf(void *buf, size_t size)
 {
 	enum teecore_memtypes mtype = MEM_AREA_MAXTYPE;
@@ -532,24 +497,4 @@ int caam_mem_get_pa_area(struct caambuf *buf, struct caambuf **out_pabufs)
 
 	MEM_TRACE("Nb Physical Area %d", nb_pa_area + 1);
 	return nb_pa_area + 1;
-}
-
-void caam_mem_cpy_ltrim_buf(struct caambuf *dst, struct caambuf *src)
-{
-	size_t offset = 0;
-	size_t cpy_size = 0;
-
-	/* Calculate the offset to start the copy */
-	while (!src->data[offset] && offset < src->length)
-		offset++;
-
-	if (offset >= src->length)
-		offset = src->length - 1;
-
-	cpy_size = MIN(dst->length, (src->length - offset));
-	MEM_TRACE("Copy %zu of src %zu bytes (offset = %zu)", cpy_size,
-		  src->length, offset);
-	memcpy(dst->data, &src->data[offset], cpy_size);
-
-	dst->length = cpy_size;
 }
