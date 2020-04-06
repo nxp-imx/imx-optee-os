@@ -11,7 +11,6 @@
 #include <caam_io.h>
 #include <caam_jr.h>
 #include <caam_utils_mem.h>
-#include <caam_utils_sgt.h>
 #include <caam_utils_status.h>
 #include <drvcrypt.h>
 #include <drvcrypt_acipher.h>
@@ -1145,15 +1144,10 @@ static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum caam_status retstatus = CAAM_FAILURE;
-	struct caam_rsa_keypair key = { };
-	paddr_t paddr_msg = 0;
-	struct caambuf msg_tmp = { };
-	struct caamsgtbuf sgtmsg = { .sgt_type = false };
-	bool realloc = false;
-	struct caambuf cipher_align = { };
-	struct caamsgtbuf sgtcipher = { .sgt_type = false };
-	paddr_t paddr_cipher = 0;
-	struct caam_jobctx jobctx = { };
+	struct caam_rsa_keypair key = {};
+	struct caamdmaobj msg = {};
+	struct caamdmaobj cipher = {};
+	struct caam_jobctx jobctx = {};
 	uint32_t *desc = NULL;
 	uint32_t desclen = 0;
 	uint32_t pdb_sgt_flags = 0;
@@ -1181,63 +1175,34 @@ static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 	 * ReAllocate the cipher result buffer with a maximum size
 	 * of the Key Modulus's size (N) if not cache aligned
 	 */
-	retstatus = caam_set_or_alloc_align_buf(rsa_data->cipher.data,
-						&cipher_align, key.n.length,
-						&realloc);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+	ret = caam_dmaobj_init_output(&cipher, rsa_data->cipher.data,
+				      rsa_data->cipher.length, key.n.length);
+	if (ret)
 		goto exit_encrypt;
-	}
 
-	retstatus = caam_sgt_build_block_data(&sgtcipher, NULL, &cipher_align);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
-		goto exit_encrypt;
-	}
-
-	if (sgtcipher.sgt_type) {
+	if (cipher.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_RSA_ENC_SGT_G;
-		paddr_cipher = virt_to_phys(sgtcipher.sgt);
-		caam_sgt_cache_op(TEE_CACHEFLUSH, &sgtcipher);
-	} else {
-		paddr_cipher = sgtcipher.buf->paddr;
-		if (!sgtcipher.buf->nocache)
-			cache_operation(TEE_CACHEFLUSH, sgtcipher.buf->data,
-					sgtcipher.length);
-	}
+
+	caam_dmaobj_cache_push(&cipher);
 
 	/* Prepare the input message CAAM descriptor entry */
-	msg_tmp.data = rsa_data->message.data;
-	msg_tmp.length = rsa_data->message.length;
-	msg_tmp.paddr = virt_to_phys(rsa_data->message.data);
-	if (!caam_mem_is_cached_buf(rsa_data->message.data,
-				    rsa_data->message.length))
-		msg_tmp.nocache = 1;
-
-	retstatus = caam_sgt_build_block_data(&sgtmsg, NULL, &msg_tmp);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+	ret = caam_dmaobj_init_input(&msg, rsa_data->message.data,
+				     rsa_data->message.length);
+	if (ret)
 		goto exit_encrypt;
-	}
 
-	if (sgtmsg.sgt_type) {
+	if (msg.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_RSA_ENC_SGT_F;
-		paddr_msg = virt_to_phys(sgtmsg.sgt);
-		caam_sgt_cache_op(TEE_CACHECLEAN, &sgtmsg);
-	} else {
-		paddr_msg = sgtmsg.buf->paddr;
-		if (!sgtmsg.buf->nocache)
-			cache_operation(TEE_CACHECLEAN, sgtmsg.buf->data,
-					sgtmsg.length);
-	}
+
+	caam_dmaobj_cache_push(&msg);
 
 	caam_desc_init(desc);
 	caam_desc_add_word(desc, DESC_HEADER(0));
 	caam_desc_add_word(desc, PDB_RSA_ENC_E_SIZE(key.e.length) |
 					 PDB_RSA_ENC_N_SIZE(key.n.length) |
 					 pdb_sgt_flags);
-	caam_desc_add_ptr(desc, paddr_msg);
-	caam_desc_add_ptr(desc, paddr_cipher);
+	caam_desc_add_ptr(desc, msg.sgtbuf.paddr);
+	caam_desc_add_ptr(desc, cipher.sgtbuf.paddr);
 	caam_desc_add_ptr(desc, key.n.paddr);
 	caam_desc_add_ptr(desc, key.e.paddr);
 	caam_desc_add_word(desc, PDB_RSA_ENC_F_SIZE(rsa_data->message.length));
@@ -1252,15 +1217,8 @@ static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		if (!cipher_align.nocache)
-			cache_operation(TEE_CACHEINVALIDATE, cipher_align.data,
-					cipher_align.length);
-
-		if (realloc)
-			memcpy(rsa_data->cipher.data, cipher_align.data,
-			       cipher_align.length);
-
-		rsa_data->cipher.length = cipher_align.length;
+		caam_dmaobj_copy_to_orig(&cipher);
+		rsa_data->cipher.length = key.n.length;
 
 		RSA_DUMPBUF("Output", rsa_data->cipher.data,
 			    rsa_data->cipher.length);
@@ -1273,15 +1231,8 @@ static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 exit_encrypt:
 	caam_free_desc(&desc);
 	do_keypair_free(&key);
-
-	if (realloc)
-		caam_free_buf(&cipher_align);
-
-	if (sgtmsg.sgt_type)
-		caam_sgtbuf_free(&sgtmsg);
-
-	if (sgtcipher.sgt_type)
-		caam_sgtbuf_free(&sgtcipher);
+	caam_dmaobj_free(&msg);
+	caam_dmaobj_free(&cipher);
 
 	return ret;
 }
@@ -1297,15 +1248,10 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum caam_status retstatus = CAAM_FAILURE;
-	struct caam_rsa_keypair key = { };
-	struct caambuf cipher_tmp = { };
-	struct caamsgtbuf sgtcipher = { .sgt_type = false };
-	paddr_t paddr_cipher = 0;
-	bool realloc = false;
-	struct caambuf msg_align = { };
-	struct caamsgtbuf sgtmsg = { .sgt_type = false };
-	paddr_t paddr_msg = 0;
-	struct caam_jobctx jobctx = { };
+	struct caam_rsa_keypair key = {};
+	struct caamdmaobj cipher = {};
+	struct caamdmaobj msg = {};
+	struct caam_jobctx jobctx = {};
 	uint32_t *desc = NULL;
 	uint32_t desclen = 0;
 	uint32_t pdb_sgt_flags = 0;
@@ -1329,40 +1275,15 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	 * Allocate the temporary result buffer with a maximum size
 	 * of the Key Modulus's size (N)
 	 */
-	if (rsa_data->message.length < key.n.length) {
-		retstatus = caam_alloc_align_buf(&msg_align, key.n.length);
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto exit_decrypt;
-		}
-
-		realloc = true;
-	} else {
-		retstatus = caam_set_or_alloc_align_buf(rsa_data->message.data,
-							&msg_align,
-							key.n.length, &realloc);
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_OUT_OF_MEMORY;
-			goto exit_decrypt;
-		}
-	}
-
-	retstatus = caam_sgt_build_block_data(&sgtmsg, NULL, &msg_align);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+	ret = caam_dmaobj_init_output(&msg, rsa_data->message.data,
+				      rsa_data->message.length, key.n.length);
+	if (ret)
 		goto exit_decrypt;
-	}
 
-	if (sgtmsg.sgt_type) {
+	if (msg.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_RSA_DEC_SGT_F;
-		paddr_msg = virt_to_phys(sgtmsg.sgt);
-		caam_sgt_cache_op(TEE_CACHEFLUSH, &sgtmsg);
-	} else {
-		paddr_msg = sgtmsg.buf->paddr;
-		if (!sgtmsg.buf->nocache)
-			cache_operation(TEE_CACHEFLUSH, sgtmsg.buf->data,
-					sgtmsg.length);
-	}
+
+	caam_dmaobj_cache_push(&msg);
 
 	/* Allocate the returned computed size when PKCS V1.5 */
 	if (operation == RSA_DECRYPT(PKCS_V1_5)) {
@@ -1374,29 +1295,13 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	}
 
 	/* Prepare the input cipher CAAM descriptor entry */
-	cipher_tmp.data = rsa_data->cipher.data;
-	cipher_tmp.length = rsa_data->cipher.length;
-	cipher_tmp.paddr = virt_to_phys(rsa_data->cipher.data);
-	if (!caam_mem_is_cached_buf(rsa_data->cipher.data,
-				    rsa_data->cipher.length))
-		cipher_tmp.nocache = 1;
+	ret = caam_dmaobj_init_input(&cipher, rsa_data->cipher.data,
+				     rsa_data->cipher.length);
 
-	retstatus = caam_sgt_build_block_data(&sgtcipher, NULL, &cipher_tmp);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
-		goto exit_decrypt;
-	}
-
-	if (sgtcipher.sgt_type) {
+	if (cipher.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_RSA_DEC_SGT_G;
-		paddr_cipher = virt_to_phys(sgtcipher.sgt);
-		caam_sgt_cache_op(TEE_CACHECLEAN, &sgtcipher);
-	} else {
-		paddr_cipher = sgtcipher.buf->paddr;
-		if (!sgtcipher.buf->nocache)
-			cache_operation(TEE_CACHECLEAN, sgtcipher.buf->data,
-					sgtcipher.length);
-	}
+
+	caam_dmaobj_cache_push(&cipher);
 
 	/* Allocate the job descriptor function of the Private key format */
 	switch (key.format) {
@@ -1445,8 +1350,8 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 				   PDB_RSA_DEC_D_SIZE(key.d.length) |
 					   PDB_RSA_DEC_N_SIZE(key.n.length) |
 					   pdb_sgt_flags);
-		caam_desc_add_ptr(desc, paddr_cipher);
-		caam_desc_add_ptr(desc, paddr_msg);
+		caam_desc_add_ptr(desc, cipher.sgtbuf.paddr);
+		caam_desc_add_ptr(desc, msg.sgtbuf.paddr);
 		caam_desc_add_ptr(desc, key.n.paddr);
 		caam_desc_add_ptr(desc, key.d.paddr);
 
@@ -1457,8 +1362,8 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 				   PDB_RSA_DEC_D_SIZE(key.d.length) |
 					   PDB_RSA_DEC_N_SIZE(key.n.length) |
 					   pdb_sgt_flags);
-		caam_desc_add_ptr(desc, paddr_cipher);
-		caam_desc_add_ptr(desc, paddr_msg);
+		caam_desc_add_ptr(desc, cipher.sgtbuf.paddr);
+		caam_desc_add_ptr(desc, msg.sgtbuf.paddr);
 		caam_desc_add_ptr(desc, key.d.paddr);
 		caam_desc_add_ptr(desc, key.p.paddr);
 		caam_desc_add_ptr(desc, key.q.paddr);
@@ -1472,8 +1377,8 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	case RSA_PRIVATE_KEY_FORMAT_3:
 		caam_desc_add_word(desc, PDB_RSA_DEC_N_SIZE(key.n.length) |
 						 pdb_sgt_flags);
-		caam_desc_add_ptr(desc, paddr_cipher);
-		caam_desc_add_ptr(desc, paddr_msg);
+		caam_desc_add_ptr(desc, cipher.sgtbuf.paddr);
+		caam_desc_add_ptr(desc, msg.sgtbuf.paddr);
 		caam_desc_add_ptr(desc, key.qp.paddr);
 		caam_desc_add_ptr(desc, key.p.paddr);
 		caam_desc_add_ptr(desc, key.q.paddr);
@@ -1517,43 +1422,27 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 
 	RSA_DUMPDESC(desc);
 
-	cache_operation(TEE_CACHECLEAN, rsa_data->cipher.data,
-			rsa_data->cipher.length);
-
 	jobctx.desc = desc;
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		if (!msg_align.nocache)
-			cache_operation(TEE_CACHEINVALIDATE, msg_align.data,
-					msg_align.length);
+		caam_dmaobj_copy_to_orig(&msg);
 
-		if (operation == RSA_DECRYPT(NO)) {
-			if (rsa_data->rsa_id == DRVCRYPT_RSA_NOPAD) {
-				struct caambuf outmsg = {
-					.data = rsa_data->message.data,
-					.length = rsa_data->message.length
-				};
-				caam_mem_cpy_ltrim_buf(&outmsg, &msg_align);
-				rsa_data->message.length = outmsg.length;
-			} else if (realloc) {
-				rsa_data->message.length =
-					MIN(key.n.length,
-					    rsa_data->message.length);
-				memcpy(rsa_data->message.data, msg_align.data,
-				       rsa_data->message.length);
-			}
-		} else {
+		if (operation == RSA_DECRYPT(NO) &&
+		    rsa_data->rsa_id == DRVCRYPT_RSA_NOPAD) {
+			caam_dmaobj_copy_ltrim_to_orig(&msg);
+		} else if (operation == RSA_DECRYPT(PKCS_V1_5)) {
 			/* PKCS 1 v1.5 */
 			cache_operation(TEE_CACHEINVALIDATE, size_msg.data,
 					size_msg.length);
 
-			rsa_data->message.length =
-				caam_read_val32(size_msg.data);
-			if (realloc)
-				memcpy(rsa_data->message.data, msg_align.data,
-				       rsa_data->message.length);
+			msg.orig.length = caam_read_val32(size_msg.data);
+			caam_dmaobj_copy_to_orig(&msg);
+		} else {
+			caam_dmaobj_copy_to_orig(&msg);
 		}
+
+		rsa_data->message.length = msg.orig.length;
 
 		RSA_DUMPBUF("Output", rsa_data->message.data,
 			    rsa_data->message.length);
@@ -1567,15 +1456,8 @@ exit_decrypt:
 	caam_free_desc(&desc);
 	do_keypair_free(&key);
 	caam_free_buf(&size_msg);
-
-	if (realloc)
-		caam_free_buf(&msg_align);
-
-	if (sgtmsg.sgt_type)
-		caam_sgtbuf_free(&sgtmsg);
-
-	if (sgtcipher.sgt_type)
-		caam_sgtbuf_free(&sgtcipher);
+	caam_dmaobj_free(&msg);
+	caam_dmaobj_free(&cipher);
 
 	caam_free_buf(&tmp);
 
