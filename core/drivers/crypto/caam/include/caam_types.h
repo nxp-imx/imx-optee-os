@@ -39,33 +39,4 @@ struct caamdefkey {
 	uint8_t mod; /* Key modulus */
 };
 
-/*
- * Scatter/Gather Table type for input and output data
- */
-struct caamsgt {
-	/* Word 0 */
-	uint32_t ptr_ms;   /* Address pointer (MS 8 LSBs) */
-
-	/* Word 1 */
-	uint32_t ptr_ls;   /* Address pointer (LS 32 bits) */
-
-	/* Word 2 */
-	uint32_t len_f_e;  /* Length 30bits + 1bit Final + 1bit Extension) */
-
-	/* Word 3 */
-	uint32_t offset;   /* Offset in memory buffer (13 LSBs) */
-};
-
-/*
- * Data buffer encoded in SGT format
- */
-struct caamsgtbuf {
-	struct caamsgt *sgt; /* SGT Array */
-	struct caambuf *buf; /* Buffer Array */
-	unsigned int number; /* Number of SGT/Buf */
-	size_t length;       /* Total length of the data encoded */
-	paddr_t paddr;	     /* Physical address to use in CAAM descriptor */
-	bool sgt_type;       /* Define the data format */
-};
-
 #endif /* __CAAM_TYPES_H__ */
