@@ -9,7 +9,6 @@
 #include <caam_hal_ctrl.h>
 #include <caam_jr.h>
 #include <caam_utils_mem.h>
-#include <caam_utils_sgt.h>
 #include <caam_utils_status.h>
 #include <drvcrypt.h>
 #include <drvcrypt_acipher.h>
@@ -382,10 +381,7 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct dh_keypair *inkeypair = sdata->key_priv;
 	struct caam_dh_keypair caam_dh_key = {};
-	struct caambuf secret_align = {};
-	struct caamsgtbuf sgt_secret = { .sgt_type = false };
-	paddr_t paddr_secret = 0;
-	bool realloc = false;
+	struct caamdmaobj secret = {};
 	struct caam_jobctx jobctx = {};
 	uint32_t *desc = NULL;
 	uint32_t desclen = 0;
@@ -409,29 +405,16 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	 * ReAllocate the secret result buffer with a maximum size
 	 * of the secret size if not cache aligned
 	 */
-	retstatus = caam_set_or_alloc_align_buf(sdata->secret.data, &secret_align,
-					      sdata->secret.length, &realloc);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+	ret = caam_dmaobj_init_output(&secret, sdata->secret.data,
+				      sdata->secret.length,
+				      sdata->secret.length);
+	if (ret)
 		goto out;
-	}
 
-	retstatus = caam_sgt_build_block_data(&sgt_secret, NULL, &secret_align);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
-		goto out;
-	}
-
-	if (sgt_secret.sgt_type) {
+	if (secret.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_SGT_PKDH_SECRET;
-		paddr_secret = virt_to_phys(sgt_secret.sgt);
-		caam_sgt_cache_op(TEE_CACHEFLUSH, &sgt_secret);
-	} else {
-		paddr_secret = sgt_secret.buf->paddr;
-		if (!sgt_secret.buf->nocache)
-			cache_operation(TEE_CACHEFLUSH, sgt_secret.buf->data,
-					sgt_secret.length);
-	}
+
+	caam_dmaobj_cache_push(&secret);
 
 	/* Convert the Private key to local key */
 	retstatus = do_keypriv_conv(&caam_dh_key, inkeypair);
@@ -465,7 +448,7 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	/* Private key */
 	caam_desc_add_ptr(desc, caam_dh_key.x.paddr);
 	/* Output secret */
-	caam_desc_add_ptr(desc, paddr_secret);
+	caam_desc_add_ptr(desc, secret.sgtbuf.paddr);
 
 	caam_desc_add_word(desc, SHARED_SECRET(DL));
 	desclen = caam_desc_get_len(desc);
@@ -477,15 +460,9 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		if (!secret_align.nocache)
-			cache_operation(TEE_CACHEINVALIDATE, secret_align.data,
-					secret_align.length);
-		if (realloc)
-			memcpy(sdata->secret.data, secret_align.data,
-			       secret_align.length);
+		caam_dmaobj_copy_to_orig(&secret);
 
 		DH_DUMPBUF("Secret", sdata->secret.data, sdata->secret.length);
-
 		ret = TEE_SUCCESS;
 	} else {
 		DH_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
@@ -495,12 +472,7 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 out:
 	caam_free_desc(&desc);
 	do_keypair_free(&caam_dh_key);
-
-	if (realloc)
-		caam_free_buf(&secret_align);
-
-	if (sgt_secret.sgt_type)
-		caam_sgtbuf_free(&sgt_secret);
+	caam_dmaobj_free(&secret);
 
 	return ret;
 }
