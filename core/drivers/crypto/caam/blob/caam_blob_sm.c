@@ -8,7 +8,6 @@
 #include <caam_common.h>
 #include <caam_sm.h>
 #include <caam_utils_mem.h>
-#include <caam_utils_sgt.h>
 #include <drivers/caam/crypto_extension.h>
 #include <mm/core_memprot.h>
 #include <string.h>
@@ -26,10 +25,7 @@ TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct sm_page_addr sm_addr = {};
-	bool realloc = false;
-	struct caambuf blob_align = {};
-	struct caamsgtbuf sgtblob = { .sgt_type = false };
-	paddr_t paddr_blob = 0;
+	struct caamdmaobj resblob = {};
 	unsigned int opflags = 0;
 	size_t outsize = 0;
 	struct caam_jobctx jobctx = {};
@@ -65,28 +61,10 @@ TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
 	}
 
 	/* Re-allocate output buffer if alignment needed */
-	retstatus = caam_set_or_alloc_align_buf(blob->blob.data, &blob_align,
-					      outsize, &realloc);
-	if (retstatus != CAAM_NO_ERROR) {
-		BLOB_TRACE("Blob reallocation error");
-		return TEE_ERROR_OUT_OF_MEMORY;
-	}
-
-	retstatus = caam_sgt_build_block_data(&sgtblob, NULL, &blob_align);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
-		goto exit_operate;
-	}
-
-	if (sgtblob.sgt_type) {
-		paddr_blob = virt_to_phys(sgtblob.sgt);
-		caam_sgt_cache_op(TEE_CACHEFLUSH, &sgtblob);
-	} else {
-		paddr_blob = sgtblob.buf->paddr;
-		if (!sgtblob.buf->nocache)
-			cache_operation(TEE_CACHEFLUSH, sgtblob.buf->data,
-					sgtblob.length);
-	}
+	ret = caam_dmaobj_init_output(&resblob, blob->blob.data,
+				      blob->blob.length, outsize);
+	if (ret)
+		return ret;
 
 	/* Allocate page(s) in one Secure Memory partition */
 	ret = caam_sm_alloc(sm_page, &sm_addr);
@@ -137,11 +115,7 @@ TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
 	caam_desc_add_ptr(desc, sm_addr.paddr);
 
 	/* Define the Output data sequence */
-	if (sgtblob.sgt_type)
-		caam_desc_add_word(desc, SEQ_OUT_PTR(sgtblob.length));
-	else
-		caam_desc_add_word(desc, SEQ_OUT_PTR(sgtblob.length));
-	caam_desc_add_ptr(desc, paddr_blob);
+	caam_desc_seq_out(desc, &resblob);
 
 	/* Define the encapsulation operation */
 	caam_desc_add_word(desc, BLOB_ENCAPS | PROT_BLOB_SEC_MEM | opflags);
@@ -158,18 +132,10 @@ TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
 	if (retstatus == CAAM_NO_ERROR) {
 		BLOB_TRACE("Done CAAM BLOB from Secure Memory encaps");
 
-		if (!blob_align.nocache)
-			cache_operation(TEE_CACHEINVALIDATE, blob_align.data,
-					blob_align.length);
+		caam_dmaobj_copy_to_orig(&resblob);
+		blob->blob.length = resblob.orig.length;
 
-		BLOB_DUMPBUF("Blob Output", blob_align.data, blob_align.length);
-
-		blob->blob.length = blob_align.length;
-
-		if (realloc)
-			memcpy(blob->blob.data, blob_align.data,
-			       blob->blob.length);
-
+		BLOB_DUMPBUF("Blob Output", blob->blob.data, blob->blob.length);
 		ret = TEE_SUCCESS;
 	} else {
 		BLOB_TRACE("CAAM Status 0x%08" PRIx32 "", jobctx.status);
@@ -177,14 +143,9 @@ TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
 	}
 
 exit_operate:
-	if (realloc)
-		caam_free_buf(&blob_align);
-
 	caam_sm_free_page(sm_page);
 	caam_free_desc(&desc);
-
-	if (sgtblob.sgt_type)
-		caam_sgtbuf_free(&sgtblob);
+	caam_dmaobj_free(&resblob);
 
 	return ret;
 }
