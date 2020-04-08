@@ -352,6 +352,7 @@
 /*
  * MP Protocol Information
  */
+#define PROT_MP_PUBK_SGT	BIT32(31)
 #define PROT_MP_CURVE(curve)	SHIFT_U32((curve) & 0xF, 17)
 
 /*
