@@ -65,7 +65,9 @@ enum caam_status caam_hal_cfg_get_conf(struct caam_jrcfg *jrcfg)
 	jrcfg->nb_jobs = NB_JOBS_QUEUE;
 
 	retstatus = CAAM_NO_ERROR;
-
+#ifdef CFG_NXP_CAAM_RUNTIME_JR
+	caam_hal_jr_prepare_backup(jrcfg->base, jrcfg->offset);
+#endif
 exit_get_conf:
 	HAL_TRACE("HAL CFG Get CAAM config ret (0x%x)\n", retstatus);
 	return retstatus;
@@ -84,13 +86,9 @@ void __weak caam_hal_cfg_setup_nsjobring(struct caam_jrcfg *jrcfg)
 		/*
 		 * When the Cryptographic driver is enabled, keep the
 		 * Secure Job Ring don't release it.
-		 * But save the configuration to restore it when
-		 * device reset after suspend.
 		 */
-		if (jr_offset == jrcfg->offset) {
-			caam_hal_jr_prepare_backup(jrcfg->base, jr_offset);
+		if (jr_offset == jrcfg->offset)
 			continue;
-		}
 #endif
 		status = caam_hal_jr_setowner(jrcfg->base, jr_offset,
 					      JROWN_ARM_NS);
