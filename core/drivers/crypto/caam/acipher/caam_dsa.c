@@ -9,7 +9,6 @@
 #include <caam_hal_ctrl.h>
 #include <caam_jr.h>
 #include <caam_utils_mem.h>
-#include <caam_utils_sgt.h>
 #include <caam_utils_status.h>
 #include <drvcrypt.h>
 #include <drvcrypt_acipher.h>
@@ -493,17 +492,10 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 	struct caam_jobctx jobctx = {};
 	uint32_t *desc = NULL;
 	uint32_t desclen = 0;
-	struct caambuf msg_tmp = {};
-	struct caamsgtbuf msg_sgt = { .sgt_type = false };
-	paddr_t paddr_msg = 0;
-	bool realloc = false;
+	struct caamdmaobj msg = {};
 	size_t sign_len = 0;
-	struct caambuf sign_c_tmp = {};
-	struct caambuf sign_d_tmp = {};
-	struct caamsgtbuf sign_c_sgt = { .sgt_type = false };
-	struct caamsgtbuf sign_d_sgt = { .sgt_type = false };
-	paddr_t paddr_sign_c = 0;
-	paddr_t paddr_sign_d = 0;
+	struct caamdmaobj sign_c = {};
+	struct caamdmaobj sign_d = {};
 	uint32_t pdb_sgt_flags = 0;
 
 #ifdef CFG_CAAM_64BIT
@@ -529,28 +521,15 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 	}
 
 	/* Prepare the input message CAAM Descriptor entry */
-	msg_tmp.data = sdata->message.data;
-	msg_tmp.length = sdata->message.length;
-	msg_tmp.paddr = virt_to_phys(sdata->message.data);
-	if (!caam_mem_is_cached_buf(sdata->message.data, sdata->message.length))
-		msg_tmp.nocache = 1;
-
-	retstatus = caam_sgt_build_block_data(&msg_sgt, NULL, &msg_tmp);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+	ret = caam_dmaobj_init_input(&msg, sdata->message.data,
+				     sdata->message.length);
+	if (ret)
 		goto exit_sign;
-	}
 
-	if (msg_sgt.sgt_type) {
+	if (msg.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_SGT_PKSIGN_MSG;
-		paddr_msg = virt_to_phys(msg_sgt.sgt);
-		caam_sgt_cache_op(TEE_CACHECLEAN, &msg_sgt);
-	} else {
-		paddr_msg = msg_sgt.buf->paddr;
-		if (!msg_sgt.buf->nocache)
-			cache_operation(TEE_CACHECLEAN, msg_sgt.buf->data,
-					msg_sgt.length);
-	}
+
+	caam_dmaobj_cache_push(&msg);
 
 	DSA_DUMPBUF("Message", sdata->message.data, sdata->message.length);
 
@@ -564,55 +543,25 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 	 */
 	sign_len = ROUNDUP(sdata->size_sec, 16) + sdata->size_sec;
 
-	retstatus = caam_set_or_alloc_align_buf(sdata->signature.data,
-						&sign_c_tmp, sign_len,
-					        &realloc);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+	ret = caam_dmaobj_init_output(&sign_c, sdata->signature.data,
+				      sdata->signature.length, sign_len);
+	if (ret)
 		goto exit_sign;
-	}
 
-	/* Prepare the 1st Part of the signature */
-	sign_c_tmp.length = sdata->size_sec;
-	retstatus = caam_sgt_build_block_data(&sign_c_sgt, NULL, &sign_c_tmp);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
-		goto exit_sign;
-	}
-
-	if (sign_c_sgt.sgt_type) {
+	if (sign_c.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_SGT_PKSIGN_SIGN_C;
-		paddr_sign_c = virt_to_phys(sign_c_sgt.sgt);
-		caam_sgt_cache_op(TEE_CACHEFLUSH, &sign_c_sgt);
-	} else {
-		paddr_sign_c = sign_c_sgt.buf->paddr;
-		if (!sign_c_sgt.buf->nocache)
-			cache_operation(TEE_CACHEFLUSH, sign_c_sgt.buf->data,
-					sign_c_sgt.length);
-	}
 
-	/* Prepare the 2nd Part of the signature */
-	sign_d_tmp.data = sign_c_tmp.data + sdata->size_sec;
-	sign_d_tmp.length = ROUNDUP(sdata->size_sec, 16);
-	sign_d_tmp.paddr = virt_to_phys(sign_d_tmp.data);
-	sign_d_tmp.nocache = sign_c_tmp.nocache;
-
-	retstatus = caam_sgt_build_block_data(&sign_d_sgt, NULL, &sign_d_tmp);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+	/* Prepare the 2nd Part of the signature. Derive from sign_c */
+	ret = caam_dmaobj_derive(&sign_d, &sign_c, sdata->size_sec,
+				 ROUNDUP(sdata->size_sec, 16));
+	if (ret)
 		goto exit_sign;
-	}
 
-	if (sign_d_sgt.sgt_type) {
+	if (sign_d.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_SGT_PKSIGN_SIGN_D;
-		paddr_sign_d = virt_to_phys(sign_d_sgt.sgt);
-		caam_sgt_cache_op(TEE_CACHEFLUSH, &sign_d_sgt);
-	} else {
-		paddr_sign_d = sign_d_sgt.buf->paddr;
-		if (!sign_d_sgt.buf->nocache)
-			cache_operation(TEE_CACHEFLUSH, sign_d_sgt.buf->data,
-					sign_d_sgt.length);
-	}
+
+	caam_dmaobj_cache_push(&sign_c);
+	caam_dmaobj_cache_push(&sign_d);
 
 	/*
 	 * Build the descriptor using Predifined ECC curve
@@ -631,11 +580,11 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 	/* Secret key */
 	caam_desc_add_ptr(desc, dsakey.x.paddr);
 	/* Input message */
-	caam_desc_add_ptr(desc, paddr_msg);
+	caam_desc_add_ptr(desc, msg.sgtbuf.paddr);
 	/* Signature 1st part */
-	caam_desc_add_ptr(desc, paddr_sign_c);
+	caam_desc_add_ptr(desc, sign_c.sgtbuf.paddr);
 	/* Signature 2nd part */
-	caam_desc_add_ptr(desc, paddr_sign_d);
+	caam_desc_add_ptr(desc, sign_d.sgtbuf.paddr);
 	/* Message length */
 	caam_desc_add_word(desc, sdata->message.length);
 
@@ -650,15 +599,11 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 	if (retstatus == CAAM_NO_ERROR) {
-		if (!sign_c_tmp.nocache)
-			cache_operation(TEE_CACHEINVALIDATE, sign_c_tmp.data,
-					sign_len);
+		/* Limit the copy to 2 * sdata->size_sec */
+		sign_c.orig.length = 2 * sdata->size_sec;
+		caam_dmaobj_copy_to_orig(&sign_c);
 
-		if (realloc)
-			memcpy(sdata->signature.data, sign_c_tmp.data,
-			       2 * sdata->size_sec);
-
-		sdata->signature.length = 2 * sdata->size_sec;
+		sdata->signature.length = sign_c.orig.length;
 
 		DSA_DUMPBUF("Signature", sdata->signature.data,
 			    sdata->signature.length);
@@ -672,20 +617,9 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 exit_sign:
 	caam_free_desc(&desc);
 	do_keypair_free(&dsakey);
-
-	if (realloc) {
-		sign_c_tmp.length = sign_len;
-		caam_free_buf(&sign_c_tmp);
-	}
-
-	if (msg_sgt.sgt_type)
-		caam_sgtbuf_free(&msg_sgt);
-
-	if (sign_c_sgt.sgt_type)
-		caam_sgtbuf_free(&sign_c_sgt);
-
-	if (sign_d_sgt.sgt_type)
-		caam_sgtbuf_free(&sign_d_sgt);
+	caam_dmaobj_free(&msg);
+	caam_dmaobj_free(&sign_c);
+	caam_dmaobj_free(&sign_d);
 
 	return ret;
 }
@@ -709,15 +643,9 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 	struct caam_jobctx jobctx = {};
 	uint32_t *desc = NULL;
 	uint32_t desclen = 0;
-	struct caambuf msg_tmp = {};
-	struct caamsgtbuf msg_sgt = { .sgt_type = false };
-	paddr_t paddr_msg = 0;
-	struct caambuf sign_c_tmp = {};
-	struct caambuf sign_d_tmp = {};
-	struct caamsgtbuf sign_c_sgt = { .sgt_type = false };
-	struct caamsgtbuf sign_d_sgt = { .sgt_type = false };
-	paddr_t paddr_sign_c = 0;
-	paddr_t paddr_sign_d = 0;
+	struct caamdmaobj msg = {};
+	struct caamdmaobj sign_c = {};
+	struct caamdmaobj sign_d = {};
 	uint32_t pdb_sgt_flags = 0;
 
 #ifdef CFG_CAAM_64BIT
@@ -743,76 +671,40 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 	}
 
 	/* Prepare the input message CAAM Descriptor entry */
-	msg_tmp.data = sdata->message.data;
-	msg_tmp.length = sdata->message.length;
-	msg_tmp.paddr = virt_to_phys(sdata->message.data);
-	if (!caam_mem_is_cached_buf(sdata->message.data, sdata->message.length))
-		msg_tmp.nocache = 1;
-
-	retstatus = caam_sgt_build_block_data(&msg_sgt, NULL, &msg_tmp);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+	ret = caam_dmaobj_init_input(&msg, sdata->message.data,
+				     sdata->message.length);
+	if (ret)
 		goto exit_verify;
-	}
 
-	if (msg_sgt.sgt_type) {
+	if (msg.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_SGT_PKVERIF_MSG;
-		paddr_msg = virt_to_phys(msg_sgt.sgt);
-		caam_sgt_cache_op(TEE_CACHECLEAN, &msg_sgt);
-	} else {
-		paddr_msg = msg_sgt.buf->paddr;
-		if (!msg_sgt.buf->nocache)
-			cache_operation(TEE_CACHECLEAN, msg_sgt.buf->data,
-					msg_sgt.length);
-	}
 
-	/* Prepare the 1st Part of the signature */
-	sign_c_tmp.data = sdata->signature.data;
-	sign_c_tmp.length = l_bytes;
-	sign_c_tmp.paddr = virt_to_phys(sign_c_tmp.data);
-	if (!caam_mem_is_cached_buf(sdata->signature.data,
-				    sdata->signature.length))
-		sign_c_tmp.nocache = 1;
+	caam_dmaobj_cache_push(&msg);
 
-	retstatus = caam_sgt_build_block_data(&sign_c_sgt, NULL, &sign_c_tmp);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+	/*
+	 * Prepare the 1st Part of the signature
+	 * Handle the full signature in case signature buffer needs to
+	 * be reallocated.
+	 */
+	ret = caam_dmaobj_init_input(&sign_c, sdata->signature.data,
+				     sdata->signature.length);
+	if (ret)
 		goto exit_verify;
-	}
 
-	if (sign_c_sgt.sgt_type) {
+	if (sign_c.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_SGT_PKVERIF_SIGN_C;
-		paddr_sign_c = virt_to_phys(sign_c_sgt.sgt);
-		caam_sgt_cache_op(TEE_CACHECLEAN, &sign_c_sgt);
-	} else {
-		paddr_sign_c = sign_c_sgt.buf->paddr;
-		if (!sign_c_sgt.buf->nocache)
-			cache_operation(TEE_CACHECLEAN, sign_c_sgt.buf->data,
-					sign_c_sgt.length);
-	}
 
-	/* Prepare the 2nd Part of the signature */
-	sign_d_tmp.data = sdata->signature.data + sdata->size_sec;
-	sign_d_tmp.length = sdata->size_sec;
-	sign_d_tmp.paddr = virt_to_phys(sign_d_tmp.data);
-	sign_d_tmp.nocache = sign_c_tmp.nocache;
-
-	retstatus = caam_sgt_build_block_data(&sign_d_sgt, NULL, &sign_d_tmp);
-	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+	/* Prepare the 2nd Part of the signature, derive from sign_c */
+	ret = caam_dmaobj_derive(&sign_d, &sign_c, sdata->size_sec,
+				 sdata->size_sec);
+	if (ret)
 		goto exit_verify;
-	}
 
-	if (sign_d_sgt.sgt_type) {
+	if (sign_d.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_SGT_PKVERIF_SIGN_D;
-		paddr_sign_d = virt_to_phys(sign_d_sgt.sgt);
-		caam_sgt_cache_op(TEE_CACHECLEAN, &sign_d_sgt);
-	} else {
-		paddr_sign_d = sign_d_sgt.buf->paddr;
-		if (!sign_d_sgt.buf->nocache)
-			cache_operation(TEE_CACHECLEAN, sign_d_sgt.buf->data,
-					sign_d_sgt.length);
-	}
+
+	caam_dmaobj_cache_push(&sign_c);
+	caam_dmaobj_cache_push(&sign_d);
 
 	/* Allocate a Temporary buffer used by the CAAM */
 	retstatus = caam_alloc_align_buf(&tmp, l_bytes);
@@ -838,11 +730,11 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata, size_t l_bytes,
 	/* Public key */
 	caam_desc_add_ptr(desc, dsakey.y.paddr);
 	/* Input message */
-	caam_desc_add_ptr(desc, paddr_msg);
+	caam_desc_add_ptr(desc, msg.sgtbuf.paddr);
 	/* Signature 1st part */
-	caam_desc_add_ptr(desc, paddr_sign_c);
+	caam_desc_add_ptr(desc, sign_c.sgtbuf.paddr);
 	/* Signature 2nd part */
-	caam_desc_add_ptr(desc, paddr_sign_d);
+	caam_desc_add_ptr(desc, sign_d.sgtbuf.paddr);
 	/* Temporary buffer */
 	caam_desc_add_ptr(desc, tmp.paddr);
 	/* Message length */
@@ -873,15 +765,9 @@ exit_verify:
 	caam_free_desc(&desc);
 	do_keypair_free(&dsakey);
 	caam_free_buf(&tmp);
-
-	if (msg_sgt.sgt_type)
-		caam_sgtbuf_free(&msg_sgt);
-
-	if (sign_c_sgt.sgt_type)
-		caam_sgtbuf_free(&sign_c_sgt);
-
-	if (sign_d_sgt.sgt_type)
-		caam_sgtbuf_free(&sign_d_sgt);
+	caam_dmaobj_free(&msg);
+	caam_dmaobj_free(&sign_c);
+	caam_dmaobj_free(&sign_d);
 
 	return ret;
 }
