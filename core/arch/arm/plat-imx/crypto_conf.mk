@@ -28,6 +28,12 @@ CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
 CFG_DBG_CAAM_BUF ?= 0x0
 
+ifeq ($(CFG_MX7ULP), y)
+# i.MX 7ULP is sharing one single line of interrupt for the 2 Job Ring interfaces
+# disable the use of interrupts in OP-TEE.
+$(call force, CFG_CAAM_NO_ITR,y)
+endif
+
 ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX)),y)
 # Due to the CAAM DMA behaviour on iMX8QM & iMX8QX, 4 bytes need to be add to
 # the buffer size when aligned memory allocation is done
