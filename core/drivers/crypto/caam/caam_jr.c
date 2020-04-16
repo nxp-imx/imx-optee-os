@@ -582,12 +582,12 @@ enum caam_status caam_jr_init(struct caam_jrcfg *jrcfg)
 	jr_privdata->it_handler.flags = ITRF_TRIGGER_LEVEL;
 	jr_privdata->it_handler.handler = caam_jr_irqhandler;
 	jr_privdata->it_handler.data = jr_privdata;
-
+#if !defined(CFG_CAAM_NO_ITR)
 #ifdef CFG_NXP_CAAM_RUNTIME_JR
 	itr_add(&jr_privdata->it_handler);
 #endif
 	caam_hal_jr_enable_itr(jr_privdata->baseaddr);
-
+#endif
 	retstatus = CAAM_NO_ERROR;
 
 end_init:
