@@ -226,8 +226,9 @@ enum caam_status caam_hal_jr_flush(vaddr_t baseaddr)
 void caam_hal_jr_resume(vaddr_t baseaddr)
 {
 	io_caam_write32(baseaddr + JRX_JRINTR, JRINTR_HALT_RESUME);
-
+#if !defined(CFG_CAAM_NO_ITR)
 	caam_hal_jr_enable_itr(baseaddr);
+#endif
 }
 
 uint8_t caam_hal_jr_input_index(vaddr_t baseaddr)
