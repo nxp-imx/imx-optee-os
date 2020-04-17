@@ -186,6 +186,7 @@ $(link-out-dir)/tee-pageable.bin: $(link-out-dir)/tee.elf
 else
 $(link-out-dir)/tee-pageable.bin:
 	@$(cmd-echo-silent) '  TOUCH   $@'
+	@mkdir -p $(dir $@)
 	$(q)touch $@
 endif
 
