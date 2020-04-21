@@ -553,6 +553,10 @@ ifeq ($(CFG_NXP_CAAM),y)
 # If NXP CAAM driver is enable for MX8Q, SC driver init is done by CAAM driver
 ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX)), y)
 $(call force,CFG_IMX_SC_EXTERN_INIT,y)
+# force CFG_CRYPTO_DRIVER
+# it is not possible with the current implementation
+# to have the CFG_CRYPTO_DRIVER set to n
+$(call force,CFG_CRYPTO_DRIVER,y)
 endif
 
 # As NXP CAAM Driver is enabled, disable the small local CAAM driver
