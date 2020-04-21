@@ -54,8 +54,8 @@ $(call force, CFG_CAAM_SIZE_ALIGN,4)
 #  - HAB support boot settings
 #
 $(call force, CFG_JR_BLOCK_SIZE,0x10000)
-$(call force,CFG_JR_INDEX,2)  # Job Ring 2
-$(call force,CFG_JR_INT,485)  # CAAM_INT2 = 485
+$(call force,CFG_JR_INDEX,3)  # Job Ring 3
+$(call force,CFG_JR_INT,486)  # CAAM_INT3 = 486
 else ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8MQ)))
 $(call force, CFG_CAAM_SIZE_ALIGN,1)
 #
