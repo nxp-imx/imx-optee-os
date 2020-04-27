@@ -12,6 +12,15 @@
 #define NB_ITERATION_HUK      1
 #define HUK_SIZE_BITS	      128
 
+/* State of the generated HUK */
+enum dcp_huk_state { DCP_HUK_EMPTY, DCP_HUK_GENERATED, DCP_HUK_ERROR };
+
+/* Information about HUK */
+static struct {
+	enum dcp_huk_state state;	    /* State */
+	uint8_t data[HW_UNIQUE_KEY_LENGTH]; /* Data */
+} dcp_huk = { .state = DCP_HUK_EMPTY };
+
 /*
  * Generate Hardware Unique Key using the Data Co-Processor (DCP) AES128-CMAC
  * cryptographic operation
@@ -80,13 +89,27 @@ TEE_Result tee_otp_get_hw_unique_key(struct tee_hw_unique_key *hwkey)
 		return ret;
 	}
 
-	ret = dcp_generate_huk(hwkey, DCP_CHANN_ANY);
-	if (ret != TEE_SUCCESS) {
-		EMSG("dcp_generate_huk failed");
-		return ret;
+	if (dcp_huk.state == DCP_HUK_EMPTY) {
+		/* HUK generation */
+		ret = dcp_generate_huk(hwkey, DCP_CHANN_ANY);
+		if (ret != TEE_SUCCESS) {
+			dcp_huk.state = DCP_HUK_ERROR;
+			EMSG("DCP HUK generation failed");
+		} else {
+			memcpy(dcp_huk.data, hwkey->data, HW_UNIQUE_KEY_LENGTH);
+			dcp_huk.state = DCP_HUK_GENERATED;
+			DMSG("DCP HUK generation ok");
+		}
+	} else if (dcp_huk.state == DCP_HUK_GENERATED) {
+		/* Copy HUK's bakcup to destination buffer */
+		memcpy(hwkey->data, dcp_huk.data, HW_UNIQUE_KEY_LENGTH);
+		ret = TEE_SUCCESS;
+		DMSG("HUK already generated");
+	} else {
+		/* DCP HUK can't be generated */
+		EMSG("DCP HUK generation failed");
+		ret = TEE_ERROR_GENERIC;
 	}
 
-	DMSG("DCP HUK generation OK");
-
-	return TEE_SUCCESS;
+	return ret;
 }
