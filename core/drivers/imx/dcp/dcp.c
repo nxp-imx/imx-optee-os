@@ -688,10 +688,12 @@ static TEE_Result dcp_pbase(paddr_t *base)
 	if (_fdt_get_status(fdt, node) == DT_STATUS_DISABLED)
 		return TEE_ERROR_ITEM_NOT_FOUND;
 
-	/* Force secure-status = "okay" and status="disabled" */
-	if (dt_enable_secure_status(fdt, node)) {
-		EMSG("Not able to set DCP Control DTB entry secure");
-		return TEE_ERROR_NOT_SUPPORTED;
+	if (!IS_ENABLED(CFG_IMX_DCP_NSEC)) {
+		/* Force secure-status = "okay" and status="disabled" */
+		if (dt_enable_secure_status(fdt, node)) {
+			EMSG("Not able to set DCP Control DTB entry secure");
+			return TEE_ERROR_NOT_SUPPORTED;
+		}
 	}
 
 	*base = _fdt_reg_base_address(fdt, node);
