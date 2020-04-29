@@ -459,6 +459,17 @@ CFG_IMX_WDOG ?= y
 CFG_IMX_OCRAM = y
 endif
 
+ifeq ($(filter y, $(CFG_IMX_DCP)), y)
+# Make the DCP available for Linux Kernel even if DCP OPTEE driver is enabled.
+# Currently, OPTEE DCP driver is only used for HUK generation, not for crypto
+# operations.
+# Linux DCP driver must be running to enable DCP clocks and to allow CI to test
+# Linux DCP crypto operations.
+# WARNING: this CFG_IMX_DCP_NSEC is UNSAFE now the DCP and HUK generation
+# is accessible by the Linux Driver (non-secure world).
+$(call force,CFG_IMX_DCP_NSEC,y)
+endif
+
 ifeq ($(CFG_ARM64_core),y)
 # arm-v8 platforms
 include core/arch/arm/cpu/cortex-armv8-0.mk
