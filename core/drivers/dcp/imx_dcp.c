@@ -9,6 +9,7 @@
  * implemented in this driver.
  * HUK generation is also implement in this driver.
  */
+#include <config.h>
 #include <compiler.h>
 #include <drivers/dcp/imx_dcp.h>
 #include <imx_dcp_utils.h>
@@ -934,12 +935,10 @@ exit:
 
 /* Update the the DCP base address variable using DT */
 #ifdef CFG_DT
-static TEE_Result dcp_vbase(vaddr_t *base)
+static TEE_Result dcp_pbase(paddr_t *base)
 {
-	vaddr_t ctrl_base = 0;
 	void *fdt = NULL;
 	int node = -1;
-	size_t size = 0;
 	unsigned int i = 0;
 
 	fdt = get_dt();
@@ -954,28 +953,28 @@ static TEE_Result dcp_vbase(vaddr_t *base)
 		if (node >= 0)
 			break;
 	}
+
 	if (node < 0) {
 		EMSG("DCP node not found err = 0x%" PRIx32, node);
 		return TEE_ERROR_ITEM_NOT_FOUND;
 	}
 
-	/* Force secure-status = "okay" and status="disabled" */
-	if (dt_enable_secure_status(fdt, node)) {
-		EMSG("Not able to set DCP Control DTB entry secure");
-		return TEE_ERROR_NOT_SUPPORTED;
+	if (_fdt_get_status(fdt, node) == DT_STATUS_DISABLED)
+		return TEE_ERROR_ITEM_NOT_FOUND;
+
+	if (!IS_ENABLED(CFG_IMX_DCP_NSEC)) {
+		/* Force secure-status = "okay" and status="disabled" */
+		if (dt_enable_secure_status(fdt, node)) {
+			EMSG("Not able to set DCP Control DTB entry secure");
+			return TEE_ERROR_NOT_SUPPORTED;
+		}
 	}
 
-	/* Map the device in the system if not already present */
-	if (dt_map_dev(fdt, node, &ctrl_base, &size) < 0) {
-		EMSG("DCP device not defined or not enabled");
-		return TEE_ERROR_NOT_SUPPORTED;
-	}
-
-	if (!ctrl_base) {
+	*base = _fdt_reg_base_address(fdt, node);
+	if (*base == DT_INFO_INVALID_REG) {
 		EMSG("Unable to get the DCP Base address");
 		return TEE_ERROR_ITEM_NOT_FOUND;
 	}
-	*base = ctrl_base;
 
 	return TEE_SUCCESS;
 }
@@ -985,6 +984,7 @@ TEE_Result dcp_init(void)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
 	uint32_t val = 0;
+	paddr_t pbase = 0;
 
 	if (driver_init)
 		return TEE_SUCCESS;
@@ -993,15 +993,14 @@ TEE_Result dcp_init(void)
 	dcp_clk_enable(true);
 
 	/* Set the dcp base address */
-	ret = dcp_vbase(&dcp_base);
-	if (ret != TEE_SUCCESS) {
-		dcp_base = core_mmu_get_va(DCP_BASE, MEM_AREA_IO_SEC);
-		if (!dcp_base) {
-			EMSG("Unable to get DCP physical address");
-			return TEE_ERROR_ITEM_NOT_FOUND;
-		}
+	ret = dcp_pbase(&pbase);
+	if (ret != TEE_SUCCESS)
+		pbase = DCP_BASE;
 
-		ret = TEE_SUCCESS;
+	dcp_base = core_mmu_get_va(pbase, MEM_AREA_IO_SEC);
+	if (!dcp_base) {
+		EMSG("Unable to get DCP physical address");
+		return TEE_ERROR_ITEM_NOT_FOUND;
 	}
 
 	/* Context switching buffer memory allocation */
