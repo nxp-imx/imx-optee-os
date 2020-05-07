@@ -121,31 +121,36 @@ void caam_hal_cfg_get_jobring_dt(void *fdt, struct caam_jrcfg *jrcfg)
 
 void caam_hal_cfg_disable_jobring_dt(void *fdt, struct caam_jrcfg *jrcfg)
 {
-	int node = fdt_node_offset_by_compatible(fdt, 0, dt_jr_match_table);
+	if (IS_ENABLED(CFG_CAAM_JR_DISABLE_NODE)) {
+		int node = fdt_node_offset_by_compatible(fdt, 0,
+							 dt_jr_match_table);
 
-	for (; node != -FDT_ERR_NOTFOUND;
-	     node = fdt_node_offset_by_compatible(fdt, node,
-						  dt_jr_match_table)) {
-		HAL_TRACE("Found Job Ring node @%" PRId32, node);
-		if (_fdt_reg_base_address(fdt, node) == jrcfg->offset) {
-			HAL_TRACE("Disable Job Ring node @%" PRId32, node);
-			if (dt_enable_secure_status(fdt, node))
-				panic();
-			break;
+		for (; node != -FDT_ERR_NOTFOUND;
+		     node = fdt_node_offset_by_compatible(fdt, node,
+							  dt_jr_match_table)) {
+			HAL_TRACE("Found Job Ring node @%" PRId32, node);
+			if (_fdt_reg_base_address(fdt, node) == jrcfg->offset) {
+				HAL_TRACE("Disable Job Ring node @%" PRId32,
+					  node);
+				if (dt_enable_secure_status(fdt, node))
+					panic();
+				break;
+			}
 		}
-	}
 
-	if (IS_ENABLED(CFG_EXTERNAL_DTB_OVERLAY)) {
-		if (node == -FDT_ERR_NOTFOUND) {
-			char target[64];
-			int ret;
+		if (IS_ENABLED(CFG_EXTERNAL_DTB_OVERLAY)) {
+			if (node == -FDT_ERR_NOTFOUND) {
+				char target[64];
+				int ret;
 
-			ret = snprintf(target, sizeof(target),
-				       DTB_JR_PATH "@%lx", jrcfg->offset);
-			if (ret < 0 || (size_t)ret >= sizeof(target))
-				panic();
-			if (dt_overlay_disable_node(target))
-				panic();
+				ret = snprintf(target, sizeof(target),
+					       DTB_JR_PATH "@%lx",
+					       jrcfg->offset);
+				if (ret < 0 || (size_t)ret >= sizeof(target))
+					panic();
+				if (dt_overlay_disable_node(target))
+					panic();
+			}
 		}
 	}
 }

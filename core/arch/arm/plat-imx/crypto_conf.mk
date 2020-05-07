@@ -84,6 +84,11 @@ $(call force, CFG_JR_INDEX,0)  # Default JR index used
 $(call force, CFG_JR_INT,137)  # Default JR IT Number (105 + 32) = 137
 endif
 
+# if CFG_DT is enable disable JR Node if taken by OP-TEE
+# i.MX 8 with scfw do not need this option.
+ifneq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX) $(CFG_MX8DXL)), y)
+$(call force, CFG_CAAM_JR_DISABLE_NODE,y)
+endif
 #
 # Configuration of the Crypto Driver
 #
