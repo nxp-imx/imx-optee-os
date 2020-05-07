@@ -24,7 +24,7 @@ void caam_hal_sm_get_base_dt(void *fdt, vaddr_t *sm_base)
 	node = fdt_node_offset_by_compatible(fdt, 0, dt_sm_match_table);
 
 	if (node < 0) {
-		EMSG("CAAM Node not found err = 0x%X", node);
+		HAL_TRACE("CAAM Node not found err = 0x%X", node);
 		return;
 	}
 
