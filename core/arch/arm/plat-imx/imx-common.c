@@ -139,11 +139,12 @@ bool soc_is_imx6dqp(void)
 
 bool soc_is_imx6(void)
 {
-	return ((imx_soc_type() == SOC_MX6SX) ||
-			(imx_soc_type() == SOC_MX6UL) ||
-			(imx_soc_type() == SOC_MX6ULL) ||
-			(imx_soc_type() == SOC_MX6DL) ||
-			(imx_soc_type() == SOC_MX6Q));
+	return ((imx_soc_type() == SOC_MX6SLL) ||
+		(imx_soc_type() == SOC_MX6SL) ||
+		(imx_soc_type() == SOC_MX6SX) ||
+		(imx_soc_type() == SOC_MX6UL) ||
+		(imx_soc_type() == SOC_MX6ULL) ||
+		(imx_soc_type() == SOC_MX6DL) || (imx_soc_type() == SOC_MX6Q));
 }
 
 bool soc_is_imx7ds(void)
