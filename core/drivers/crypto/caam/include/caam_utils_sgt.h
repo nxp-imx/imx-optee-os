@@ -51,8 +51,10 @@ void caam_sgtbuf_free(struct caamsgtbuf *data);
  *
  * @op     Cache operation
  * @insgt  SGT table
+ * @length Length of data to maintain
  */
-void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt);
+void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt,
+		       size_t length);
 
 /*
  * Set a Scatter Gather Table Entry
@@ -75,16 +77,10 @@ void caam_sgt_set_entry(struct caamsgt *sgt, vaddr_t paddr, size_t len,
 	caam_sgt_set_entry(sgt, paddr, len, 0, false, true)
 
 /*
- * Build a SGT object with @data buffer.
- * If the @data buffer is a buffer mapped on non-contiguous physical areas,
- * convert it in SGT entries.
+ * Fill the CAAM SGT table with the buffer list in @sgt parameter
  *
- * @sgtbuf [out] SGT object built
- * @data   Operation data
- * @pabufs Physical Areas list of the @data buffer
+ * @sgt [in/out] SGT buffer list and table
  */
-enum caam_status caam_sgt_build_data(struct caamsgtbuf *sgtbuf,
-				     struct caambuf *data,
-				     struct caambuf *pabufs);
+void caam_sgt_fill_table(struct caamsgtbuf *sgt);
 
 #endif /* __CAAM_UTILS_SGT_H__ */

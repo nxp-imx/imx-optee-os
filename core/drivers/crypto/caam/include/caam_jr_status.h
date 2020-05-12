@@ -26,6 +26,7 @@
 #define JRSTA_CCB_CHAID_RNG       SHIFT_U32(0x5, 4)
 #define JRSTA_CCB_ERRID_HW        SHIFT_U32(0xB, 0)
 #define JRSTA_DECO_ERRID_FORMAT   SHIFT_U32(0x88, 0)
+#define JRSTA_DECO_INV_SIGNATURE  SHIFT_U32(0x86, 0)
 
 /* Return the Halt User status else 0 if not a Jump Halt User */
 #define JRSTA_GET_HALT_USER(status)                                            \

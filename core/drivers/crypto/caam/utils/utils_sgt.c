@@ -18,9 +18,30 @@
 #define BS_ENTRY_EXT	BIT32(31)
 #define BS_ENTRY_FINAL	BIT32(30)
 
-void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt)
+/*
+ * Trace the SGT entry @idx of the SGT list
+ *
+ * @idx  Entry in the SGT list
+ * @sgt  SGT list
+ */
+static inline void sgt_entry_trace(int idx __maybe_unused,
+				   struct caamsgtbuf *sgt __maybe_unused)
+{
+	SGT_TRACE("SGT[%d]->data   = %p", idx, sgt->buf[idx].data);
+	SGT_TRACE("SGT[%d]->length = %zu", idx, sgt->buf[idx].length);
+	SGT_TRACE("SGT[%d]->paddr  = 0x%" PRIxPA, idx, sgt->buf[idx].paddr);
+	SGT_TRACE("SGT[%d]->ptr_ms   = %" PRIx32, idx, sgt->sgt[idx].ptr_ms);
+	SGT_TRACE("SGT[%d]->ptr_ls   = %" PRIx32, idx, sgt->sgt[idx].ptr_ls);
+	SGT_TRACE("SGT[%d]->len_f_e  = %" PRIx32, idx, sgt->sgt[idx].len_f_e);
+	SGT_TRACE("SGT[%d]->offset   = %" PRIx32, idx, sgt->sgt[idx].offset);
+}
+
+void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt,
+		       size_t length)
 {
 	unsigned int idx = 0;
+	size_t op_size = 0;
+	size_t rem_length = length;
 
 	cache_operation(TEE_CACHECLEAN, (void *)insgt->sgt,
 			insgt->number * sizeof(struct caamsgt));
@@ -29,7 +50,8 @@ void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt)
 	for (idx = 0; idx < insgt->number; idx++) {
 		if (insgt->sgt[idx].len_f_e & BS_ENTRY_EXT) {
 			SGT_TRACE("SGT EXT @%p", insgt->buf[idx].data);
-			caam_sgt_cache_op(op, (void *)insgt->buf[idx].data);
+			caam_sgt_cache_op(op, (void *)insgt->buf[idx].data,
+					  rem_length);
 
 			/*
 			 * Extension entry is the last entry of the
@@ -39,9 +61,11 @@ void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt)
 			break;
 		}
 
+		op_size = MIN(rem_length, insgt->buf[idx].length);
 		if (!insgt->buf[idx].nocache)
 			cache_operation(op, (void *)insgt->buf[idx].data,
-					insgt->buf[idx].length);
+					op_size);
+		rem_length -= op_size;
 	}
 }
 
@@ -67,91 +91,21 @@ void caam_sgt_set_entry(struct caamsgt *sgt, paddr_t paddr, size_t len,
 	caam_write_val32(&sgt->offset, offset);
 }
 
-static void caam_sgt_fill_table(struct caambuf *buf, struct caamsgtbuf *sgt,
-				int start_idx, int nb_pa)
+void caam_sgt_fill_table(struct caamsgtbuf *sgt)
 {
-	int idx = 0;
+	unsigned int idx = 0;
 
-	SGT_TRACE("Create %d SGT entries", nb_pa);
+	SGT_TRACE("Create %d SGT entries", sgt->number);
 
-	for (idx = 0; idx < nb_pa; idx++) {
-		sgt->buf[idx + start_idx].data = buf[idx].data;
-		sgt->buf[idx + start_idx].length = buf[idx].length;
-		sgt->buf[idx + start_idx].paddr = buf[idx].paddr;
-		sgt->buf[idx + start_idx].nocache = buf[idx].nocache;
-		sgt->length += buf[idx].length;
-		if (idx < nb_pa - 1)
-			CAAM_SGT_ENTRY(&sgt->sgt[idx + start_idx],
-				       sgt->buf[idx + start_idx].paddr,
-				       sgt->buf[idx + start_idx].length);
-		else
-			CAAM_SGT_ENTRY_FINAL(&sgt->sgt[idx + start_idx],
-					     sgt->buf[idx + start_idx].paddr,
-					     sgt->buf[idx + start_idx].length);
-
-		SGT_TRACE("SGT[%d]->data   = %p", idx + start_idx,
-			  sgt->buf[idx + start_idx].data);
-		SGT_TRACE("SGT[%d]->length = %zu", idx + start_idx,
-			  sgt->buf[idx + start_idx].length);
-		SGT_TRACE("SGT[%d]->paddr  = 0x%" PRIxPA, idx + start_idx,
-			  sgt->buf[idx + start_idx].paddr);
-		SGT_TRACE("SGT[%d]->ptr_ms   = %" PRIx32, idx + start_idx,
-			  sgt->sgt[idx + start_idx].ptr_ms);
-		SGT_TRACE("SGT[%d]->ptr_ls   = %" PRIx32, idx + start_idx,
-			  sgt->sgt[idx + start_idx].ptr_ls);
-		SGT_TRACE("SGT[%d]->len_f_e  = %" PRIx32, idx + start_idx,
-			  sgt->sgt[idx + start_idx].len_f_e);
-		SGT_TRACE("SGT[%d]->offset   = %" PRIx32, idx + start_idx,
-			  sgt->sgt[idx + start_idx].offset);
-	}
-}
-
-enum caam_status caam_sgt_build_data(struct caamsgtbuf *sgtbuf,
-				     struct caambuf *data,
-				     struct caambuf *pabufs)
-{
-	enum caam_status retstatus = CAAM_FAILURE;
-
-	/*
-	 * If data is mapped on non-contiguous physical areas,
-	 * a SGT object of the number of physical area is built.
-	 *
-	 * Otherwise create a buffer object.
-	 */
-	if (sgtbuf->number > 1) {
-		sgtbuf->sgt_type = true;
-		sgtbuf->length = 0;
-
-		SGT_TRACE("Allocate %d SGT entries", sgtbuf->number);
-		retstatus = caam_sgtbuf_alloc(sgtbuf);
-
-		if (retstatus != CAAM_NO_ERROR)
-			return retstatus;
-
-		/* Build the SGT table based on the physical area list */
-		caam_sgt_fill_table(pabufs, sgtbuf, 0, sgtbuf->number);
-
-		sgtbuf->paddr = virt_to_phys(sgtbuf->sgt);
-	} else {
-		/*
-		 * Only the data buffer is to be used and it's not
-		 * split on mutliple physical pages
-		 */
-		sgtbuf->sgt_type = false;
-
-		retstatus = caam_sgtbuf_alloc(sgtbuf);
-		if (retstatus != CAAM_NO_ERROR)
-			return retstatus;
-
-		sgtbuf->buf->data = data->data;
-		sgtbuf->buf->length = data->length;
-		sgtbuf->buf->paddr = data->paddr;
-		sgtbuf->buf->nocache = data->nocache;
-		sgtbuf->length = data->length;
-		sgtbuf->paddr = sgtbuf->buf->paddr;
+	for (; idx < sgt->number - 1; idx++) {
+		CAAM_SGT_ENTRY(&sgt->sgt[idx], sgt->buf[idx].paddr,
+			       sgt->buf[idx].length);
+		sgt_entry_trace(idx, sgt);
 	}
 
-	return CAAM_NO_ERROR;
+	CAAM_SGT_ENTRY_FINAL(&sgt->sgt[idx], sgt->buf[idx].paddr,
+			     sgt->buf[idx].length);
+	sgt_entry_trace(idx, sgt);
 }
 
 void caam_sgtbuf_free(struct caamsgtbuf *data)
@@ -167,7 +121,7 @@ void caam_sgtbuf_free(struct caamsgtbuf *data)
 
 enum caam_status caam_sgtbuf_alloc(struct caamsgtbuf *data)
 {
-	if (!data)
+	if (!data || !data->number)
 		return CAAM_BAD_PARAM;
 
 	if (data->sgt_type) {

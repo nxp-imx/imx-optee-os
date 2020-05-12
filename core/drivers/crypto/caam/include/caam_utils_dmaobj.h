@@ -13,19 +13,14 @@
 
 /*
  * CAAM DMA Object type
- * Keep the original data/length reference
- * If needed, reallocate a new buffer to be used by the CAAM
- * If needed, create a CAAM SGT object for the CAAM
+ * @priv   Private object data not used externally.
+ * @orig   Original data buffer
+ * @sgtbuf CAAM SGT/Buffer object
  */
 struct caamdmaobj {
-	struct {
-		uint8_t *data; /* Original data buffer */
-		size_t length; /* Original data length */
-	} orig;
-
-	struct caambuf dmabuf;	  /* DMA buffer - original or reallocated */
-	struct caamsgtbuf sgtbuf; /* CAAM SGT or Buffer object */
-	unsigned int type;	  /* Encoded type of the object */
+	void *priv;
+	struct caambuf orig;
+	struct caamsgtbuf sgtbuf;
 };
 
 /*
@@ -57,6 +52,15 @@ TEE_Result caam_dmaobj_init_input(struct caamdmaobj *obj, const void *data,
  */
 TEE_Result caam_dmaobj_init_output(struct caamdmaobj *obj, void *data,
 				   size_t length, size_t min_length);
+
+/*
+ * Initialize a CAAM DMA object of type output data and allocate a new
+ * cache aligned buffer of @length bytes.
+ *
+ * @obj     [out] CAAM DMA object initialized
+ * @length  Length in bytes of the output data
+ */
+TEE_Result caam_dmaobj_new_output(struct caamdmaobj *obj, size_t length);
 
 /*
  * Push the data to physical memory with a cache clean or flush depending

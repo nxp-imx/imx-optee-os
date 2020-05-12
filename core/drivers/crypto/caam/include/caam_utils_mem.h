@@ -12,6 +12,13 @@
 #include <caam_common.h>
 
 /*
+ * Allocate normal memory.
+ *
+ * @size  size in bytes of the memory to allocate
+ */
+void *caam_alloc(size_t size);
+
+/*
  * Allocate normal memory and initialize it to 0's.
  *
  * @size  size in bytes of the memory to allocate
@@ -85,18 +92,6 @@ enum caam_status caam_alloc_align_buf(struct caambuf *buf, size_t size);
  * @buf   Driver buffer to free
  */
 void caam_free_buf(struct caambuf *buf);
-
-/*
- * Initialize struct caambuf with buffer reference, eventually
- * reallocating the buffer if not matching cache line alignment.
- *
- * @orig    Buffer origin
- * @dst     [out] CAAM Buffer object with origin or reallocated buffer
- * @size    Size in bytes of the buffer
- * @realloc [out] true if buffer has been reallocated
- */
-enum caam_status caam_set_or_alloc_align_buf(void *orig, struct caambuf *dst,
-					     size_t size, bool *realloc);
 
 /*
  * Copy source data into the block buffer. Allocate block buffer if
