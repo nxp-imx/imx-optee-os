@@ -18,7 +18,12 @@ TEE_Result job_status_to_tee_result(uint32_t status)
 	case JRSTA_SRC(DECO):
 		if (JRSTA_CCB_GET_ERR(status) == JRSTA_DECO_ERRID_FORMAT)
 			return TEE_ERROR_BAD_PARAMETERS;
+
+		if (JRSTA_CCB_GET_ERR(status) == JRSTA_DECO_INV_SIGNATURE)
+			return TEE_ERROR_SIGNATURE_INVALID;
+
 		break;
+
 	default:
 		break;
 	}

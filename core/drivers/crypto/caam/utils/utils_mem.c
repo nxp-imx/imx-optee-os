@@ -15,23 +15,6 @@
 #include <string.h>
 
 /*
- * Check if pointer p is aligned with align
- */
-#define IS_PTR_ALIGN(p, align)	(((uintptr_t)(p) & ((align) - 1)) == 0)
-
-/*
- * Check if size is aligned with align
- */
-#define IS_SIZE_ALIGN(size, align)                                             \
-	({                                                                     \
-		__typeof__(size) _size = (size);                               \
-		__typeof__(size) _sizeup = 0;                                  \
-									       \
-		_sizeup = ROUNDUP(_size, align);                               \
-		(_sizeup == _size) ? 1 : 0;                                    \
-	})
-
-/*
  * Read the system cache line size.
  * Get the value from the ARM system configration register
  */
@@ -88,7 +71,7 @@ static void *mem_alloc(size_t size_in, uint8_t type)
 	size_t size = 0;
 	uint32_t cacheline_size = 0;
 
-	MEM_TRACE("alloc %zu bytes of type %" PRIu8, size, type);
+	MEM_TRACE("alloc %zu bytes of type %" PRIu8, size_in, type);
 
 	/* Roundup needed to respect CAAM DMA behaviour */
 	if (type & MEM_TYPE_ALIGN)
@@ -263,6 +246,11 @@ static enum caam_status mem_alloc_buf(struct caambuf *buf, size_t size,
 	return CAAM_NO_ERROR;
 }
 
+void *caam_alloc(size_t size)
+{
+	return mem_alloc(size, MEM_TYPE_NORMAL);
+}
+
 void *caam_calloc(size_t size)
 {
 	return mem_alloc(size, MEM_TYPE_ZEROED);
@@ -343,43 +331,6 @@ bool caam_mem_is_cached_buf(void *buf, size_t size)
 		is_cached = tee_entry_is_sdp_cached();
 
 	return is_cached;
-}
-
-enum caam_status caam_set_or_alloc_align_buf(void *orig, struct caambuf *dst,
-					     size_t size, bool *realloc)
-{
-	uint32_t cacheline_size = 0;
-	enum caam_status retstatus = CAAM_FAILURE;
-
-	if (caam_mem_is_cached_buf(orig, size)) {
-		/*
-		 * Check if either orig pointer or size are aligned on the
-		 * cache line size.
-		 * If not, reallocate a buffer aligned on cache line.
-		 */
-		cacheline_size = read_cacheline_size();
-		if (!IS_PTR_ALIGN(orig, cacheline_size) ||
-		    !IS_SIZE_ALIGN(size, cacheline_size)) {
-			retstatus = caam_alloc_align_buf(dst, size);
-			if (retstatus == CAAM_NO_ERROR)
-				*realloc = true;
-
-			return retstatus;
-		}
-		dst->nocache = 0;
-	} else {
-		dst->nocache = 1;
-	}
-
-	dst->data = orig;
-	dst->paddr = virt_to_phys(dst->data);
-	if (!dst->paddr)
-		return CAAM_OUT_MEMORY;
-
-	dst->length = size;
-
-	*realloc = false;
-	return CAAM_NO_ERROR;
 }
 
 enum caam_status caam_cpy_block_src(struct caamblock *block,
