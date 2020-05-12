@@ -55,8 +55,7 @@ static enum caam_status do_tweak_block(struct cipherdata *ctx,
 	 * operation description
 	 */
 	for (idx = 0; idx < ctx->alg->size_block; idx++)
-		tmp->dmabuf.data[idx] =
-			srcbuf->data[idx] ^ enc_tweak->data[idx];
+		tmp->orig.data[idx] = srcbuf->data[idx] ^ enc_tweak->data[idx];
 
 	retstatus = caam_cipher_block(ctx, false, NEED_KEY1, ctx->encrypt, tmp,
 				      tmp);
@@ -65,8 +64,7 @@ static enum caam_status do_tweak_block(struct cipherdata *ctx,
 		return retstatus;
 
 	for (idx = 0; idx < ctx->alg->size_block; idx++)
-		dstbuf->data[idx] =
-			tmp->dmabuf.data[idx] ^ enc_tweak->data[idx];
+		dstbuf->data[idx] = tmp->orig.data[idx] ^ enc_tweak->data[idx];
 
 	/* Galois field multiplication of the tweak */
 	do_galois_mult(enc_tweak);
@@ -111,11 +109,11 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 
 	/* First operation is to encrypt the tweak with the key #2 */
 	/* Allocate the encrypted tweak buffer */
-	ret = caam_dmaobj_init_output(&enc_tweak, NULL, 0, ctx->tweak.length);
+	ret = caam_dmaobj_new_output(&enc_tweak, ctx->tweak.length);
 	if (ret)
 		goto end_xts;
 
-	ret = caam_dmaobj_init_output(&tmpdst, NULL, 0, ctx->alg->size_block);
+	ret = caam_dmaobj_new_output(&tmpdst, ctx->alg->size_block);
 	if (ret)
 		goto end_xts;
 
@@ -160,7 +158,7 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 
 	for (; fullsize > 0; fullsize -= ctx->alg->size_block) {
 		CIPHER_TRACE("Tweak block fullsize %zu", fullsize);
-		retstatus = do_tweak_block(ctx, &enc_tweak.dmabuf, &srcbuf,
+		retstatus = do_tweak_block(ctx, &enc_tweak.orig, &srcbuf,
 					   &dstbuf, &tmpdst);
 
 		CIPHER_TRACE("Tweak block ret 0x%" PRIx32, retstatus);
@@ -198,16 +196,16 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 			 * In case of decryption, need to multiply
 			 * the tweak first
 			 */
-			memcpy(tmpsrc.data, enc_tweak.dmabuf.data,
-			       enc_tweak.dmabuf.length);
+			memcpy(tmpsrc.data, enc_tweak.orig.data,
+			       enc_tweak.orig.length);
 			do_galois_mult(&tmpsrc);
 
 			retstatus = do_tweak_block(ctx, &tmpsrc, &srcbuf,
-						   &tmpdst.dmabuf, &tmpdst);
+						   &tmpdst.orig, &tmpdst);
 		} else {
 			retstatus =
-				do_tweak_block(ctx, &enc_tweak.dmabuf, &srcbuf,
-					       &tmpdst.dmabuf, &tmpdst);
+				do_tweak_block(ctx, &enc_tweak.orig, &srcbuf,
+					       &tmpdst.orig, &tmpdst);
 		}
 
 		CIPHER_TRACE("Tweak penultimate block ret 0x%" PRIx32,
@@ -223,13 +221,13 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 			tmpsrc.data[idx] =
 				srcbuf.data[ctx->alg->size_block + idx];
 			dstbuf.data[ctx->alg->size_block + idx] =
-				tmpdst.dmabuf.data[idx];
+				tmpdst.orig.data[idx];
 		}
 
 		for (; idx < ctx->alg->size_block; idx++)
-			tmpsrc.data[idx] = tmpdst.dmabuf.data[idx];
+			tmpsrc.data[idx] = tmpdst.orig.data[idx];
 
-		retstatus = do_tweak_block(ctx, &enc_tweak.dmabuf, &tmpsrc,
+		retstatus = do_tweak_block(ctx, &enc_tweak.orig, &tmpsrc,
 					   &dstbuf, &tmpdst);
 
 		CIPHER_DUMPBUF("Source", tmpsrc.data, tmpsrc.length);

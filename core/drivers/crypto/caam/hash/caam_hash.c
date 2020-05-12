@@ -539,8 +539,7 @@ TEE_Result caam_hash_hmac_final(struct hashctx *ctx, uint8_t *digest,
 	if (ret)
 		goto exit_final;
 
-	HASH_TRACE("Final Type 0x%" PRIX32 " - Digest @%p-%zu", alg->type,
-		   dig.dmabuf.data, len);
+	HASH_TRACE("Final Type 0x%" PRIX32 " - Digest %zu", alg->type, len);
 
 	desc = ctx->descriptor;
 	caam_desc_init(desc);
