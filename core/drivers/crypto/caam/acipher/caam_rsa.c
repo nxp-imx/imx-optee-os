@@ -1426,8 +1426,6 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		caam_dmaobj_copy_to_orig(&msg);
-
 		if (operation == RSA_DECRYPT(NO) &&
 		    rsa_data->rsa_id == DRVCRYPT_RSA_NOPAD) {
 			caam_dmaobj_copy_ltrim_to_orig(&msg);
