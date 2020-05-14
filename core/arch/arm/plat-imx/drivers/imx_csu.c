@@ -39,7 +39,7 @@ const struct csu_setting csu_setting_imx6ull[] = {
 };
 
 const struct csu_setting csu_setting_imx6sl[] = {
-	{ 13, 0x3F0033 }, /* Protect ROMCP/DCP */
+	{ 13, 0xFF0033 }, /* Protect ROMCP/DCP */
 	{ 16, 0xFF0033 }, /* Protect TZASC */
 	{ 26, 0xFF0033 }, /* Protect OCRAM */
 	{ (-1), 0 },
