@@ -27,7 +27,7 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 	struct hab_dek_blob_header *hdr = NULL;
 	struct crypto_blob dek_blob = {};
 	struct crypto_sm_page sm_page = {};
-
+	bool backward_compatibility = false;
 	uint32_t exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT,
 						   TEE_PARAM_TYPE_MEMREF_OUTPUT,
 						   TEE_PARAM_TYPE_VALUE_INPUT,
@@ -74,6 +74,8 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 		sm_page.page = 2;
 		sm_page.nb_pages = 1;
 		sm_page.partition = 1;
+		/* keep compatibility with imx_3.2.y based optee-os */
+		backward_compatibility = true;
 	}
 
 	memset((void *)dek_blob.blob.data, 0x0, dek_blob.blob.length);
@@ -95,7 +97,7 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 	res = caam_blob_sm_encapsulate(&dek_blob, &sm_page);
 	if (res != TEE_SUCCESS) {
 		EMSG("DEK Blob Encapsulation 0x%08" PRIx32, res);
-		return res;
+		goto out;
 	}
 
 	/* Build HAB DEK blob header */
@@ -115,8 +117,12 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 	params[1].memref.size = hdr->len_lsb;
 	dhex_dump(NULL, 0, TRACE_DEBUG, (void *)params[1].memref.buffer,
 		  params[1].memref.size);
+	res = TEE_SUCCESS;
+out:
+	if (backward_compatibility)
+		res = caam_sm_free_partition(sm_page.partition);
 
-	return TEE_SUCCESS;
+	return res;
 }
 
 /*
