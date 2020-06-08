@@ -384,7 +384,7 @@ TEE_Result crypto_acipher_rsassa_sign(uint32_t algo, struct rsa_keypair *key,
 		rsa_ssa.message.length = msg_len;
 		rsa_ssa.signature.data = (uint8_t *)sig;
 		rsa_ssa.signature.length = rsa_ssa.key.n_size;
-		rsa_ssa.salt_len = salt_len;
+		rsa_ssa.salt_len = (size_t)salt_len;
 		rsa_ssa.mgf = &drvcrypt_rsa_mgf1;
 
 		if (rsa->optional.ssa_sign)
@@ -458,7 +458,7 @@ TEE_Result crypto_acipher_rsassa_verify(uint32_t algo,
 		rsa_ssa.message.length = msg_len;
 		rsa_ssa.signature.data = (uint8_t *)sig;
 		rsa_ssa.signature.length = sig_len;
-		rsa_ssa.salt_len = salt_len;
+		rsa_ssa.salt_len = (size_t)salt_len;
 		rsa_ssa.mgf = &drvcrypt_rsa_mgf1;
 
 		if (rsa->optional.ssa_verify)
