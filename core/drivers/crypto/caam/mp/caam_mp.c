@@ -147,10 +147,10 @@ TEE_Result crypto_mp_export_publickey(struct cryptobuf *pubkey)
 		return TEE_ERROR_SHORT_BUFFER;
 	}
 
-	ret = caam_dmaobj_init_output(&reskey, pubkey->data, pubkey->length,
-				      2 * mp_privdata.sec_size);
+	ret = caam_dmaobj_output_sgtbuf(&reskey, pubkey->data, pubkey->length,
+					2 * mp_privdata.sec_size);
 	if (ret)
-		return TEE_ERROR_OUT_OF_MEMORY;
+		return ret;
 
 	if (reskey.sgtbuf.sgt_type)
 		pdb_sgt_flag = PROT_MP_PUBK_SGT;
@@ -190,12 +190,11 @@ TEE_Result crypto_mp_export_publickey(struct cryptobuf *pubkey)
 	if (retstatus == CAAM_NO_ERROR) {
 		MP_TRACE("MP Public Key generated");
 		reskey.orig.length = 2 * mp_privdata.sec_size;
-		caam_dmaobj_copy_to_orig(&reskey);
-
-		pubkey->length = reskey.orig.length;
+		pubkey->length = caam_dmaobj_copy_to_orig(&reskey);
 
 		MP_DUMPBUF("MP PubKey", pubkey->data, pubkey->length);
-		ret = TEE_SUCCESS;
+
+		ret = caam_status_to_tee_result(retstatus);
 	} else {
 		MP_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
@@ -244,7 +243,7 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 	retstatus = caam_alloc_align_buf(&hash, TEE_MAX_HASH_SIZE);
 	if (retstatus != CAAM_NO_ERROR) {
 		MP_TRACE("Hash allocation error");
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_mpsign;
 	}
 
@@ -258,8 +257,8 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 	 */
 	sign_len = ROUNDUP(mp_privdata.sec_size, 16) + mp_privdata.sec_size;
 
-	ret = caam_dmaobj_init_output(&sign_c, sdata->signature.data,
-				      sdata->signature.length, sign_len);
+	ret = caam_dmaobj_output_sgtbuf(&sign_c, sdata->signature.data,
+					sdata->signature.length, sign_len);
 	if (ret)
 		goto exit_mpsign;
 
@@ -267,8 +266,8 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 		pdb_sgt_flags |= PDB_SGT_MP_SIGN_C;
 
 	/* Prepare the 2nd Part of the signature. Derived from sign_c */
-	ret = caam_dmaobj_derive(&sign_d, &sign_c, mp_privdata.sec_size,
-				 ROUNDUP(mp_privdata.sec_size, 16));
+	ret = caam_dmaobj_derive_sgtbuf(&sign_d, &sign_c, mp_privdata.sec_size,
+					ROUNDUP(mp_privdata.sec_size, 16));
 	if (ret)
 		goto exit_mpsign;
 
@@ -276,11 +275,10 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 		pdb_sgt_flags |= PDB_SGT_MP_SIGN_D;
 
 	caam_dmaobj_cache_push(&sign_c);
-	caam_dmaobj_cache_push(&sign_d);
 
 	/* Prepare the input message CAAM descriptor entry */
-	ret = caam_dmaobj_init_input(&msg, sdata->message.data,
-				     sdata->message.length);
+	ret = caam_dmaobj_input_sgtbuf(&msg, sdata->message.data,
+				       sdata->message.length);
 	if (ret)
 		goto exit_mpsign;
 
@@ -329,13 +327,12 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 	if (retstatus == CAAM_NO_ERROR) {
 		MP_TRACE("Do Mpsign gen CAAM");
 		sign_c.orig.length = 2 * mp_privdata.sec_size;
-		caam_dmaobj_copy_to_orig(&sign_c);
-
-		sdata->signature.length = sign_c.orig.length;
+		sdata->signature.length = caam_dmaobj_copy_to_orig(&sign_c);
 
 		MP_DUMPBUF("MP Signature", sdata->signature.data,
 			   sdata->signature.length);
-		ret = TEE_SUCCESS;
+
+		ret = caam_status_to_tee_result(retstatus);
 	} else {
 		MP_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
