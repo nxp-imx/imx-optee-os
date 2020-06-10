@@ -83,4 +83,17 @@ void caam_sgt_set_entry(struct caamsgt *sgt, vaddr_t paddr, size_t len,
  */
 void caam_sgt_fill_table(struct caamsgtbuf *sgt);
 
+/*
+ * Derive a CAAM SGT table from the @from SGT table starting @offset.
+ * Allocate the resulting SGT table derived.
+ *
+ * @sgt     [out] SGT buffer list and table
+ * @from    Input SGT table
+ * @offset  Offset to start
+ * @length  Length of the new SGT data
+ */
+enum caam_status caam_sgt_derive(struct caamsgtbuf *sgt,
+				 const struct caamsgtbuf *from, size_t offset,
+				 size_t length);
+
 #endif /* __CAAM_UTILS_SGT_H__ */

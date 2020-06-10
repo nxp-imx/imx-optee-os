@@ -126,4 +126,10 @@ int caam_mem_get_pa_area(struct caambuf *buf, struct caambuf **pabufs);
  */
 bool caam_mem_is_cached_buf(void *buf, size_t size);
 
+/*
+ * Read the system cache line size.
+ * Get the value from the ARM system configuration register
+ */
+uint32_t caam_mem_read_cacheline_size(void);
+
 #endif /* __CAAM_UTILS_MEM_H__ */
