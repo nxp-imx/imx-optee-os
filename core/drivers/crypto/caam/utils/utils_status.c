@@ -15,6 +15,9 @@ TEE_Result job_status_to_tee_result(uint32_t status)
 	 * to a TEE_Result other than TEE_ERROR_GENERIC
 	 */
 	switch (JRSTA_SRC_GET(status)) {
+	case JRSTA_SRC(NONE):
+		return TEE_SUCCESS;
+
 	case JRSTA_SRC(DECO):
 		if (JRSTA_CCB_GET_ERR(status) == JRSTA_DECO_ERRID_FORMAT)
 			return TEE_ERROR_BAD_PARAMETERS;
@@ -42,6 +45,9 @@ TEE_Result caam_status_to_tee_result(enum caam_status status)
 
 	case CAAM_BAD_PARAM:
 		return TEE_ERROR_BAD_PARAMETERS;
+
+	case CAAM_SHORT_BUFFER:
+		return TEE_ERROR_SHORT_BUFFER;
 
 	default:
 		break;

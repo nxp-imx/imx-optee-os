@@ -11,6 +11,7 @@
 #include <caam_trace.h>
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
+#include <string.h>
 #include <tee/cache.h>
 #include <util.h>
 
@@ -34,6 +35,25 @@ static inline void sgt_entry_trace(int idx __maybe_unused,
 	SGT_TRACE("SGT[%d]->ptr_ls   = %" PRIx32, idx, sgt->sgt[idx].ptr_ls);
 	SGT_TRACE("SGT[%d]->len_f_e  = %" PRIx32, idx, sgt->sgt[idx].len_f_e);
 	SGT_TRACE("SGT[%d]->offset   = %" PRIx32, idx, sgt->sgt[idx].offset);
+}
+
+/*
+ * Add an @offset to the SGT entry
+ *
+ * @sgt     [in/out] Sgt entry
+ * @offset  Offset to add
+ */
+static void sgt_entry_offset(struct caamsgt *sgt, unsigned int offset)
+{
+	unsigned int len_f_e = 0;
+
+	len_f_e = caam_read_val32(&sgt->len_f_e);
+
+	/* Set the new length and keep the Final bit if set */
+	len_f_e = (ENTRY_LEN(len_f_e) - offset) | (len_f_e & BS_ENTRY_FINAL);
+
+	caam_write_val32(&sgt->len_f_e, len_f_e);
+	caam_write_val32(&sgt->offset, offset);
 }
 
 void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt,
@@ -106,6 +126,71 @@ void caam_sgt_fill_table(struct caamsgtbuf *sgt)
 	CAAM_SGT_ENTRY_FINAL(&sgt->sgt[idx], sgt->buf[idx].paddr,
 			     sgt->buf[idx].length);
 	sgt_entry_trace(idx, sgt);
+}
+
+enum caam_status caam_sgt_derive(struct caamsgtbuf *sgt,
+				 const struct caamsgtbuf *from, size_t offset,
+				 size_t length)
+{
+	enum caam_status retstatus = CAAM_FAILURE;
+	unsigned int idx = 0;
+	unsigned int st_idx = 0;
+	size_t off = offset;
+	size_t rlength = length;
+
+	SGT_TRACE("Derive from %p - offset %zu, %d SGT entries", from, offset,
+		  from->number);
+
+	if (from->length - offset < length) {
+		SGT_TRACE("From SGT/Buffer too short (%zu)", from->length);
+		return CAAM_SHORT_BUFFER;
+	}
+
+	for (; idx < from->number && off >= from->buf[idx].length; idx++)
+		off -= from->buf[idx].length;
+
+	st_idx = idx;
+	sgt->number = 1;
+	rlength -= MIN(rlength, from->buf[idx].length - off);
+
+	for (idx++; idx < from->number && rlength; idx++) {
+		rlength -= MIN(rlength, from->buf[idx].length);
+		sgt->number++;
+	}
+
+	sgt->sgt_type = (sgt->number > 1) ? true : false;
+
+	/* Allocate a new SGT/Buffer object */
+	retstatus = caam_sgtbuf_alloc(sgt);
+	SGT_TRACE("Allocate %d SGT entries ret 0x%" PRIx32, sgt->number,
+		  retstatus);
+	if (retstatus != CAAM_NO_ERROR)
+		return retstatus;
+
+	memcpy(sgt->buf, &from->buf[st_idx], sgt->number * sizeof(*sgt->buf));
+
+	if (sgt->sgt_type) {
+		memcpy(sgt->sgt, &from->sgt[st_idx],
+		       sgt->number * sizeof(*sgt->sgt));
+
+		/* Set the offset of the first sgt entry */
+		sgt_entry_offset(sgt->sgt, off);
+
+		/*
+		 * Push the SGT Table into memory now because
+		 * derived objects are not pushed.
+		 */
+		cache_operation(TEE_CACHECLEAN, sgt->sgt,
+				sgt->number * sizeof(*sgt->sgt));
+
+		sgt->paddr = virt_to_phys(sgt->sgt);
+	} else {
+		sgt->paddr = sgt->buf->paddr + off;
+	}
+
+	sgt->length = length;
+
+	return CAAM_NO_ERROR;
 }
 
 void caam_sgtbuf_free(struct caamsgtbuf *data)

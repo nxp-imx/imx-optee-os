@@ -17,6 +17,7 @@ enum caam_status {
 	CAAM_NOT_SUPPORTED, /* Feature not supported */
 	CAAM_OUT_MEMORY,    /* Out of memory */
 	CAAM_BAD_PARAM,	    /* Bad parameters */
+	CAAM_SHORT_BUFFER,  /* Buffer is too short */
 	CAAM_BUSY,	    /* Operation is not possible, system busy */
 	CAAM_PENDING,	    /* Operation is pending */
 	CAAM_TIMEOUT,	    /* Operation timeout */

@@ -14,26 +14,6 @@
 #include <tee/entry_std.h>
 #include <string.h>
 
-/*
- * Read the system cache line size.
- * Get the value from the ARM system configration register
- */
-static uint32_t read_cacheline_size(void)
-{
-	uint32_t value = 0;
-
-#ifdef ARM64
-	value = read_ctr_el0();
-#else
-	value = read_ctr();
-#endif /* ARM64 */
-	value = CTR_WORD_SIZE
-		<< ((value >> CTR_DMINLINE_SHIFT) & CTR_DMINLINE_MASK);
-	MEM_TRACE("System Cache Line size = %" PRIu32 " bytes", value);
-
-	return value;
-}
-
 #define MEM_TYPE_NORMAL 0      /* Normal allocation */
 #define MEM_TYPE_ZEROED	BIT(0) /* Buffer filled with 0's */
 #define MEM_TYPE_ALIGN	BIT(1) /* Address and size aligned on a cache line */
@@ -105,7 +85,7 @@ static void *mem_alloc(size_t size_in, uint8_t type)
 		 * line start offset, add a cache line to full area allocated
 		 * to ensure that end of the working buffer is in a cache line.
 		 */
-		cacheline_size = read_cacheline_size();
+		cacheline_size = caam_mem_read_cacheline_size();
 		if (size == cacheline_size) {
 			if (ADD_OVERFLOW(alloc_size, cacheline_size,
 					 &alloc_size))
@@ -186,7 +166,7 @@ static void *mem_alloc(size_t size, uint8_t type)
 	MEM_TRACE("alloc (normal) %zu bytes of type %" PRIu8, size, type);
 
 	if (type & MEM_TYPE_ALIGN) {
-		cacheline_size = read_cacheline_size();
+		cacheline_size = caam_mem_read_cacheline_size();
 		if (ADD_OVERFLOW(alloc_size,
 				 ROUNDUP(alloc_size, cacheline_size),
 				 &alloc_size))
@@ -450,4 +430,20 @@ int caam_mem_get_pa_area(struct caambuf *buf, struct caambuf **out_pabufs)
 
 	MEM_TRACE("Nb Physical Area %d", nb_pa_area + 1);
 	return nb_pa_area + 1;
+}
+
+uint32_t caam_mem_read_cacheline_size(void)
+{
+	uint32_t value = 0;
+
+#ifdef ARM64
+	value = read_ctr_el0();
+#else
+	value = read_ctr();
+#endif /* ARM64 */
+	value = CTR_WORD_SIZE
+		<< ((value >> CTR_DMINLINE_SHIFT) & CTR_DMINLINE_MASK);
+	MEM_TRACE("System Cache Line size = %" PRIu32 " bytes", value);
+
+	return value;
 }
