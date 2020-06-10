@@ -61,7 +61,7 @@ static enum caam_status do_keypair_conv_p_g(struct caam_dh_keypair *outkey,
 	/* Prime Number Modulus */
 	retstatus = caam_calloc_buf(&outkey->p, p_size);
 	if (retstatus != CAAM_NO_ERROR)
-		return CAAM_OUT_MEMORY;
+		return retstatus;
 
 	crypto_bignum_bn2bin(inkey->p, outkey->p.data);
 	cache_operation(TEE_CACHECLEAN, outkey->p.data, outkey->p.length);
@@ -69,7 +69,7 @@ static enum caam_status do_keypair_conv_p_g(struct caam_dh_keypair *outkey,
 	/* Generator */
 	retstatus = caam_calloc_buf(&outkey->g, p_size);
 	if (retstatus != CAAM_NO_ERROR)
-		return CAAM_OUT_MEMORY;
+		return retstatus;
 
 	/* Get the number of bytes of g to pad with 0's */
 	field_size = crypto_bignum_num_bytes(inkey->g);
@@ -102,7 +102,7 @@ static enum caam_status do_keypriv_conv(struct caam_dh_keypair *outkey,
 	p_size = crypto_bignum_num_bytes(inkey->p);
 	retstatus = caam_calloc_buf(&outkey->p, p_size);
 	if (retstatus != CAAM_NO_ERROR)
-		return CAAM_OUT_MEMORY;
+		return retstatus;
 
 	crypto_bignum_bn2bin(inkey->p, outkey->p.data);
 	cache_operation(TEE_CACHECLEAN, outkey->p.data, outkey->p.length);
@@ -110,7 +110,7 @@ static enum caam_status do_keypriv_conv(struct caam_dh_keypair *outkey,
 	/* Private Key X */
 	retstatus = caam_calloc_buf(&outkey->x, key_size);
 	if (retstatus != CAAM_NO_ERROR)
-		return CAAM_OUT_MEMORY;
+		return retstatus;
 
 	crypto_bignum_bn2bin(inkey->x, outkey->x.data);
 	cache_operation(TEE_CACHECLEAN, outkey->x.data, outkey->x.length);
@@ -137,7 +137,7 @@ static enum caam_status do_keypub_conv(struct caam_dh_keypair *outkey,
 	/* Public Key Y */
 	retstatus = caam_calloc_buf(&outkey->y, key_size);
 	if (retstatus != CAAM_NO_ERROR)
-		return CAAM_OUT_MEMORY;
+		return retstatus;
 
 	crypto_bignum_bn2bin(inkey, outkey->y.data);
 	cache_operation(TEE_CACHECLEAN, outkey->y.data, outkey->y.length);
@@ -258,7 +258,7 @@ static TEE_Result do_gen_keypair(struct dh_keypair *key,
 	/* Allocate Private Key to be generated */
 	retstatus = caam_calloc_align_buf(&caam_dh_key.x, n_bytes);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto out;
 	}
 	cache_operation(TEE_CACHEFLUSH, caam_dh_key.x.data,
@@ -267,7 +267,7 @@ static TEE_Result do_gen_keypair(struct dh_keypair *key,
 	/* Allocate Public Key to be generated */
 	retstatus = caam_calloc_align_buf(&caam_dh_key.y, l_bytes);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto out;
 	}
 	cache_operation(TEE_CACHEFLUSH, caam_dh_key.y.data,
@@ -276,7 +276,7 @@ static TEE_Result do_gen_keypair(struct dh_keypair *key,
 	/* Allocate Private Key modulus (r) and fill it with one's */
 	retstatus = caam_calloc_buf(&dh_r, n_bytes);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto out;
 	}
 
@@ -286,7 +286,7 @@ static TEE_Result do_gen_keypair(struct dh_keypair *key,
 	/* Generator and Prime */
 	retstatus = do_keypair_conv_p_g(&caam_dh_key, key);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto out;
 	}
 
@@ -405,9 +405,9 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	 * ReAllocate the secret result buffer with a maximum size
 	 * of the secret size if not cache aligned
 	 */
-	ret = caam_dmaobj_init_output(&secret, sdata->secret.data,
-				      sdata->secret.length,
-				      sdata->secret.length);
+	ret = caam_dmaobj_output_sgtbuf(&secret, sdata->secret.data,
+					sdata->secret.length,
+					sdata->secret.length);
 	if (ret)
 		goto out;
 
@@ -426,7 +426,7 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	/* Convert the Public key to local key */
 	retstatus = do_keypub_conv(&caam_dh_key, sdata->key_pub);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto out;
 	}
 
@@ -460,10 +460,10 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		caam_dmaobj_copy_to_orig(&secret);
+		sdata->secret.length = caam_dmaobj_copy_to_orig(&secret);
 
 		DH_DUMPBUF("Secret", sdata->secret.data, sdata->secret.length);
-		ret = TEE_SUCCESS;
+		ret = caam_status_to_tee_result(retstatus);
 	} else {
 		DH_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
