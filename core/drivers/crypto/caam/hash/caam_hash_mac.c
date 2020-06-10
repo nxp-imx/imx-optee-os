@@ -72,7 +72,7 @@ static enum caam_status do_reduce_key(struct caamdmaobj *reduce_key,
 	struct caam_jobctx jobctx = {};
 	uint32_t *desc = NULL;
 
-	if (caam_dmaobj_init_input(&key, inkey, len))
+	if (caam_dmaobj_input_sgtbuf(&key, inkey, len))
 		return CAAM_OUT_MEMORY;
 
 	/* Allocate the job descriptor */
@@ -151,8 +151,8 @@ static TEE_Result do_hmac_init(struct crypto_mac_ctx *ctx, const uint8_t *inkey,
 	if (len > alg->size_block) {
 		HASH_TRACE("Input key must be reduced");
 
-		ret = caam_dmaobj_init_output(&reduce_key, NULL, 0,
-					      alg->size_digest);
+		ret = caam_dmaobj_output_sgtbuf(&reduce_key, NULL, 0,
+						alg->size_digest);
 		if (ret) {
 			HASH_TRACE("Reduced Key allocation error");
 			goto exit_split_key;
@@ -163,7 +163,7 @@ static TEE_Result do_hmac_init(struct crypto_mac_ctx *ctx, const uint8_t *inkey,
 			goto exit_split_key;
 	} else {
 		/* Key size is correct use directly the input key */
-		ret = caam_dmaobj_init_input(&reduce_key, inkey, len);
+		ret = caam_dmaobj_input_sgtbuf(&reduce_key, inkey, len);
 		if (ret)
 			goto exit_split_key;
 	}
