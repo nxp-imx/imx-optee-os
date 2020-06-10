@@ -144,12 +144,13 @@ static TEE_Result do_update_mac(struct drvcrypt_cipher_update *dupdate)
 	enum caam_status retstatus = CAAM_FAILURE;
 	struct cipherdata *ctx = dupdate->ctx;
 	struct caamdmaobj src = {};
-	struct caamdmaobj srcblock = {};
 	struct caamdmaobj dst = {};
 	size_t full_size = 0;
 	size_t size_topost = 0;
 	size_t size_todo = 0;
-	uint8_t *srcdata = NULL;
+	size_t size_done = 0;
+	size_t size_inmade = 0;
+	size_t offset = 0;
 
 	CIPHER_TRACE("Length=%zu - %s", dupdate->src.length,
 		     ctx->encrypt ? "Encrypt" : "Decrypt");
@@ -160,15 +161,13 @@ static TEE_Result do_update_mac(struct drvcrypt_cipher_update *dupdate)
 		size_topost = dupdate->src.length;
 	} else {
 		size_topost = full_size % ctx->alg->size_block;
+		size_inmade = dupdate->src.length - size_topost;
 		/* Total size that is a cipher block multiple */
 		size_todo = full_size - size_topost;
 	}
 
 	CIPHER_TRACE("FullSize %zu - posted %zu - todo %zu", full_size,
 		     size_topost, size_todo);
-
-	if (dupdate->src.length)
-		srcdata = dupdate->src.data;
 
 	if (!size_todo) {
 		/*
@@ -180,95 +179,106 @@ static TEE_Result do_update_mac(struct drvcrypt_cipher_update *dupdate)
 			memcpy(dupdate->dst.data, ctx->ctx.data,
 			       MIN(dupdate->dst.length, ctx->alg->size_ctx));
 
-		goto final_mac_update;
+		ret = TEE_SUCCESS;
+		goto end_mac_post;
+	}
+
+	if (dupdate->src.length) {
+		ret = caam_dmaobj_init_input(&src, dupdate->src.data,
+					     dupdate->src.length);
+		if (ret)
+			goto end_mac;
+
+		ret = caam_dmaobj_prepare(&src, NULL, ctx->alg->size_block);
+		if (ret)
+			goto end_mac;
 	}
 
 	if (dupdate->last) {
-		ret = caam_dmaobj_init_output(&dst, dupdate->dst.data,
-					      dupdate->dst.length,
-					      ctx->alg->size_ctx);
+		ret = caam_dmaobj_output_sgtbuf(&dst, dupdate->dst.data,
+						dupdate->dst.length,
+						dupdate->dst.length);
 		if (ret)
 			goto end_mac;
+
+		/* Remove a block of data to do the last block */
+		if (size_todo > ctx->alg->size_block)
+			size_todo -= ctx->alg->size_block;
+		else
+			size_todo = 0;
 	}
 
 	/* Check if there is some data saved to complete the buffer */
 	if (ctx->blockbuf.filled) {
-		ret = caam_dmaobj_init_input(&src, srcdata,
-					     ctx->alg->size_block -
-						     ctx->blockbuf.filled);
+		ret = caam_dmaobj_add_first_block(&src, &ctx->blockbuf);
 		if (ret)
 			goto end_mac;
-
-		ret = caam_dmaobj_add_first_block(&srcblock, &ctx->blockbuf,
-						  &src);
-		if (ret)
-			goto end_mac;
-
-		srcdata += ctx->alg->size_block - ctx->blockbuf.filled;
 		ctx->blockbuf.filled = 0;
-		size_todo -= ctx->alg->size_block;
-
-		if (dupdate->last && !size_todo) {
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      true, &srcblock, &dst);
-			caam_dmaobj_copy_to_orig(&dst);
-			goto final_mac_update;
-		} else {
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      true, &srcblock, NULL);
-		}
-
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_GENERIC;
-			goto end_mac;
-		}
-
-		caam_dmaobj_free(&src);
 	}
 
-	while (size_todo) {
-		ret = caam_dmaobj_init_input(&src, srcdata,
-					     ctx->alg->size_block);
+	size_done = ctx->alg->size_block;
+	for (; size_todo; offset += size_done, size_todo -= size_done) {
+		CIPHER_TRACE("Do input %zu bytes, offset %zu", size_done,
+			     offset);
+
+		ret = caam_dmaobj_sgtbuf_build(&src, &size_done, offset,
+					       ctx->alg->size_block);
 		if (ret)
 			goto end_mac;
 
-		if (dupdate->last) {
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      true, &src, &dst);
-			caam_dmaobj_copy_to_orig(&dst);
-		} else {
-			retstatus = caam_cipher_block(ctx, true, NEED_KEY1,
-						      true, &src, NULL);
+		if (size_done != ctx->alg->size_block) {
+			ret = TEE_ERROR_GENERIC;
+			goto end_mac;
 		}
 
-		if (retstatus != CAAM_NO_ERROR)
-			return TEE_ERROR_GENERIC;
+		retstatus = caam_cipher_block(ctx, true, NEED_KEY1, true, &src,
+					      NULL);
 
-		size_todo -= ctx->alg->size_block;
-		srcdata += ctx->alg->size_block;
+		if (retstatus != CAAM_NO_ERROR) {
+			ret = caam_status_to_tee_result(retstatus);
+			goto end_mac;
+		}
+	}
 
-		caam_dmaobj_free(&src);
-	};
+	if (dupdate->last) {
+		CIPHER_TRACE("Do input %zu bytes, offset %zu", size_done,
+			     offset);
 
-final_mac_update:
-	ret = TEE_SUCCESS;
+		ret = caam_dmaobj_sgtbuf_build(&src, &size_done, offset,
+					       ctx->alg->size_block);
+		if (ret)
+			goto end_mac;
 
+		if (size_done != ctx->alg->size_block) {
+			ret = TEE_ERROR_GENERIC;
+			goto end_mac;
+		}
+
+		retstatus = caam_cipher_block(ctx, true, NEED_KEY1, true, &src,
+					      &dst);
+
+		if (retstatus == CAAM_NO_ERROR)
+			caam_dmaobj_copy_to_orig(&dst);
+
+		ret = caam_status_to_tee_result(retstatus);
+	}
+
+end_mac_post:
 	if (size_topost) {
 		struct caambuf cpysrc = {
-			.data = srcdata,
-			.length = size_topost
+			.data = dupdate->src.data,
+			.length = dupdate->src.length
 		};
 
-		CIPHER_TRACE("Save input data %zu bytes of %zu", size_topost,
-			     dupdate->src.length);
+		CIPHER_TRACE("Save input data %zu bytes of %zu (%zu)",
+			     size_topost, dupdate->src.length, size_inmade);
 
-		retstatus = caam_cpy_block_src(&ctx->blockbuf, &cpysrc, 0);
-		if (retstatus != CAAM_NO_ERROR)
-			ret = TEE_ERROR_GENERIC;
+		retstatus = caam_cpy_block_src(&ctx->blockbuf, &cpysrc,
+					       size_inmade);
+		ret = caam_status_to_tee_result(retstatus);
 	}
 
 end_mac:
-	caam_dmaobj_free(&srcblock);
 	caam_dmaobj_free(&src);
 	caam_dmaobj_free(&dst);
 
@@ -407,76 +417,130 @@ static TEE_Result run_cmac_desc(struct cipherdata *ctx, struct caamdmaobj *src,
 static TEE_Result do_update_cmac(struct drvcrypt_cipher_update *dupdate)
 {
 	TEE_Result ret = TEE_ERROR_BAD_PARAMETERS;
+	enum caam_status retstatus = CAAM_FAILURE;
 	struct cipherdata *ctx = dupdate->ctx;
 	size_t full_size = 0;
 	size_t size_topost = 0;
 	size_t size_todo = 0;
 	size_t size_inmade = 0;
+	size_t size_done = 0;
+	size_t offset = 0;
 	struct caamdmaobj src = {};
 	struct caamdmaobj dst = {};
 
 	CIPHER_TRACE("Length=%zu - %s", dupdate->src.length,
 		     dupdate->encrypt ? "Encrypt" : "Decrypt");
 
-	if (dupdate->last) {
-		ret = caam_dmaobj_init_output(&dst, dupdate->dst.data,
-					      dupdate->dst.length,
-					      dupdate->dst.length);
-		if (ret)
-			return ret;
-	}
-
 	/* Calculate the total data to be handled */
 	full_size = ctx->blockbuf.filled + dupdate->src.length;
 	if (!dupdate->last) {
-		if (full_size < ctx->alg->size_block) {
+		/*
+		 * In case there is no data to save and because it's
+		 * not the final operation, ensure that a block of data
+		 * is kept for the final operation.
+		 */
+		if (full_size <= ctx->alg->size_block) {
 			size_topost = dupdate->src.length;
-		} else {
-			size_topost = full_size % ctx->alg->size_block;
+			goto end_cmac_post;
+		}
 
-			/*
-			 * In case there is no data to save and because it's
-			 * not the final operation, ensure that a block of data
-			 * is kept for the final operation.
-			 */
-			if (!size_topost)
-				size_topost = ctx->alg->size_block;
+		size_topost = full_size % ctx->alg->size_block;
 
-			/* Total size that is a cipher block multiple */
-			size_todo = full_size - size_topost;
+		if (!size_topost)
+			size_topost = ctx->alg->size_block;
+
+		size_inmade = dupdate->src.length - size_topost;
+		size_todo = size_inmade;
+	} else {
+		ret = caam_dmaobj_output_sgtbuf(&dst, dupdate->dst.data,
+						dupdate->dst.length,
+						dupdate->dst.length);
+		if (ret)
+			goto end_cmac;
+
+		/*
+		 * If there more than one block to do, keep the last
+		 * block to build the CMAC output.
+		 */
+		if (full_size > ctx->alg->size_block) {
+			size_todo = full_size - ctx->alg->size_block;
+			size_inmade = size_todo - ctx->blockbuf.filled;
 		}
 	}
 
-	CIPHER_TRACE("full_size %zu - posted %zu - todo %zu", full_size,
+	if (dupdate->src.length) {
+		ret = caam_dmaobj_init_input(&src, dupdate->src.data,
+					     size_inmade);
+		if (ret)
+			goto end_cmac;
+
+		ret = caam_dmaobj_prepare(&src, NULL, ctx->alg->size_block);
+		if (ret)
+			goto end_cmac;
+	}
+
+	CIPHER_TRACE("FullSize %zu - posted %zu - todo %zu", full_size,
 		     size_topost, size_todo);
 
-	if (size_todo || dupdate->last) {
-		size_inmade = dupdate->src.length - size_topost;
-		if (size_inmade) {
-			ret = caam_dmaobj_init_input(&src, dupdate->src.data,
-						     size_inmade);
+	for (; size_todo; offset += size_done, size_todo -= size_done) {
+		size_done = size_todo;
+
+		CIPHER_TRACE("Do input %zu bytes, offset %zu", size_done,
+			     offset);
+
+		ret = caam_dmaobj_sgtbuf_build(&src, &size_done, offset,
+					       ctx->alg->size_block);
+		if (ret)
+			goto end_cmac;
+
+		/*
+		 * Need to re-adjust the length of the data if the
+		 * posted data block is not empty and the SGT/Buffer
+		 * is part of the full input data to do.
+		 */
+		if (ctx->blockbuf.filled && size_done < size_todo) {
+			size_done -= ctx->blockbuf.filled;
+			src.sgtbuf.length = size_done;
+		}
+
+		ret = run_cmac_desc(ctx, &src, NULL, false);
+		if (ret)
+			goto end_cmac;
+	}
+
+	if (dupdate->last) {
+		if (dupdate->src.length - size_inmade) {
+			size_done = dupdate->src.length - size_inmade;
+			ret = caam_dmaobj_sgtbuf_build(&src, &size_done, offset,
+						       ctx->alg->size_block);
 			if (ret)
 				goto end_cmac;
 
-			ret = run_cmac_desc(ctx, &src, &dst, dupdate->last);
+			if (size_done != dupdate->src.length - size_inmade) {
+				ret = TEE_ERROR_GENERIC;
+				goto end_cmac;
+			}
+
+			ret = run_cmac_desc(ctx, &src, &dst, true);
 		} else {
-			ret = run_cmac_desc(ctx, NULL, &dst, dupdate->last);
+			ret = run_cmac_desc(ctx, NULL, &dst, true);
 		}
 
-		if (ret == TEE_SUCCESS && dupdate->last)
+		if (!ret)
 			caam_dmaobj_copy_to_orig(&dst);
-	} else {
-		ret = TEE_SUCCESS;
 	}
 
+end_cmac_post:
 	if (size_topost) {
 		struct caambuf srcbuf = { .data = dupdate->src.data,
 					  .length = dupdate->src.length };
+
 		CIPHER_TRACE("Post %zu of input len %zu made %zu", size_topost,
 			     srcbuf.length, size_inmade);
-		if (caam_cpy_block_src(&ctx->blockbuf, &srcbuf, size_inmade) !=
-		    CAAM_NO_ERROR)
-			ret = TEE_ERROR_GENERIC;
+
+		retstatus = caam_cpy_block_src(&ctx->blockbuf, &srcbuf,
+					       size_inmade);
+		ret = caam_status_to_tee_result(retstatus);
 	}
 
 end_cmac:

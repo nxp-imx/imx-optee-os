@@ -6,6 +6,7 @@
  */
 #include <caam_common.h>
 #include <caam_utils_mem.h>
+#include <caam_utils_status.h>
 #include <mm/core_memprot.h>
 #include <string.h>
 
@@ -41,11 +42,10 @@ static void do_galois_mult(struct caambuf *buf)
  * @dstbuf     [out] Destination data encrypted/decrypted
  * @tmp        Temporary data buffer
  */
-static enum caam_status do_tweak_block(struct cipherdata *ctx,
-				       struct caambuf *enc_tweak,
-				       struct caambuf *srcbuf,
-				       struct caambuf *dstbuf,
-				       struct caamdmaobj *tmp)
+static TEE_Result do_tweak_block(struct cipherdata *ctx,
+				 struct caambuf *enc_tweak,
+				 struct caambuf *srcbuf, struct caambuf *dstbuf,
+				 struct caamdmaobj *tmp)
 {
 	enum caam_status retstatus = CAAM_FAILURE;
 	unsigned int idx = 0;
@@ -61,7 +61,7 @@ static enum caam_status do_tweak_block(struct cipherdata *ctx,
 				      tmp);
 
 	if (retstatus != CAAM_NO_ERROR)
-		return retstatus;
+		return caam_status_to_tee_result(retstatus);
 
 	for (idx = 0; idx < ctx->alg->size_block; idx++)
 		dstbuf->data[idx] = tmp->orig.data[idx] ^ enc_tweak->data[idx];
@@ -69,7 +69,7 @@ static enum caam_status do_tweak_block(struct cipherdata *ctx,
 	/* Galois field multiplication of the tweak */
 	do_galois_mult(enc_tweak);
 
-	return retstatus;
+	return TEE_SUCCESS;
 }
 
 TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
@@ -102,18 +102,20 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 		return TEE_ERROR_GENERIC;
 	}
 
-	ret = caam_dmaobj_init_input(&tweak, ctx->tweak.data,
-				     ctx->tweak.length);
-	if (ret)
-		return ret;
-
-	/* First operation is to encrypt the tweak with the key #2 */
-	/* Allocate the encrypted tweak buffer */
-	ret = caam_dmaobj_new_output(&enc_tweak, ctx->tweak.length);
+	ret = caam_dmaobj_input_sgtbuf(&tweak, ctx->tweak.data,
+				       ctx->tweak.length);
 	if (ret)
 		goto end_xts;
 
-	ret = caam_dmaobj_new_output(&tmpdst, ctx->alg->size_block);
+	/*
+	 * First operation is to encrypt the tweak with the key #2
+	 * Allocate the encrypted tweak buffer
+	 */
+	ret = caam_dmaobj_output_sgtbuf(&enc_tweak, NULL, 0, ctx->tweak.length);
+	if (ret)
+		goto end_xts;
+
+	ret = caam_dmaobj_output_sgtbuf(&tmpdst, NULL, 0, ctx->alg->size_block);
 	if (ret)
 		goto end_xts;
 
@@ -121,7 +123,7 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 				      &enc_tweak);
 	if (retstatus != CAAM_NO_ERROR) {
 		CIPHER_TRACE("Tweak encryption error");
-		ret = TEE_ERROR_GENERIC;
+		ret = caam_status_to_tee_result(retstatus);
 		goto end_xts;
 	}
 
@@ -158,14 +160,12 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 
 	for (; fullsize > 0; fullsize -= ctx->alg->size_block) {
 		CIPHER_TRACE("Tweak block fullsize %zu", fullsize);
-		retstatus = do_tweak_block(ctx, &enc_tweak.orig, &srcbuf,
-					   &dstbuf, &tmpdst);
+		ret = do_tweak_block(ctx, &enc_tweak.orig, &srcbuf, &dstbuf,
+				     &tmpdst);
 
-		CIPHER_TRACE("Tweak block ret 0x%" PRIx32, retstatus);
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_GENERIC;
+		CIPHER_TRACE("Tweak block ret 0x%" PRIx32, ret);
+		if (ret)
 			goto end_xts;
-		}
 
 		CIPHER_DUMPBUF("Source", srcbuf.data, srcbuf.length);
 		CIPHER_DUMPBUF("Dest", dstbuf.data, dstbuf.length);
@@ -187,7 +187,7 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 		 */
 		retstatus = caam_alloc_align_buf(&tmpsrc, ctx->alg->size_block);
 		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_OUT_OF_MEMORY;
+			ret = caam_status_to_tee_result(retstatus);
 			goto end_xts;
 		}
 
@@ -200,21 +200,17 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 			       enc_tweak.orig.length);
 			do_galois_mult(&tmpsrc);
 
-			retstatus = do_tweak_block(ctx, &tmpsrc, &srcbuf,
-						   &tmpdst.orig, &tmpdst);
+			ret = do_tweak_block(ctx, &tmpsrc, &srcbuf,
+					     &tmpdst.orig, &tmpdst);
 		} else {
-			retstatus =
-				do_tweak_block(ctx, &enc_tweak.orig, &srcbuf,
-					       &tmpdst.orig, &tmpdst);
+			ret = do_tweak_block(ctx, &enc_tweak.orig, &srcbuf,
+					     &tmpdst.orig, &tmpdst);
 		}
 
-		CIPHER_TRACE("Tweak penultimate block ret 0x%" PRIx32,
-			     retstatus);
+		CIPHER_TRACE("Tweak penultimate block ret 0x%" PRIx32, ret);
 
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_GENERIC;
+		if (ret)
 			goto end_xts;
-		}
 
 		/* Build the last block and create the last destination block */
 		for (idx = 0; idx < lastblk; idx++) {
@@ -227,17 +223,15 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 		for (; idx < ctx->alg->size_block; idx++)
 			tmpsrc.data[idx] = tmpdst.orig.data[idx];
 
-		retstatus = do_tweak_block(ctx, &enc_tweak.orig, &tmpsrc,
-					   &dstbuf, &tmpdst);
+		ret = do_tweak_block(ctx, &enc_tweak.orig, &tmpsrc, &dstbuf,
+				     &tmpdst);
+
+		CIPHER_TRACE("Tweak last block ret 0x%" PRIx32, ret);
+		if (ret)
+			goto end_xts;
 
 		CIPHER_DUMPBUF("Source", tmpsrc.data, tmpsrc.length);
 		CIPHER_DUMPBUF("Dest", dstbuf.data, dstbuf.length);
-		CIPHER_TRACE("Tweak last block ret 0x%" PRIx32, retstatus);
-
-		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_GENERIC;
-			goto end_xts;
-		}
 	}
 
 	/* Finalize by decrypting the tweak back */
@@ -245,13 +239,13 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 				      &tweak);
 	if (retstatus != CAAM_NO_ERROR) {
 		CIPHER_TRACE("Tweak decryption error");
-		ret = TEE_ERROR_GENERIC;
+		ret = caam_status_to_tee_result(retstatus);
 		goto end_xts;
 	}
+
 	caam_dmaobj_copy_to_orig(&tweak);
 
 	ret = TEE_SUCCESS;
-
 end_xts:
 	caam_free_buf(&tmpsrc);
 	caam_dmaobj_free(&tmpdst);
