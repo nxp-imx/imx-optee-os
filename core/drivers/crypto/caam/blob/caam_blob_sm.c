@@ -8,6 +8,7 @@
 #include <caam_common.h>
 #include <caam_sm.h>
 #include <caam_utils_mem.h>
+#include <caam_utils_status.h>
 #include <drivers/caam/crypto_extension.h>
 #include <mm/core_memprot.h>
 #include <string.h>
@@ -61,8 +62,8 @@ TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
 	}
 
 	/* Re-allocate output buffer if alignment needed */
-	ret = caam_dmaobj_init_output(&resblob, blob->blob.data,
-				      blob->blob.length, outsize);
+	ret = caam_dmaobj_output_sgtbuf(&resblob, blob->blob.data,
+					blob->blob.length, outsize);
 	if (ret)
 		return ret;
 
@@ -132,11 +133,10 @@ TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
 	if (retstatus == CAAM_NO_ERROR) {
 		BLOB_TRACE("Done CAAM BLOB from Secure Memory encaps");
 
-		caam_dmaobj_copy_to_orig(&resblob);
-		blob->blob.length = resblob.orig.length;
+		blob->blob.length = caam_dmaobj_copy_to_orig(&resblob);
 
 		BLOB_DUMPBUF("Blob Output", blob->blob.data, blob->blob.length);
-		ret = TEE_SUCCESS;
+		ret = caam_status_to_tee_result(retstatus);
 	} else {
 		BLOB_TRACE("CAAM Status 0x%08" PRIx32 "", jobctx.status);
 		ret = TEE_ERROR_GENERIC;
