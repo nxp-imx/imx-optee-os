@@ -34,11 +34,11 @@ static TEE_Result do_xor_mod_n(struct drvcrypt_mod_op *data)
 
 	RSA_TRACE("(A xor B) mod n");
 
-	ret = caam_dmaobj_init_input(&data_a, data->a.data, data->a.length);
+	ret = caam_dmaobj_input_sgtbuf(&data_a, data->a.data, data->a.length);
 	if (ret)
 		return ret;
 
-	ret = caam_dmaobj_init_input(&data_b, data->b.data, data->b.length);
+	ret = caam_dmaobj_input_sgtbuf(&data_b, data->b.data, data->b.length);
 	if (ret)
 		goto end_xor_mod_n;
 
@@ -46,8 +46,9 @@ static TEE_Result do_xor_mod_n(struct drvcrypt_mod_op *data)
 	 * ReAllocate the result buffer with a maximum size
 	 * of the Key Modulus's size (N) if not cache aligned
 	 */
-	ret = caam_dmaobj_init_output(&res, data->result.data,
-				      data->result.length, data->result.length);
+	ret = caam_dmaobj_output_sgtbuf(&res, data->result.data,
+					data->result.length,
+					data->result.length);
 	if (ret)
 		goto end_xor_mod_n;
 
@@ -91,7 +92,7 @@ static TEE_Result do_xor_mod_n(struct drvcrypt_mod_op *data)
 	if (retstatus == CAAM_NO_ERROR) {
 		caam_dmaobj_copy_to_orig(&res);
 		RSA_DUMPBUF("Output", data->result.data, data->result.length);
-		ret = TEE_SUCCESS;
+		ret = caam_status_to_tee_result(retstatus);
 	} else {
 		RSA_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);

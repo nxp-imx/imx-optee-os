@@ -58,7 +58,7 @@ static enum caam_status do_keypub_conv(struct caam_ecc_keypair *outkey,
 	/* Point (x y) is twice security key size */
 	retstatus = caam_calloc_buf(&outkey->xy, 2 * size_sec);
 	if (retstatus != CAAM_NO_ERROR)
-		return CAAM_OUT_MEMORY;
+		return retstatus;
 
 	/*
 	 * Copy x value
@@ -100,7 +100,7 @@ static enum caam_status do_keypair_conv(struct caam_ecc_keypair *outkey,
 	/* Private key is only scalar d of sec_size bytes */
 	retstatus = caam_calloc_buf(&outkey->d, size_sec);
 	if (retstatus != CAAM_NO_ERROR)
-		return CAAM_OUT_MEMORY;
+		return retstatus;
 
 	/* Get the number of bytes of d to pad with 0's */
 	d_size = crypto_bignum_num_bytes(inkey->d);
@@ -261,7 +261,7 @@ static TEE_Result do_gen_keypair(struct ecc_keypair *key, size_t key_size)
 	 */
 	retstatus = caam_alloc_align_buf(&d, (key_size / 8) * 3);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_gen_keypair;
 	}
 
@@ -309,8 +309,6 @@ static TEE_Result do_gen_keypair(struct ecc_keypair *key, size_t key_size)
 		ECC_DUMPBUF("D", d.data, key_size / 8);
 		ECC_DUMPBUF("X", xy.data, xy.length / 2);
 		ECC_DUMPBUF("Y", xy.data + xy.length / 2, xy.length / 2);
-
-		ret = TEE_SUCCESS;
 	} else {
 		ECC_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
@@ -368,13 +366,13 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 	/* Convert the private key to a local key */
 	retstatus = do_keypair_conv(&ecckey, inkey, sdata->size_sec);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_sign;
 	}
 
 	/* Prepare the input message CAAM Descriptor entry */
-	ret = caam_dmaobj_init_input(&msg, sdata->message.data,
-				     sdata->message.length);
+	ret = caam_dmaobj_input_sgtbuf(&msg, sdata->message.data,
+				       sdata->message.length);
 	if (ret)
 		goto exit_sign;
 
@@ -395,8 +393,8 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 	 */
 	sign_len = ROUNDUP(sdata->size_sec, 16) + sdata->size_sec;
 
-	ret = caam_dmaobj_init_output(&sign_c, sdata->signature.data,
-				      sdata->signature.length, sign_len);
+	ret = caam_dmaobj_output_sgtbuf(&sign_c, sdata->signature.data,
+					sdata->signature.length, sign_len);
 	if (ret)
 		goto exit_sign;
 
@@ -404,8 +402,8 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 		pdb_sgt_flags |= PDB_SGT_PKSIGN_SIGN_C;
 
 	/* Derive sign_d from created sign_c DMA object */
-	ret = caam_dmaobj_derive(&sign_d, &sign_c, sdata->size_sec,
-				 ROUNDUP(sdata->size_sec, 16));
+	ret = caam_dmaobj_derive_sgtbuf(&sign_d, &sign_c, sdata->size_sec,
+					ROUNDUP(sdata->size_sec, 16));
 	if (ret)
 		goto exit_sign;
 
@@ -413,7 +411,6 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 		pdb_sgt_flags |= PDB_SGT_PKSIGN_SIGN_D;
 
 	caam_dmaobj_cache_push(&sign_c);
-	caam_dmaobj_cache_push(&sign_d);
 
 	/*
 	 * Build the descriptor using Predifined ECC curve
@@ -445,14 +442,12 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 	if (retstatus == CAAM_NO_ERROR) {
 		sign_c.orig.length = 2 * sdata->size_sec;
-		caam_dmaobj_copy_to_orig(&sign_c);
-
-		sdata->signature.length = sign_c.orig.length;
+		sdata->signature.length = caam_dmaobj_copy_to_orig(&sign_c);
 
 		ECC_DUMPBUF("Signature", sdata->signature.data,
 			    sdata->signature.length);
 
-		ret = TEE_SUCCESS;
+		ret = caam_status_to_tee_result(retstatus);
 	} else {
 		ECC_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
@@ -513,13 +508,13 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 	/* Convert the Public key to local key */
 	retstatus = do_keypub_conv(&ecckey, inkey, sdata->size_sec);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_verify;
 	}
 
 	/* Prepare the input message CAAM Descriptor entry */
-	ret = caam_dmaobj_init_input(&msg, sdata->message.data,
-				     sdata->message.length);
+	ret = caam_dmaobj_input_sgtbuf(&msg, sdata->message.data,
+				       sdata->message.length);
 	if (ret)
 		goto exit_verify;
 
@@ -533,8 +528,8 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 	 * Handle the full signature in case signature buffer needs to
 	 * be reallocated.
 	 */
-	ret = caam_dmaobj_init_input(&sign_c, sdata->signature.data,
-				     sdata->signature.length);
+	ret = caam_dmaobj_input_sgtbuf(&sign_c, sdata->signature.data,
+				       sdata->signature.length);
 	if (ret)
 		goto exit_verify;
 
@@ -542,8 +537,8 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 		pdb_sgt_flags |= PDB_SGT_PKVERIF_SIGN_C;
 
 	/* Prepare the 2nd Part of the signature, derived from sign_c */
-	ret = caam_dmaobj_derive(&sign_d, &sign_c, sdata->size_sec,
-				 sdata->size_sec);
+	ret = caam_dmaobj_derive_sgtbuf(&sign_d, &sign_c, sdata->size_sec,
+					sdata->size_sec);
 	if (ret)
 		goto exit_verify;
 
@@ -551,12 +546,11 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 		pdb_sgt_flags |= PDB_SGT_PKVERIF_SIGN_D;
 
 	caam_dmaobj_cache_push(&sign_c);
-	caam_dmaobj_cache_push(&sign_d);
 
 	/* Allocate a Temporary buffer used by the CAAM */
 	retstatus = caam_alloc_align_buf(&tmp, 2 * sdata->size_sec);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_verify;
 	}
 
@@ -598,7 +592,7 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 		ECC_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
 	} else {
-		ret = TEE_SUCCESS;
+		ret = caam_status_to_tee_result(retstatus);
 	}
 
 exit_verify:
@@ -653,14 +647,14 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	/* Convert the Private key to local key */
 	retstatus = do_keypair_conv(&ecckey, inprivkey, sdata->size_sec);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_shared;
 	}
 
 	/* Convert the Public key to local key */
 	retstatus = do_keypub_conv(&ecckey, inpubkey, sdata->size_sec);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_shared;
 	}
 
@@ -668,8 +662,8 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	 * ReAllocate the secret result buffer with a maximum size
 	 * of the secret size if not cache aligned
 	 */
-	ret = caam_dmaobj_init_output(&secret, sdata->secret.data,
-				      sdata->secret.length, sdata->size_sec);
+	ret = caam_dmaobj_output_sgtbuf(&secret, sdata->secret.data,
+					sdata->secret.length, sdata->size_sec);
 	if (ret)
 		goto exit_shared;
 
@@ -703,12 +697,11 @@ static TEE_Result do_shared_secret(struct drvcrypt_secret_data *sdata)
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		caam_dmaobj_copy_to_orig(&secret);
-		sdata->secret.length = secret.orig.length;
+		sdata->secret.length = caam_dmaobj_copy_to_orig(&secret);
 
 		ECC_DUMPBUF("Secret", sdata->secret.data, sdata->secret.length);
 
-		ret = TEE_SUCCESS;
+		ret = caam_status_to_tee_result(retstatus);
 	} else {
 		ECC_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);

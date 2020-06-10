@@ -532,7 +532,7 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 	/* First allocate primes p and q in one buffer */
 	retstatus = caam_calloc_align_buf(&genkey.p, key_size / 8);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_gen_keypair;
 	}
 
@@ -545,7 +545,7 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 	/* Allocate Public exponent to a caam buffer */
 	retstatus = caam_calloc_buf(&genkey.e, crypto_bignum_num_bytes(key->e));
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_gen_keypair;
 	}
 
@@ -559,7 +559,7 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 
 	retstatus = caam_calloc_align_buf(&genkey.d, size_d + size_n);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_gen_keypair;
 	}
 
@@ -573,7 +573,7 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 		retstatus = caam_calloc_align_buf(&genkey.dp,
 						  ((key_size / 8) / 2) * 3);
 		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_OUT_OF_MEMORY;
+			ret = caam_status_to_tee_result(retstatus);
 			goto exit_gen_keypair;
 		}
 
@@ -600,7 +600,7 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t key_size)
 	retstatus = caam_prime_rsa_gen(&prime);
 	RSA_TRACE("Generate Prime P and Q returned 0x%" PRIx32, retstatus);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_gen_keypair;
 	}
 
@@ -714,7 +714,7 @@ static TEE_Result do_oaep_decoding(struct drvcrypt_rsa_ed *rsa_data)
 	 */
 	retstatus = caam_calloc_align_buf(&EM, rsa_data->key.n_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_decrypt;
 	}
 
@@ -743,7 +743,7 @@ static TEE_Result do_oaep_decoding(struct drvcrypt_rsa_ed *rsa_data)
 	/* Allocate the DB buffer */
 	retstatus = caam_calloc_align_buf(&DB, db_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_decrypt;
 	}
 
@@ -754,7 +754,7 @@ static TEE_Result do_oaep_decoding(struct drvcrypt_rsa_ed *rsa_data)
 	/* Allocate the lHash buffer */
 	retstatus = caam_calloc_align_buf(&lHash, rsa_data->digest_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_decrypt;
 	}
 
@@ -771,14 +771,14 @@ static TEE_Result do_oaep_decoding(struct drvcrypt_rsa_ed *rsa_data)
 	/* Allocate the seed buffer */
 	retstatus = caam_calloc_align_buf(&seed, rsa_data->digest_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_decrypt;
 	}
 
 	/* Allocate the dbMask buffer */
 	retstatus = caam_calloc_align_buf(&dbMask, db_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_decrypt;
 	}
 
@@ -840,7 +840,7 @@ static TEE_Result do_oaep_decoding(struct drvcrypt_rsa_ed *rsa_data)
 
 	retstatus = drvcrypt_xor_mod_n(&mod_op);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_decrypt;
 	}
 
@@ -874,7 +874,7 @@ static TEE_Result do_oaep_decoding(struct drvcrypt_rsa_ed *rsa_data)
 
 	retstatus = drvcrypt_xor_mod_n(&mod_op);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_decrypt;
 	}
 
@@ -967,7 +967,7 @@ static TEE_Result do_oaep_encoding(struct drvcrypt_rsa_ed *rsa_data)
 	/* Allocate the DB buffer */
 	retstatus = caam_calloc_align_buf(&DB, db_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_encrypt;
 	}
 
@@ -1014,14 +1014,14 @@ static TEE_Result do_oaep_encoding(struct drvcrypt_rsa_ed *rsa_data)
 	/* Allocate the seed buffer */
 	retstatus = caam_calloc_align_buf(&seed, rsa_data->digest_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_encrypt;
 	}
 
 	/* Allocate the dbMask buffer */
 	retstatus = caam_calloc_align_buf(&dbMask, db_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_encrypt;
 	}
 
@@ -1055,7 +1055,7 @@ static TEE_Result do_oaep_encoding(struct drvcrypt_rsa_ed *rsa_data)
 	 */
 	retstatus = caam_calloc_align_buf(&EM, rsa_data->key.n_size);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_OUT_OF_MEMORY;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_oaep_encrypt;
 	}
 
@@ -1072,10 +1072,8 @@ static TEE_Result do_oaep_encoding(struct drvcrypt_rsa_ed *rsa_data)
 	mod_op.result.length = maskedDB.length;
 
 	ret = drvcrypt_xor_mod_n(&mod_op);
-	if (ret != TEE_SUCCESS) {
-		ret = TEE_ERROR_GENERIC;
+	if (ret != TEE_SUCCESS)
 		goto exit_oaep_encrypt;
-	}
 
 	/*
 	 * Step g
@@ -1137,7 +1135,7 @@ exit_oaep_encrypt:
  * CAAM RSA Encryption of the input message to a cipher
  *
  * @rsa_data   [in/out] RSA Data to encrypt
- * @operation  CAAM RSA Decryption operation
+ * @operation  CAAM RSA Encryption operation
  */
 static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 				  uint32_t operation)
@@ -1167,7 +1165,7 @@ static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 	 */
 	retstatus = do_keypub_conv(&key, rsa_data->key.key);
 	if (retstatus != CAAM_NO_ERROR) {
-		ret = TEE_ERROR_GENERIC;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_encrypt;
 	}
 
@@ -1175,8 +1173,8 @@ static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 	 * ReAllocate the cipher result buffer with a maximum size
 	 * of the Key Modulus's size (N) if not cache aligned
 	 */
-	ret = caam_dmaobj_init_output(&cipher, rsa_data->cipher.data,
-				      rsa_data->cipher.length, key.n.length);
+	ret = caam_dmaobj_output_sgtbuf(&cipher, rsa_data->cipher.data,
+					rsa_data->cipher.length, key.n.length);
 	if (ret)
 		goto exit_encrypt;
 
@@ -1186,8 +1184,8 @@ static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 	caam_dmaobj_cache_push(&cipher);
 
 	/* Prepare the input message CAAM descriptor entry */
-	ret = caam_dmaobj_init_input(&msg, rsa_data->message.data,
-				     rsa_data->message.length);
+	ret = caam_dmaobj_input_sgtbuf(&msg, rsa_data->message.data,
+				       rsa_data->message.length);
 	if (ret)
 		goto exit_encrypt;
 
@@ -1217,12 +1215,11 @@ static TEE_Result do_caam_encrypt(struct drvcrypt_rsa_ed *rsa_data,
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
 	if (retstatus == CAAM_NO_ERROR) {
-		caam_dmaobj_copy_to_orig(&cipher);
-		rsa_data->cipher.length = key.n.length;
+		rsa_data->cipher.length = caam_dmaobj_copy_to_orig(&cipher);
 
 		RSA_DUMPBUF("Output", rsa_data->cipher.data,
 			    rsa_data->cipher.length);
-		ret = TEE_SUCCESS;
+		ret = caam_status_to_tee_result(retstatus);
 	} else {
 		RSA_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
 		ret = job_status_to_tee_result(jobctx.status);
@@ -1267,7 +1264,7 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	retstatus = do_keypair_conv(&key, rsa_data->key.key);
 	if (retstatus != CAAM_NO_ERROR) {
 		RSA_TRACE("do_keypair_conv returned 0x%" PRIx32, retstatus);
-		ret = TEE_ERROR_GENERIC;
+		ret = caam_status_to_tee_result(retstatus);
 		goto exit_decrypt;
 	}
 
@@ -1275,8 +1272,9 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	 * Allocate the temporary result buffer with a maximum size
 	 * of the Key Modulus's size (N)
 	 */
-	ret = caam_dmaobj_init_output(&msg, rsa_data->message.data,
-				      rsa_data->message.length, key.n.length);
+	ret = caam_dmaobj_output_sgtbuf(&msg, rsa_data->message.data,
+					rsa_data->message.length, key.n.length);
+
 	if (ret)
 		goto exit_decrypt;
 
@@ -1295,8 +1293,8 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	}
 
 	/* Prepare the input cipher CAAM descriptor entry */
-	ret = caam_dmaobj_init_input(&cipher, rsa_data->cipher.data,
-				     rsa_data->cipher.length);
+	ret = caam_dmaobj_input_sgtbuf(&cipher, rsa_data->cipher.data,
+				       rsa_data->cipher.length);
 
 	if (cipher.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_RSA_DEC_SGT_G;
@@ -1328,7 +1326,7 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 		retstatus =
 			caam_alloc_align_buf(&tmp, key.p.length + key.q.length);
 		if (retstatus != CAAM_NO_ERROR) {
-			ret = TEE_ERROR_OUT_OF_MEMORY;
+			ret = caam_status_to_tee_result(retstatus);
 			goto exit_decrypt;
 		}
 
@@ -1425,30 +1423,30 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	jobctx.desc = desc;
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
 
-	if (retstatus == CAAM_NO_ERROR) {
-		if (operation == RSA_DECRYPT(NO) &&
-		    rsa_data->rsa_id == DRVCRYPT_RSA_NOPAD) {
-			caam_dmaobj_copy_ltrim_to_orig(&msg);
-		} else if (operation == RSA_DECRYPT(PKCS_V1_5)) {
+	if (retstatus != CAAM_NO_ERROR) {
+		RSA_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
+		ret = job_status_to_tee_result(jobctx.status);
+		goto exit_decrypt;
+	}
+
+	if (operation == RSA_DECRYPT(NO) &&
+	    rsa_data->rsa_id == DRVCRYPT_RSA_NOPAD) {
+		rsa_data->message.length = caam_dmaobj_copy_ltrim_to_orig(&msg);
+	} else {
+		if (operation == RSA_DECRYPT(PKCS_V1_5)) {
 			/* PKCS 1 v1.5 */
 			cache_operation(TEE_CACHEINVALIDATE, size_msg.data,
 					size_msg.length);
 
 			msg.orig.length = caam_read_val32(size_msg.data);
-			caam_dmaobj_copy_to_orig(&msg);
-		} else {
-			caam_dmaobj_copy_to_orig(&msg);
+			RSA_TRACE("New length %zu", msg.orig.length);
 		}
 
-		rsa_data->message.length = msg.orig.length;
-
-		RSA_DUMPBUF("Output", rsa_data->message.data,
-			    rsa_data->message.length);
-		ret = TEE_SUCCESS;
-	} else {
-		RSA_TRACE("CAAM Status 0x%08" PRIx32, jobctx.status);
-		ret = job_status_to_tee_result(jobctx.status);
+		rsa_data->message.length = caam_dmaobj_copy_to_orig(&msg);
 	}
+
+	RSA_DUMPBUF("Output", rsa_data->message.data, rsa_data->message.length);
+	ret = TEE_SUCCESS;
 
 exit_decrypt:
 	caam_free_desc(&desc);
