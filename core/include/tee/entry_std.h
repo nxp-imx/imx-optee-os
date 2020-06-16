@@ -23,4 +23,7 @@ TEE_Result __tee_entry_std(struct optee_msg_arg *arg, uint32_t num_params);
 /* Get list head for sessions opened from non-secure */
 void nsec_sessions_list_head(struct tee_ta_session_head **open_sessions);
 
-#endif /* __TEE_ENTRY_STD_H */
+/* Retrieve SDP mem cacheability */
+bool tee_entry_is_sdp_cached(void);
+
+#endif /* TEE_ENTRY_STD_H */
