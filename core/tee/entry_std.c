@@ -582,6 +582,18 @@ err:
 	return res;
 }
 
+bool tee_entry_is_sdp_cached(void)
+{
+#ifdef CFG_SECURE_DATA_PATH
+	uint32_t cattr;
+
+	if (!mobj_get_mem_type(*sdp_mem_mobjs, &cattr))
+		return cattr & TEE_MATTR_MEM_TYPE_CACHED;;
+#endif
+
+	return false;
+}
+
 static TEE_Result default_mobj_init(void)
 {
 #ifdef CFG_CORE_RESERVED_SHM
