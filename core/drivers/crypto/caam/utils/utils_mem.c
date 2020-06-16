@@ -13,6 +13,7 @@
 #include <kernel/cache_helpers.h>
 #include <mm/core_memprot.h>
 #include <tee/cache.h>
+#include <tee/entry_std.h>
 #include <string.h>
 
 #define MEM_TYPE_NORMAL 0      /* Normal allocation */
@@ -179,7 +180,7 @@ void caam_free_buf(struct caambuf *buf)
 bool caam_mem_is_cached_buf(void *buf, size_t size)
 {
 	enum teecore_memtypes mtype = MEM_AREA_MAXTYPE;
-	bool is_cached = false;
+	bool is_cached = true;
 
 	/*
 	 * First check if the buffer is a known memory area mapped
@@ -188,10 +189,11 @@ bool caam_mem_is_cached_buf(void *buf, size_t size)
 	 * it cacheable
 	 */
 	mtype = core_mmu_get_type_by_pa(virt_to_phys(buf));
-	if (mtype == MEM_AREA_MAXTYPE)
-		is_cached = true;
-	else
+
+	if (mtype != MEM_AREA_MAXTYPE)
 		is_cached = core_vbuf_is(CORE_MEM_CACHED, buf, size);
+	else if (core_vbuf_is(CORE_MEM_SDP_MEM, buf, size))
+		is_cached = tee_entry_is_sdp_cached();
 
 	return is_cached;
 }
