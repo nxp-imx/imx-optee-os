@@ -85,6 +85,9 @@ $(eval $(call cryphw-enable-drv-hw, ECC))
 #   Format #3: (p, q, dp, dq, qp)
 CFG_NXP_CAAM_RSA_KEY_FORMAT ?= 3
 
+CFG_CRYPTO_SM2_PKE = n
+CFG_CRYPTO_SM2_DSA = n
+CFG_CRYPTO_SM2_KEP = n
 endif
 
 $(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, RSA ECC))
