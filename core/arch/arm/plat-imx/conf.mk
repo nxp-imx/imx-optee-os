@@ -542,7 +542,7 @@ CFG_IMX_OCOTP ?= y
 
 # Almost all platforms include CAAM HW Modules, except the
 # ones forced to be disabled
-CFG_NXP_CAAM ?= n
+CFG_NXP_CAAM ?= y
 
 ifeq ($(CFG_NXP_CAAM),y)
 ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX) $(CFG_MX8DXL)), y)
