@@ -677,14 +677,13 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 
 		ret = caam_dmaobj_init_input(&insrc,
 					     dupdate->src.data + size_indone,
-					     dupdate->src.length - size_indone);
+					     size_topost);
 		if (ret)
 			goto end_streaming;
 
 		ret = caam_dmaobj_init_output(&indst,
 					      dupdate->dst.data + size_indone,
-					      ctx->blockbuf.filled,
-					      ctx->blockbuf.filled);
+					      size_topost, size_topost);
 		if (ret)
 			goto end_streaming;
 
