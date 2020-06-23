@@ -509,7 +509,7 @@ CFG_IMX_OCOTP ?= y
 
 # Almost all platforms include CAAM HW Modules, except the
 # ones forced to be disabled
-CFG_NXP_CAAM ?= n
+CFG_NXP_CAAM ?= y
 
 # Disable CAAM driver for MX8Q
 ifneq (,$(filter y, $(CFG_MX8QM) $(CFG_MX8QX)))
