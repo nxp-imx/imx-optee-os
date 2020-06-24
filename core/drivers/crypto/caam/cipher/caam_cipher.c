@@ -578,6 +578,7 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 	struct caamdmaobj indst = {};
 	struct caamdmaobj srcblock = {};
 	struct caamdmaobj dstblock = {};
+	struct caamblock trash_bck = {};
 	size_t fullSize = 0;
 	size_t size_topost = 0;
 	size_t size_todo = 0;
@@ -665,6 +666,40 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 	if (size_topost) {
 		CIPHER_TRACE("Save input data %zu bytes (done %zu)",
 			     size_topost, size_indone);
+
+		ret = caam_dmaobj_init_output(&indst,
+					      dupdate->dst.data + size_indone,
+					      size_topost, size_topost);
+		if (ret)
+			goto end_streaming;
+
+		if (ctx->blockbuf.filled) {
+			caam_dmaobj_free(&dstblock);
+
+			/*
+			 * Because there are some bytes to trash, use
+			 * a block buffer that will be added to the
+			 * destination SGT/Buffer structure to do the
+			 * cipher operation.
+			 */
+			ret = caam_alloc_align_buf(&trash_bck.buf,
+						   ctx->blockbuf.filled);
+			if (ret != CAAM_NO_ERROR) {
+				CIPHER_TRACE("Allocation Trash Block error");
+				goto end_streaming;
+			}
+			trash_bck.filled = ctx->blockbuf.filled;
+
+			ret = caam_dmaobj_add_first_block(&dstblock, &trash_bck,
+							  &indst);
+			if (ret)
+				goto end_streaming;
+
+			dst = &dstblock;
+		} else {
+			dst = &indst;
+		}
+
 		struct caambuf cpysrc = { .data = dupdate->src.data,
 					  .length = dupdate->src.length };
 
@@ -675,20 +710,13 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 			goto end_streaming;
 		}
 
-		ret = caam_dmaobj_init_input(&insrc,
-					     dupdate->src.data + size_indone,
-					     size_topost);
-		if (ret)
-			goto end_streaming;
-
-		ret = caam_dmaobj_init_output(&indst,
-					      dupdate->dst.data + size_indone,
-					      size_topost, size_topost);
+		ret = caam_dmaobj_init_input(&insrc, ctx->blockbuf.buf.data,
+					     ctx->blockbuf.filled);
 		if (ret)
 			goto end_streaming;
 
 		retstatus = caam_cipher_block(ctx, false, NEED_KEY1,
-					      ctx->encrypt, &insrc, &indst);
+					      ctx->encrypt, &insrc, dst);
 
 		if (retstatus != CAAM_NO_ERROR) {
 			ret = TEE_ERROR_GENERIC;
@@ -700,7 +728,7 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 		CIPHER_DUMPBUF("Source", ctx->blockbuf.buf.data,
 			       ctx->blockbuf.filled);
 		CIPHER_DUMPBUF("Result", dupdate->dst.data + size_indone,
-			       ctx->blockbuf.filled);
+			       size_topost);
 	}
 
 	ret = TEE_SUCCESS;
@@ -710,6 +738,9 @@ end_streaming:
 	caam_dmaobj_free(&indst);
 	caam_dmaobj_free(&srcblock);
 	caam_dmaobj_free(&dstblock);
+
+	/* Free Trash block buffer */
+	caam_free_buf(&trash_bck.buf);
 
 	return ret;
 }
