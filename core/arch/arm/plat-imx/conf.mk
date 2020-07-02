@@ -537,5 +537,9 @@ CFG_IMX_CAAM ?= y
 endif
 endif
 
+ifeq ($(CFG_BUSFREQ),y)
+$(call force,CFG_SM_PLATFORM_HANDLER,y)
+endif
+
 # Cryptographic configuration
 include core/arch/arm/plat-imx/crypto_conf.mk
