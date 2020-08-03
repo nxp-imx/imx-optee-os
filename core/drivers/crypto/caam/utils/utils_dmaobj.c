@@ -198,6 +198,7 @@ static void add_sgtdata_entry(struct caamdmaobj *obj, struct sgtdata *sgtdata,
 	if (entry->nocopy) {
 		sgtdata->orig = 0;
 		sgtdata->length = 0;
+		sgtdata->dma = 0;
 	} else {
 		sgtdata->orig = entry->origbuf.data + offset;
 		sgtdata->length = dma->length;
@@ -501,67 +502,6 @@ static enum caam_status output_to_align(struct caambuf *alignbuf,
 }
 
 /*
- * Map the output DMA @entry inside the @dmabuf.
- * Then fill the SGT/Buffer information @sgtbuf
- *
- * @dmabuf      [in/out] CAAM DMA accessible buffer
- * @entry       DMA entry to re-map
- * @sgtbuf      [out] SGT/Buffer information
- * @offset      Start offset of the DMA entry data
- */
-static void output_to_dmabuf(struct caamdmabuf *dmabuf, struct dmaentry *entry,
-			     struct caambuf *sgtbuf, size_t offset)
-{
-	struct caambuf tmpbuf = {};
-
-	/*
-	 * Prepare the output data to use the CAAM DMA buffer.
-	 */
-	tmpbuf.data = dmabuf->buf.data + dmabuf->buf.length;
-	tmpbuf.length = MIN(dmabuf->remind, entry->origbuf.length - offset);
-	tmpbuf.paddr = dmabuf->buf.paddr + dmabuf->buf.length;
-
-	dmabuf->remind -= tmpbuf.length;
-	dmabuf->buf.length += tmpbuf.length;
-
-	entry->newbuf = true;
-
-	/* Add the entry in the SGT/Buffer table */
-	memcpy(sgtbuf, &tmpbuf, sizeof(*sgtbuf));
-}
-
-/*
- * Map the input DMA @entry inside the @dmabuf and copy the input
- * data into the new area.
- * Then fill the SGT/Buffer information @sgtbuf
- *
- * @dmabuf      [in/out] CAAM DMA accessible buffer
- * @entry       DMA entry to re-map
- * @sgtbuf      [out] SGT/Buffer information
- * @offset      Start offset of the DMA entry data
- */
-static void input_to_dmabuf(struct caamdmabuf *dmabuf, struct dmaentry *entry,
-			    struct caambuf *sgtbuf, size_t offset)
-{
-	struct caambuf tmpbuf = {};
-
-	/*
-	 * Copy the input data to the CAAM DMA buffer.
-	 * If buffer already filled, add the data after.
-	 */
-	tmpbuf.data = dmabuf->buf.data + dmabuf->buf.length;
-	tmpbuf.length = MIN(dmabuf->remind, entry->origbuf.length - offset);
-	tmpbuf.paddr = dmabuf->buf.paddr + dmabuf->buf.length;
-
-	memcpy(tmpbuf.data, &entry->origbuf.data[offset], tmpbuf.length);
-	dmabuf->remind -= tmpbuf.length;
-	dmabuf->buf.length += tmpbuf.length;
-
-	/* Add the entry in the SGT/Buffer table */
-	memcpy(sgtbuf, &tmpbuf, sizeof(*sgtbuf));
-}
-
-/*
  * Re-map a DMA entry into a CAAM DMA accessible buffer.
  * Create the SGT/Buffer entry to be used in the CAAM Descriptor
  * Record this entry in the SGT/Buffer Data to get information on current
@@ -578,14 +518,22 @@ static enum caam_status entry_sgtbuf_dmabuf(struct caamdmaobj *obj,
 {
 	struct priv_dmaobj *priv = obj->priv;
 	struct caambuf *sgtbuf = &obj->sgtbuf.buf[index];
+	struct caamdmabuf *dmabuf = &priv->dmabuf;
 
 	if (!priv->dmabuf.allocated)
 		return CAAM_OUT_MEMORY;
 
+	sgtbuf->data = dmabuf->buf.data + dmabuf->buf.length;
+	sgtbuf->length = MIN(dmabuf->remind, entry->origbuf.length - off);
+	sgtbuf->paddr = dmabuf->buf.paddr + dmabuf->buf.length;
+	sgtbuf->nocache = dmabuf->buf.nocache;
+	dmabuf->remind -= sgtbuf->length;
+	dmabuf->buf.length += sgtbuf->length;
+
 	if (priv->type & DMAOBJ_INPUT)
-		input_to_dmabuf(&priv->dmabuf, entry, sgtbuf, off);
+		memcpy(sgtbuf->data, &entry->origbuf.data[off], sgtbuf->length);
 	else
-		output_to_dmabuf(&priv->dmabuf, entry, sgtbuf, off);
+		entry->newbuf = true;
 
 	add_sgtdata_entry(obj, &priv->sgtdata[index], entry, sgtbuf, off);
 
