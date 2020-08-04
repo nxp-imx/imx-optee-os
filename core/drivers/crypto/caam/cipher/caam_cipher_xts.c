@@ -63,6 +63,8 @@ static TEE_Result do_tweak_block(struct cipherdata *ctx,
 	if (retstatus != CAAM_NO_ERROR)
 		return caam_status_to_tee_result(retstatus);
 
+	caam_dmaobj_copy_to_orig(tmp);
+
 	for (idx = 0; idx < ctx->alg->size_block; idx++)
 		dstbuf->data[idx] = tmp->orig.data[idx] ^ enc_tweak->data[idx];
 
@@ -126,6 +128,8 @@ TEE_Result caam_cipher_update_xts(struct drvcrypt_cipher_update *dupdate)
 		ret = caam_status_to_tee_result(retstatus);
 		goto end_xts;
 	}
+
+	caam_dmaobj_copy_to_orig(&enc_tweak);
 
 	/*
 	 * Encrypt or Decrypt input data.
