@@ -368,13 +368,17 @@ TEE_Result caam_hash_hmac_init(struct hashctx *ctx)
 	if (!ctx)
 		return TEE_ERROR_BAD_PARAMETERS;
 
+	/* Initialize the block buffer */
 	ctx->blockbuf.filled = 0;
+	ctx->blockbuf.max = ctx->alg->size_block;
 
 	/* Ensure Context length is 0 */
 	ctx->ctx.length = 0;
 
 	/* Initialize the HMAC Key */
 	ctx->key.length = 0;
+
+	ctx->initialized = true;
 
 	return TEE_SUCCESS;
 }
@@ -434,14 +438,18 @@ static TEE_Result do_update_hash(struct hashctx *ctx, struct caamdmaobj *src)
 
 	ctx->blockbuf.filled = 0;
 
-	/* Save the running context */
-	caam_desc_add_word(desc, ST_NOIMM(CLASS_2, REG_CTX, ctx->ctx.length));
-	caam_desc_add_ptr(desc, ctx->ctx.paddr);
+	if (ctx->ctx.length) {
+		/* Save the running context */
+		caam_desc_add_word(desc,
+				   ST_NOIMM(CLASS_2, REG_CTX, ctx->ctx.length));
+		caam_desc_add_ptr(desc, ctx->ctx.paddr);
+
+		/* Ensure Context register data are not in cache */
+		cache_operation(TEE_CACHEINVALIDATE, ctx->ctx.data,
+				ctx->ctx.length);
+	}
 
 	HASH_DUMPDESC(desc);
-
-	/* Ensure Context register data are not in cache */
-	cache_operation(TEE_CACHEINVALIDATE, ctx->ctx.data, ctx->ctx.length);
 
 	jobctx.desc = desc;
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
@@ -628,8 +636,9 @@ TEE_Result caam_hash_hmac_final(struct hashctx *ctx, uint8_t *digest,
 	caam_desc_add_ptr(desc, ctx->blockbuf.buf.paddr);
 	caam_desc_add_word(desc, ctx->blockbuf.filled);
 
-	cache_operation(TEE_CACHECLEAN, ctx->blockbuf.buf.data,
-			ctx->blockbuf.filled);
+	if (ctx->blockbuf.filled)
+		cache_operation(TEE_CACHECLEAN, ctx->blockbuf.buf.data,
+				ctx->blockbuf.filled);
 
 	ctx->blockbuf.filled = 0;
 
@@ -665,11 +674,17 @@ void caam_hash_hmac_copy_state(struct hashctx *dst, struct hashctx *src)
 
 	assert(dst && src);
 
+	if (!dst->initialized)
+		if (caam_hash_hmac_init(dst))
+			panic();
+
 	dst->alg = src->alg;
 
-	memcpy(dst->ctx.data, src->ctx.data, src->ctx.length);
-	dst->ctx.length = src->ctx.length;
-	cache_operation(TEE_CACHECLEAN, dst->ctx.data, dst->ctx.length);
+	if (src->ctx.length) {
+		memcpy(dst->ctx.data, src->ctx.data, src->ctx.length);
+		dst->ctx.length = src->ctx.length;
+		cache_operation(TEE_CACHECLEAN, dst->ctx.data, dst->ctx.length);
+	}
 
 	if (src->blockbuf.filled) {
 		struct caambuf srcdata = {
