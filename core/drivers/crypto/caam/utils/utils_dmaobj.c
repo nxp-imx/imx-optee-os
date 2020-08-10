@@ -268,6 +268,9 @@ static struct dmaentry *dmalist_add_entry(struct priv_dmaobj *priv,
 static inline void dmaobj_cache_operation(enum utee_cache_operation op,
 					  struct caamdmaobj *obj)
 {
+	if (!obj->sgtbuf.length)
+		return;
+
 	if (obj->sgtbuf.sgt_type)
 		caam_sgt_cache_op(op, &obj->sgtbuf, obj->sgtbuf.length);
 	else if (!obj->sgtbuf.buf->nocache)
@@ -330,14 +333,21 @@ static TEE_Result check_buffer_alignment(struct priv_dmaobj *priv,
 		newbuf.paddr = entry->origbuf.paddr;
 		newbuf.nocache = entry->origbuf.nocache;
 
-		new_entry = dmalist_add_entry_head(priv, &newbuf);
-		if (!new_entry)
-			return TEE_ERROR_OUT_OF_MEMORY;
+		if (entry->origbuf.length <= priv->startbuf.length) {
+			/* Replace the first entry with the new align buffer */
+			memcpy(&entry->origbuf, &newbuf,
+			       sizeof(entry->origbuf));
+			entry->start_align = true;
+		} else {
+			new_entry = dmalist_add_entry_head(priv, &newbuf);
+			if (!new_entry)
+				return TEE_ERROR_OUT_OF_MEMORY;
 
-		new_entry->start_align = true;
-		entry->origbuf.data = (uint8_t *)va_align;
-		entry->origbuf.length -= newbuf.length;
-		entry->origbuf.paddr += newbuf.length;
+			new_entry->start_align = true;
+			entry->origbuf.data = (uint8_t *)va_align;
+			entry->origbuf.length -= newbuf.length;
+			entry->origbuf.paddr += newbuf.length;
+		}
 	}
 
 	/* Get the last entry of the list */

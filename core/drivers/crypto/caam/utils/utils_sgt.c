@@ -67,7 +67,7 @@ void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt,
 			insgt->number * sizeof(struct caamsgt));
 
 	SGT_TRACE("SGT @%p %d entries", insgt, insgt->number);
-	for (idx = 0; idx < insgt->number; idx++) {
+	for (idx = 0; idx < insgt->number && rem_length; idx++) {
 		if (insgt->sgt[idx].len_f_e & BS_ENTRY_EXT) {
 			SGT_TRACE("SGT EXT @%p", insgt->buf[idx].data);
 			caam_sgt_cache_op(op, (void *)insgt->buf[idx].data,
