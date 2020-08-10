@@ -529,12 +529,11 @@ TEE_Result caam_cipher_initialize(struct drvcrypt_cipher_init *dinit)
 				/* Fill it with 0's */
 				memset(cipherdata->tweak.data, 0,
 				       cipherdata->tweak.length);
-
-				/* Push data to physical memory */
-				cache_operation(TEE_CACHEFLUSH,
-						cipherdata->tweak.data,
-						cipherdata->tweak.length);
 			}
+
+			/* Push data to physical memory */
+			cache_operation(TEE_CACHEFLUSH, cipherdata->tweak.data,
+					cipherdata->tweak.length);
 		}
 	}
 
@@ -631,6 +630,7 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 	}
 
 	size_done = size_todo;
+	dupdate->dst.length = 0;
 	for (; size_todo; offset += size_done, size_todo -= size_done) {
 		CIPHER_TRACE("Do input %zu bytes (%zu), offset %zu", size_done,
 			     size_todo, offset);
@@ -650,7 +650,7 @@ static TEE_Result do_update_streaming(struct drvcrypt_cipher_update *dupdate)
 			goto end_streaming;
 		}
 
-		caam_dmaobj_copy_to_orig(&dst);
+		dupdate->dst.length += caam_dmaobj_copy_to_orig(&dst);
 	}
 
 	CIPHER_DUMPBUF("Source", dupdate->src.data, dupdate->src.length);
