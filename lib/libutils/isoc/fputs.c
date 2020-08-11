@@ -7,11 +7,12 @@
 #include <stdlib.h>
 #include <trace.h>
 
-int fputs(const char *s, FILE *stream)
+int fputs(const char *s __maybe_unused, FILE *stream)
 {
 	if (stream != stdout && stream != stderr)
 		abort();
-
+#if TRACE_LEVEL > 0
 	trace_ext_puts(s);
+#endif
 	return 0;
 }
