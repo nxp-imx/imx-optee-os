@@ -351,6 +351,7 @@ ifneq (,$(filter $(PLATFORM_FLAVOR),mx8mpevk))
 CFG_DDR_SIZE ?= 0x180000000ULL
 CFG_UART_BASE ?= UART2_BASE
 $(call force,CFG_CORE_LARGE_PHYS_ADDR,y)
+$(call force,CFG_CORE_ARM64_PA_BITS,36)
 endif
 
 ifneq (,$(filter $(PLATFORM_FLAVOR),mx8qxpmek mx8qmmek))
