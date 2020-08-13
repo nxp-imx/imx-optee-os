@@ -138,7 +138,7 @@ $(eval $(call cryphw-enable-drv-hw, RSA))
 $(eval $(call cryphw-enable-drv-hw, ECC))
 $(eval $(call cryphw-enable-drv-hw, DH))
 $(eval $(call cryphw-enable-drv-hw, DSA))
-ifneq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX) $(CFG_MX8DX) $(CFG_MX8DXL)), y)
+ifneq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX) $(CFG_MX8DXL)), y)
 $(eval $(call cryphw-enable-drv-hw, MP))
 CFG_PTA_MP ?= y
 endif
