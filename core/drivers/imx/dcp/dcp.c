@@ -903,7 +903,6 @@ static TEE_Result dcp_pbase(paddr_t *base)
 TEE_Result dcp_init(void)
 {
 	TEE_Result ret = TEE_ERROR_GENERIC;
-	uint32_t val = 0;
 	paddr_t pbase = 0;
 
 	if (driver_init)
@@ -932,13 +931,12 @@ TEE_Result dcp_init(void)
 	 * Initialize control register
 	 * Enable normal DCP operation (SFTRST & CLKGATE bits set to 0)
 	 */
-	val = DCP_CTRL_GATHER_RESIDUAL_WRITES |
-	      DCP_CTRL_ENABLE_CONTEXT_SWITCHING;
-	io_write32(dcp_base + DCP_CTRL, val);
+	io_write32(dcp_base + DCP_CTRL_CLR, DCP_CTRL_SFTRST | DCP_CTRL_CLKGATE);
 
 	/* Copy context switching buffer address in DCP_CONTEXT register */
-	val = hw_context_buffer.paddr;
-	io_write32(dcp_base + DCP_CONTEXT, val);
+	io_write32(dcp_base + DCP_CTRL_SET,
+		   DCP_CTRL_GATHER_RESIDUAL_WRITES |
+			   DCP_CTRL_ENABLE_CONTEXT_SWITCHING);
 
 	/* Enable all DCP channels */
 	io_write32(dcp_base + DCP_CHANNELCTRL,
@@ -946,6 +944,9 @@ TEE_Result dcp_init(void)
 
 	/* Clear DCP_STAT register */
 	io_write32(dcp_base + DCP_STAT_CLR, DCP_STAT_CLEAR);
+
+	/* Copy context switching buffer address in DCP_CONTEXT register */
+	io_write32(dcp_base + DCP_CONTEXT, (uint32_t)hw_context_buffer.paddr);
 
 	driver_init = true;
 
