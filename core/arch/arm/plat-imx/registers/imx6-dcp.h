@@ -17,6 +17,8 @@
 
 /* DCP registers address offset */
 #define DCP_CTRL	   0x00
+#define DCP_CTRL_SET	   0x04
+#define DCP_CTRL_CLR	   0x08
 #define DCP_STAT	   0x10
 #define DCP_STAT_CLR	   0x18
 #define DCP_CHANNELCTRL	   0x20
@@ -55,6 +57,8 @@
 #define DCP_CTRL_GATHER_RESIDUAL_WRITES	  BIT32(23)
 #define DCP_CTRL_ENABLE_CONTEXT_CACHING	  BIT32(22)
 #define DCP_CTRL_ENABLE_CONTEXT_SWITCHING BIT32(21)
+#define DCP_CTRL_CLKGATE		  BIT32(30)
+#define DCP_CTRL_SFTRST			  BIT32(31)
 
 /* Work Packet control0 configuration */
 #define DCP_CONTROL0_OUTPUT_WORDSWAP  BIT32(23)
