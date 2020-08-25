@@ -34,6 +34,7 @@ static TEE_Result crypto_driver_init(void)
 
 	retstatus = caam_hal_cfg_get_conf(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_hal_cfg_get_conf() (%d)", retstatus);
 		retresult = TEE_ERROR_NOT_SUPPORTED;
 		goto exit_init;
 	}
@@ -44,6 +45,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the Job Ring to be used */
 	retstatus = caam_jr_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_jr_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -51,6 +53,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the RNG Module */
 	retstatus = caam_rng_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_rng_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -58,6 +61,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the Hash Module */
 	retstatus = caam_hash_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_hash_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -65,6 +69,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the MATH Module */
 	retstatus = caam_math_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_math_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -72,6 +77,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the Secure Memory Module */
 	retstatus = caam_sm_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_sm_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -79,6 +85,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the RSA Module */
 	retstatus = caam_rsa_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_rsa_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -86,6 +93,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the Cipher Module */
 	retstatus = caam_cipher_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_cipher_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -93,6 +101,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the HMAC Module */
 	retstatus = caam_hmac_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_hmac_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -100,6 +109,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the BLOB Module */
 	retstatus = caam_blob_mkvb_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_blob_mkvb_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -107,6 +117,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the CMAC Module */
 	retstatus = caam_cmac_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_cmac_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -114,6 +125,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the ECC Module */
 	retstatus = caam_ecc_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_ecc_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -121,6 +133,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the DH Module */
 	retstatus = caam_dh_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_dh_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -128,6 +141,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the DSA Module */
 	retstatus = caam_dsa_init(&jrcfg);
 	if (retstatus != CAAM_NO_ERROR) {
+		EMSG("caam_dsa_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
@@ -135,6 +149,7 @@ static TEE_Result crypto_driver_init(void)
 	/* Initialize the Manufacturing Protection Module */
 	retstatus = caam_mp_init(jrcfg.base);
 	if (retstatus != CAAM_NO_ERROR && retstatus != CAAM_NOT_SUPPORTED) {
+		EMSG("caam_mp_init() (%d)", retstatus);
 		retresult = TEE_ERROR_GENERIC;
 		goto exit_init;
 	}
