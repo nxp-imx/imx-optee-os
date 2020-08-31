@@ -14,7 +14,7 @@ AlignAfterOpenBracket: Align
 #AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignConsecutiveMacros: true
-#AlignEscapedNewlines: Left # Unknown to clang-format-4.0
+AlignEscapedNewlines: DontAlign
 AlignOperands: true
 #AlignTrailingComments: false
 AllowAllParametersOfDeclarationOnNextLine: false
@@ -472,10 +472,11 @@ ObjCBlockIndentWidth: 8
 ObjCSpaceAfterProperty: true
 ObjCSpaceBeforeProtocolList: true
 
-# Taken from git's rules
-#PenaltyBreakAssignment: 10 # Unknown to clang-format-4.0
-PenaltyBreakBeforeFirstCallParameter: 80
-PenaltyBreakComment: 10
+# Penalties values set order of what should be done if a line
+# is to long.
+PenaltyBreakAssignment: 90
+PenaltyBreakBeforeFirstCallParameter: 90
+PenaltyBreakComment: 90
 PenaltyBreakFirstLessLess: 0
 PenaltyBreakString: 10
 PenaltyExcessCharacter: 100
