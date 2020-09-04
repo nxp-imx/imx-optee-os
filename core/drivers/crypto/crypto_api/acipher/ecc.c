@@ -158,11 +158,11 @@ void crypto_acipher_free_ecc_public_key(struct ecc_public_key *key)
  *
  * @key   Keypair
  */
-TEE_Result crypto_acipher_gen_ecc_key(struct ecc_keypair *key, size_t key_size)
+TEE_Result crypto_acipher_gen_ecc_key(struct ecc_keypair *key,
+				      size_t __unused key_size)
 {
 	TEE_Result ret = TEE_ERROR_NOT_IMPLEMENTED;
 	struct drvcrypt_ecc *ecc = NULL;
-	size_t size_bits = 0;
 
 	/* Check input parameters */
 	if (!key) {
@@ -170,13 +170,9 @@ TEE_Result crypto_acipher_gen_ecc_key(struct ecc_keypair *key, size_t key_size)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
-	size_bits = get_ecc_keysize(key->curve);
-	if (size_bits != key_size)
-		return TEE_ERROR_BAD_PARAMETERS;
-
 	ecc = drvcrypt_get_ops(CRYPTO_ECC);
 	if (ecc)
-		ret = ecc->gen_keypair(key, size_bits);
+		ret = ecc->gen_keypair(key, get_ecc_keysize(key->curve));
 
 	CRYPTO_TRACE("ECC Keypair (%zu bits) generate ret = 0x%" PRIx32,
 		     size_bits, ret);
