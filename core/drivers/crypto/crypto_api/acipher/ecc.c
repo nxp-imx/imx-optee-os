@@ -107,7 +107,8 @@ static TEE_Result ecc_generate_keypair(struct ecc_keypair *key,
 
 	ecc = drvcrypt_get_ops(CRYPTO_ECC);
 	if (ecc)
-		ret = ecc->gen_keypair(key, get_ecc_key_size_bytes(key->curve));
+		ret = ecc->gen_keypair(key,
+				       get_ecc_key_size_bytes(key->curve) * 8);
 
 	CRYPTO_TRACE("ECC Keypair (%zu bits) generate ret = 0x%" PRIx32,
 		     size_bits, ret);
