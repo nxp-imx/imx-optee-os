@@ -64,7 +64,7 @@ register_phys_mem_pgdir(MEM_AREA_IO_NSEC, CONSOLE_UART_BASE,
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, GIC_BASE, CORE_MMU_PGDIR_SIZE);
 #endif
 
-#if defined(PLATFORM_FLAVOR_lx2160ardb)
+#if defined(PLATFORM_FLAVOR_lx2160ardb) || defined(PLATFORM_FLAVOR_lx2160aqds)
 register_dynamic_shm(CFG_DRAM0_BASE, (CFG_TZDRAM_START - CFG_DRAM0_BASE));
 #ifdef CFG_DRAM1_BASE
 register_dynamic_shm(CFG_DRAM1_BASE, CFG_DRAM1_SIZE);
