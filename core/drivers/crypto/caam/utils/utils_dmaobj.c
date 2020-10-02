@@ -57,8 +57,6 @@ struct caamdmabuf {
  * DMA Object buffer entry
  *
  * @newbuf        True if list entry is a new DMA Buffer
- * @start_align   VA of the first data aligned on cache line start
- * @end_align     VA of the last data aligned on cache line end
  * @nodma_access  Buffer is not accessible from CAAM DMA
  * @nocopy        Buffer doesn't have to be copied back to the origin
  * @origbuf       Original buffer reference
@@ -66,14 +64,12 @@ struct caamdmabuf {
  */
 struct dmaentry {
 	bool newbuf;
-	bool start_align;
-	bool end_align;
 	bool nodma_access;
 	bool nocopy;
 
 	struct caambuf origbuf;
 
-	SIMPLEQ_ENTRY(dmaentry) next;
+	TAILQ_ENTRY(dmaentry) next;
 };
 
 /*
@@ -93,8 +89,7 @@ struct sgtdata {
  * @type         Type of DMA Object
  * @nb_sgtbuf    Number of SGT/Buffer entries allocated
  * @dmabuf       DMA Buffer allocated
- * @startbuf     Start cache alignment DMA Buffer
- * @endbuf       End cache alignment DMA Buffer
+ * @sgtdata      Reference to SGT/Buffer list in used
  * @list         List of the DMA Object buffer entry
  */
 struct priv_dmaobj {
@@ -102,12 +97,9 @@ struct priv_dmaobj {
 	unsigned int nb_sgtbuf;
 
 	struct caamdmabuf dmabuf;
-	struct caambuf startbuf;
-	struct caambuf endbuf;
-
 	struct sgtdata *sgtdata;
 
-	SIMPLEQ_HEAD(dmalist, dmaentry) list;
+	TAILQ_HEAD(dmalist, dmaentry) list;
 };
 
 /*
@@ -175,7 +167,7 @@ static TEE_Result allocate_private(struct caamdmaobj *obj, unsigned int type)
 	/* Set the object type as input */
 	priv->type = type;
 
-	SIMPLEQ_INIT(&priv->list);
+	TAILQ_INIT(&priv->list);
 
 	return TEE_SUCCESS;
 }
@@ -226,7 +218,7 @@ static struct dmaentry *dmalist_add_entry_head(struct priv_dmaobj *priv,
 		memcpy(&entry->origbuf, orig, sizeof(entry->origbuf));
 		DMAOBJ_TRACE("entry %p - insert head entry of %zu bytes", entry,
 			     orig->length);
-		SIMPLEQ_INSERT_HEAD(&priv->list, entry, next);
+		TAILQ_INSERT_HEAD(&priv->list, entry, next);
 	}
 
 	return entry;
@@ -250,10 +242,49 @@ static struct dmaentry *dmalist_add_entry(struct priv_dmaobj *priv,
 		memcpy(&entry->origbuf, orig, sizeof(entry->origbuf));
 		DMAOBJ_TRACE("entry %p - insert entry of %zu bytes", entry,
 			     orig->length);
-		if (SIMPLEQ_EMPTY(&priv->list))
-			SIMPLEQ_INSERT_HEAD(&priv->list, entry, next);
+		if (TAILQ_EMPTY(&priv->list))
+			TAILQ_INSERT_HEAD(&priv->list, entry, next);
 		else
-			SIMPLEQ_INSERT_TAIL(&priv->list, entry, next);
+			TAILQ_INSERT_TAIL(&priv->list, entry, next);
+	}
+
+	return entry;
+}
+
+static struct dmaentry *dmalist_insert_before_entry(struct priv_dmaobj *priv,
+						    struct dmaentry *before,
+						    struct caambuf *new)
+{
+	struct dmaentry *entry = NULL;
+
+	entry = caam_calloc(sizeof(*entry));
+	if (entry) {
+		/* Save the original buffer reference */
+		memcpy(&entry->origbuf, new, sizeof(entry->origbuf));
+		DMAOBJ_TRACE("entry %p - insert entry of %zu bytes", entry,
+			     new->length);
+		if (TAILQ_FIRST(&priv->list) == before)
+			TAILQ_INSERT_HEAD(&priv->list, entry, next);
+		else
+			TAILQ_INSERT_BEFORE(before, entry, next);
+	}
+
+	return entry;
+}
+
+static struct dmaentry *dmalist_insert_after_entry(struct priv_dmaobj *priv,
+						   struct dmaentry *after,
+						   struct caambuf *new)
+{
+	struct dmaentry *entry = NULL;
+
+	entry = caam_calloc(sizeof(*entry));
+	if (entry) {
+		/* Save the original buffer reference */
+		memcpy(&entry->origbuf, new, sizeof(entry->origbuf));
+		DMAOBJ_TRACE("entry %p - insert entry of %zu bytes", entry,
+			     new->length);
+		TAILQ_INSERT_AFTER(&priv->list, after, entry, next);
 	}
 
 	return entry;
@@ -277,6 +308,16 @@ static inline void dmaobj_cache_operation(enum utee_cache_operation op,
 		cache_operation(op, obj->sgtbuf.buf->data, obj->sgtbuf.length);
 }
 
+static inline void add_dma_require(struct priv_dmaobj *priv, size_t length)
+{
+	size_t tmp = 0;
+
+	if (ADD_OVERFLOW(priv->dmabuf.require, length, &tmp))
+		priv->dmabuf.require = SIZE_MAX;
+	else
+		priv->dmabuf.require = tmp;
+}
+
 /*
  * Check if the buffer start/end addresses are aligned on the cache line.
  * If not flags as start and/or end addresses not aligned, expect if the
@@ -295,108 +336,160 @@ static TEE_Result check_buffer_alignment(struct priv_dmaobj *priv,
 	struct caambuf newbuf = {};
 	vaddr_t va_start = 0;
 	vaddr_t va_end = 0;
-	vaddr_t va_end_real = 0;
-	vaddr_t va_align = 0;
-	size_t tmp = 0;
+	vaddr_t va_end_align = 0;
+	vaddr_t va_start_align = 0;
+	size_t remlen = 0;
+	size_t acclen = 0;
 
 	cacheline_size = caam_mem_read_cacheline_size();
 
-	entry = SIMPLEQ_FIRST(&priv->list);
-	if (!entry)
-		return TEE_ERROR_NO_DATA;
+	TAILQ_FOREACH(entry, &priv->list, next)
+	{
+		DMAOBJ_TRACE("Entry %p: start %p len %zu (%zu >= %zu)", entry,
+			     entry->origbuf.data, entry->origbuf.length, acclen,
+			     maxlen);
 
-	va_start = (vaddr_t)entry->origbuf.data;
-	va_align = ROUNDUP(va_start, cacheline_size);
-	if (va_align != va_start && !entry->nodma_access) {
-		DMAOBJ_TRACE("Start address not aligned 0x%" PRIxVA, va_start);
-		/*
-		 * Don't check end address of the buffer if the cacheline
-		 * size is bigger or equal to the needed size.
-		 * In place, ask for a new buffer aligned.
-		 */
-		if (maxlen <= cacheline_size) {
-			entry->newbuf = true;
-			if (ADD_OVERFLOW(priv->dmabuf.require, cacheline_size,
-					 &tmp))
-				priv->dmabuf.require = SIZE_MAX;
-			else
-				priv->dmabuf.require = tmp;
+		/* No need to continue if we convert the needed length */
+		if (acclen >= maxlen)
 			return TEE_SUCCESS;
+
+		acclen += entry->origbuf.length;
+
+		if (entry->nodma_access || entry->newbuf)
+			continue;
+
+		if (entry->origbuf.length < cacheline_size) {
+			/*
+			 * Length of the entry is not aligned on cache size
+			 * Require a full aligned buffer
+			 */
+			DMAOBJ_TRACE("Length %zu vs cache line %u",
+				     entry->origbuf.length, cacheline_size);
+
+			entry->newbuf = true;
+			add_dma_require(priv, entry->origbuf.length);
+			continue;
 		}
 
-		priv->startbuf.length = va_align - va_start;
-		DMAOBJ_TRACE("Start align buffer length = %zu",
-			     priv->startbuf.length);
+		va_start = (vaddr_t)entry->origbuf.data;
+		va_start_align = ROUNDUP(va_start, cacheline_size);
 
-		newbuf.data = entry->origbuf.data;
-		newbuf.length = priv->startbuf.length;
-		newbuf.paddr = entry->origbuf.paddr;
-		newbuf.nocache = entry->origbuf.nocache;
+		if (va_start_align != va_start) {
+			DMAOBJ_TRACE("Start 0x%" PRIxVA " vs align 0x%" PRIxVA,
+				     va_start, va_start_align);
 
-		if (entry->origbuf.length <= priv->startbuf.length) {
-			/* Replace the first entry with the new align buffer */
-			memcpy(&entry->origbuf, &newbuf,
-			       sizeof(entry->origbuf));
-			entry->start_align = true;
-		} else {
-			new_entry = dmalist_add_entry_head(priv, &newbuf);
+			remlen = entry->origbuf.length -
+				 (va_start_align - va_start);
+			if (remlen <= cacheline_size) {
+				/*
+				 * Start address is not aligned and the
+				 * remaining length if after re-alignment
+				 * is not cache size aligned.
+				 * Require a full aligned buffer
+				 */
+				DMAOBJ_TRACE("Rem length %zu vs cache line %u",
+					     remlen, cacheline_size);
+				entry->newbuf = true;
+				add_dma_require(priv, entry->origbuf.length);
+				continue;
+			}
+
+			/*
+			 * Insert a new entry to make buffer on a cache line.
+			 */
+			newbuf.data = entry->origbuf.data;
+			newbuf.length = va_start_align - va_start;
+			newbuf.paddr = entry->origbuf.paddr;
+			newbuf.nocache = entry->origbuf.nocache;
+
+			add_dma_require(priv, newbuf.length);
+			new_entry = dmalist_insert_before_entry(priv, entry,
+								&newbuf);
 			if (!new_entry)
 				return TEE_ERROR_OUT_OF_MEMORY;
 
-			new_entry->start_align = true;
-			entry->origbuf.data = (uint8_t *)va_align;
+			new_entry->newbuf = true;
+
+			/*
+			 * Update current entry with align address and new
+			 * length.
+			 */
+			entry->origbuf.data = (uint8_t *)va_start_align;
 			entry->origbuf.length -= newbuf.length;
 			entry->origbuf.paddr += newbuf.length;
+
+			/*
+			 * Set current entry to new entry to continue
+			 * the FOREACH loop from this new_entry and then
+			 * verify the rest of the entry modified.
+			 */
+			entry = new_entry;
+			acclen -= entry->origbuf.length;
+			continue;
 		}
-	}
-
-	/* Get the last entry of the list */
-	for (; SIMPLEQ_NEXT(entry, next); entry = SIMPLEQ_NEXT(entry, next))
-		;
-
-	va_end_real = (vaddr_t)entry->origbuf.data + entry->origbuf.length;
-	va_end = va_start + maxlen;
-	va_align = ROUNDUP(va_end, cacheline_size);
-	if (va_align > va_end_real && !entry->nodma_access) {
-		DMAOBJ_TRACE("End address not aligned 0x%" PRIxVA, va_end);
 
 		/*
-		 * If the cacheline size is bigger or equal to the needed size,
-		 * ask for a new buffer aligned.
+		 * NOTICE:
+		 * Due to the CAAM DMA behaviour on iMX8QM & iMX8QX,
+		 * 4 bytes need to be add to the buffer size when aligned
+		 * memory allocation is done.
+		 * This is not verified here because no issue observed
+		 * during all tests.
+		 * This rule is respected when new DMA buffer is allocated
+		 * in the utils_mem.c allocator.
 		 */
-		if (maxlen <= cacheline_size) {
-			entry->newbuf = true;
-			if (ADD_OVERFLOW(priv->dmabuf.require, cacheline_size,
-					 &tmp))
-				priv->dmabuf.require = SIZE_MAX;
-			else
-				priv->dmabuf.require = tmp;
+		va_end = (vaddr_t)entry->origbuf.data + entry->origbuf.length;
+		va_end_align = ROUNDUP(va_end, cacheline_size);
 
-			return TEE_SUCCESS;
-		}
+		if (va_end != va_end_align) {
+			DMAOBJ_TRACE("End 0x%" PRIxVA " vs align 0x%" PRIxVA,
+				     va_end, va_end_align);
 
-		va_align = ROUNDDOWN(va_end, cacheline_size);
-		priv->endbuf.length = va_end - va_align;
-		DMAOBJ_TRACE("End align buffer length = %zu",
-			     priv->endbuf.length);
+			va_end_align = ROUNDDOWN(va_end, cacheline_size);
+			remlen = entry->origbuf.length - va_end_align;
 
-		newbuf.data = (uint8_t *)va_align;
-		newbuf.length = priv->endbuf.length;
-		newbuf.paddr = entry->origbuf.paddr + newbuf.length;
-		newbuf.nocache = entry->origbuf.nocache;
+			if (remlen <= cacheline_size) {
+				/*
+				 * End address is not aligned and the remaining
+				 * length if after re-alignment is not cache
+				 * size aligned.
+				 * Require a full aligned buffer
+				 */
+				DMAOBJ_TRACE("Rem length %zu vs cache line %u",
+					     remlen, cacheline_size);
+				entry->newbuf = true;
+				add_dma_require(priv, entry->origbuf.length);
+				continue;
+			}
 
-		if (entry->origbuf.length <= priv->endbuf.length) {
-			/* Replace the last entry with the new align buffer */
-			memcpy(&entry->origbuf, &newbuf,
-			       sizeof(entry->origbuf));
-			entry->end_align = true;
-		} else {
-			new_entry = dmalist_add_entry(priv, &newbuf);
+			/*
+			 * Insert a new entry to make buffer on a cache line.
+			 */
+			newbuf.data = (uint8_t *)va_end_align;
+			newbuf.length = va_end - va_end_align;
+			newbuf.paddr = entry->origbuf.paddr + newbuf.length;
+			newbuf.nocache = entry->origbuf.nocache;
+
+			add_dma_require(priv, newbuf.length);
+
+			new_entry = dmalist_insert_after_entry(priv, entry,
+							       &newbuf);
 			if (!new_entry)
 				return TEE_ERROR_OUT_OF_MEMORY;
 
-			new_entry->end_align = true;
+			new_entry->newbuf = true;
+
+			/* Update current entry with new length */
 			entry->origbuf.length -= newbuf.length;
+
+			/*
+			 * Set current entry to new entry to continue
+			 * the FOREACH loop from this new_entry and then
+			 * verify the rest of the entry modified.
+			 */
+			entry = new_entry;
+			acclen -= newbuf.length;
+			continue;
 		}
 	}
 
@@ -486,32 +579,6 @@ end:
 }
 
 /*
- * Allocate a cache line aligned buffer of given length and
- * fill a @sgtbuf with the allocated buffer information.
- *
- * @alignbuf  [in/out] Cache line aligned buffer allocated
- * @sgtbuf    [out] SGT/Buffer information
- */
-static enum caam_status output_to_align(struct caambuf *alignbuf,
-					struct caambuf *sgtbuf)
-{
-	enum caam_status retstatus = CAAM_FAILURE;
-
-	if (!alignbuf->data) {
-		DMAOBJ_TRACE("Alloc align buffer of %zu bytes",
-			     alignbuf->length);
-		retstatus = caam_alloc_align_buf(alignbuf, alignbuf->length);
-		if (retstatus != CAAM_NO_ERROR)
-			return retstatus;
-	}
-
-	/* Add the entry in the SGT/Buffer table */
-	memcpy(sgtbuf, alignbuf, sizeof(*sgtbuf));
-
-	return CAAM_NO_ERROR;
-}
-
-/*
  * Re-map a DMA entry into a CAAM DMA accessible buffer.
  * Create the SGT/Buffer entry to be used in the CAAM Descriptor
  * Record this entry in the SGT/Buffer Data to get information on current
@@ -551,10 +618,8 @@ static enum caam_status entry_sgtbuf_dmabuf(struct caamdmaobj *obj,
 }
 
 /*
- * Create the SGT/Buffer entries mapping the DMA @entry.
- * If start/end buffer addresses must be cache aligned, a SGT/Buffer entry is
- * created.
- * Record these entries in the SGT/buffer Data to get information on current
+ * Create the SGT/Buffer entry mapping the DMA @entry.
+ * Record these entry in the SGT/buffer Data to get information on current
  * working data.
  *
  * @obj         CAAM DMA object
@@ -566,41 +631,17 @@ static enum caam_status entry_sgtbuf(struct caamdmaobj *obj,
 				     struct dmaentry *entry, unsigned int index,
 				     size_t off)
 {
-	enum caam_status retstatus = CAAM_FAILURE;
 	struct priv_dmaobj *priv = obj->priv;
 	struct caambuf *sgtbuf = &obj->sgtbuf.buf[index];
 	struct sgtdata *sgtdata = &priv->sgtdata[index];
 
-	if (entry->start_align) {
-		priv->startbuf.length -= off;
-		retstatus = output_to_align(&priv->startbuf, sgtbuf);
-		DMAOBJ_TRACE("Output Start align ret 0x%" PRIx32, retstatus);
-		if (retstatus != CAAM_NO_ERROR)
-			return retstatus;
+	memcpy(sgtbuf, &entry->origbuf, sizeof(*sgtbuf));
+	sgtbuf->data += off;
+	sgtbuf->paddr += off;
+	sgtbuf->length -= off;
 
-		DMAOBJ_TRACE("Start DMA buffer %p - %zu", sgtbuf->data,
-			     sgtbuf->length);
-		add_sgtdata_entry(obj, sgtdata, entry, sgtbuf, off);
-	} else if (entry->end_align) {
-		priv->endbuf.length -= off;
-		retstatus = output_to_align(&priv->endbuf, sgtbuf);
-		DMAOBJ_TRACE("Output End align ret 0x%" PRIx32, retstatus);
-		if (retstatus != CAAM_NO_ERROR)
-			return retstatus;
-
-		DMAOBJ_TRACE("End DMA buffer %p - %zu", sgtbuf->data,
-			     sgtbuf->length);
-		add_sgtdata_entry(obj, sgtdata, entry, sgtbuf, off);
-	} else {
-		memcpy(sgtbuf, &entry->origbuf, sizeof(*sgtbuf));
-		sgtbuf->data += off;
-		sgtbuf->paddr += off;
-		sgtbuf->length -= off;
-
-		DMAOBJ_TRACE("DMA buffer %p - %zu", sgtbuf->data,
-			     sgtbuf->length);
-		add_sgtdata_entry(obj, sgtdata, entry, sgtbuf, off);
-	}
+	DMAOBJ_TRACE("DMA buffer %p - %zu", sgtbuf->data, sgtbuf->length);
+	add_sgtdata_entry(obj, sgtdata, entry, sgtbuf, off);
 
 	return CAAM_NO_ERROR;
 }
@@ -669,7 +710,8 @@ TEE_Result caam_dmaobj_init_output(struct caamdmaobj *obj, const void *data,
 	struct dmaentry *entry = NULL;
 	struct caambuf newbuf = {};
 
-	DMAOBJ_TRACE("Output object with data @%p of %zu bytes", data, length);
+	DMAOBJ_TRACE("Output object with data @%p of %zu bytes (%zu)", data,
+		     length, min_length);
 
 	if (!obj) {
 		ret = TEE_ERROR_BAD_PARAMETERS;
@@ -710,6 +752,7 @@ TEE_Result caam_dmaobj_init_output(struct caamdmaobj *obj, const void *data,
 			goto end;
 		}
 
+		entry->nocopy = true;
 		entry->newbuf = true;
 	}
 
@@ -736,7 +779,7 @@ TEE_Result caam_dmaobj_output_sgtbuf(struct caamdmaobj *obj, const void *data,
 		 * start/end address are cache aligned.
 		 * If the @min_length is less than a cache line size, we
 		 * can initializing the output buffer with the cache line size
-		 * to prevent @end_align flag and so reallocate a not used
+		 * to prevent end buffer misalignement so reallocate a not used
 		 * buffer.
 		 */
 		size = MAX(min_length, caam_mem_read_cacheline_size());
@@ -860,10 +903,13 @@ size_t caam_dmaobj_copy_ltrim_to_orig(struct caamdmaobj *obj)
 	}
 
 do_copy:
-	dst_rlen = obj->orig.length - off;
+	if (off < obj->orig.length)
+		dst_rlen = obj->orig.length - off;
+
 	dst = obj->orig.data;
 
-	DMAOBJ_TRACE("Copy/Move Offset=%zu (len=%zu)", off, dst_rlen);
+	DMAOBJ_TRACE("Copy/Move Offset=%zu (len=%zu) TYPE=%d", off, dst_rlen,
+		     obj->sgtbuf.sgt_type);
 
 	if (!dst_rlen) {
 		dst[0] = 0;
@@ -911,12 +957,12 @@ void caam_dmaobj_free(struct caamdmaobj *obj)
 		     priv->type & DMAOBJ_INPUT ? "Input" : "Output",
 		     obj->orig.data, obj->orig.length);
 
-	entry = SIMPLEQ_FIRST(&priv->list);
+	entry = TAILQ_FIRST(&priv->list);
 	while (entry) {
 		DMAOBJ_TRACE("Is type 0x%" PRIx8 " newbuf %s", priv->type,
 			     entry->newbuf ? "true" : "false");
 
-		next = SIMPLEQ_NEXT(entry, next);
+		next = TAILQ_NEXT(entry, next);
 
 		DMAOBJ_TRACE("Free entry %p", entry);
 		caam_free(entry);
@@ -937,16 +983,6 @@ void caam_dmaobj_free(struct caamdmaobj *obj)
 	if (priv->dmabuf.allocated) {
 		DMAOBJ_TRACE("Free CAAM DMA buffer");
 		caam_free_buf(&priv->dmabuf.buf);
-	}
-
-	if (priv->startbuf.data) {
-		DMAOBJ_TRACE("Free Start align buffer");
-		caam_free_buf(&priv->startbuf);
-	}
-
-	if (priv->endbuf.data) {
-		DMAOBJ_TRACE("Free End align buffer");
-		caam_free_buf(&priv->endbuf);
 	}
 
 	if (priv->type & DMAOBJ_ALLOC_ORIG) {
@@ -1241,7 +1277,7 @@ TEE_Result caam_dmaobj_sgtbuf_build(struct caamdmaobj *obj, size_t *length,
 		     *length);
 
 	/* Find the first DMA buffer to start with */
-	SIMPLEQ_FOREACH(entry, &priv->list, next)
+	TAILQ_FOREACH(entry, &priv->list, next)
 	{
 		if (offset < entry->origbuf.length)
 			break;
@@ -1263,9 +1299,8 @@ TEE_Result caam_dmaobj_sgtbuf_build(struct caamdmaobj *obj, size_t *length,
 	nb_sgt = 1;
 
 	/* Calculate the number of SGT entry */
-	for (entry = SIMPLEQ_NEXT(entry, next);
-	     entry && acc_length < max_length;
-	     entry = SIMPLEQ_NEXT(entry, next)) {
+	for (entry = TAILQ_NEXT(entry, next); entry && acc_length < max_length;
+	     entry = TAILQ_NEXT(entry, next)) {
 		acc_length += entry->origbuf.length;
 		nb_sgt++;
 	}
@@ -1315,7 +1350,7 @@ TEE_Result caam_dmaobj_sgtbuf_build(struct caamdmaobj *obj, size_t *length,
 
 	obj->sgtbuf.length = 0;
 	for (entry = start_entry; entry && idx < nb_sgt;
-	     entry = SIMPLEQ_NEXT(entry, next), idx++) {
+	     entry = TAILQ_NEXT(entry, next), idx++) {
 		DMAOBJ_TRACE("entry %p (%d)", entry, idx);
 		if (entry->nodma_access || entry->newbuf) {
 			retstatus =
