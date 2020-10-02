@@ -391,7 +391,6 @@ err_alloc_keypair:
 	crypto_bignum_free(key->q);
 	crypto_bignum_free(key->dp);
 	crypto_bignum_free(key->dq);
-	crypto_bignum_free(key->qp);
 
 	return TEE_ERROR_OUT_OF_MEMORY;
 }
@@ -426,7 +425,6 @@ err_alloc_publickey:
 	RSA_TRACE("Allocation error");
 
 	crypto_bignum_free(key->e);
-	crypto_bignum_free(key->n);
 
 	return TEE_ERROR_OUT_OF_MEMORY;
 }
@@ -1286,8 +1284,10 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	/* Allocate the returned computed size when PKCS V1.5 */
 	if (operation == RSA_DECRYPT(PKCS_V1_5)) {
 		retstatus = caam_alloc_align_buf(&size_msg, 4);
-		if (retstatus != CAAM_NO_ERROR)
+		if (retstatus != CAAM_NO_ERROR) {
+			ret = caam_status_to_tee_result(retstatus);
 			goto exit_decrypt;
+		}
 
 		cache_operation(TEE_CACHEFLUSH, size_msg.data, size_msg.length);
 	}
@@ -1295,6 +1295,8 @@ static TEE_Result do_caam_decrypt(struct drvcrypt_rsa_ed *rsa_data,
 	/* Prepare the input cipher CAAM descriptor entry */
 	ret = caam_dmaobj_input_sgtbuf(&cipher, rsa_data->cipher.data,
 				       rsa_data->cipher.length);
+	if (ret)
+		goto exit_decrypt;
 
 	if (cipher.sgtbuf.sgt_type)
 		pdb_sgt_flags |= PDB_RSA_DEC_SGT_G;
