@@ -22,6 +22,8 @@ CFG_DBG_CAAM_TRACE ?= BIT32(1)
 CFG_DBG_CAAM_DESC ?= 0x0
 CFG_DBG_CAAM_BUF ?= 0x0
 
+$(call force, CFG_CAAM_SIZE_ALIGN,4)
+
 #
 # CAAM Job Ring configuration
 #  - Normal boot settings
