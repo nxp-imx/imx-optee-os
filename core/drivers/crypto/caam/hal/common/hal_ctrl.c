@@ -131,6 +131,7 @@ void caam_hal_ctrl_inc_priblob(vaddr_t baseaddr)
 		panic("Written PRIBLOB and read PRIBLOB do not match!");
 }
 
+#ifdef CFG_CRYPTO_DRV_MP
 uint8_t caam_hal_ctrl_get_mpcurve(vaddr_t ctrl_addr)
 {
 	uint32_t val_scfgr = 0;
@@ -249,7 +250,9 @@ void caam_hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct caambuf *msg_mpmr)
 		     io_caam_read32(ctrl_addr + SCFGR));
 	}
 }
+#endif /* CFG_CRYPTO_DRV_MP */
 
+#ifdef CFG_CRYPTO_DRV_SM
 vaddr_t caam_hal_ctrl_get_smvaddr(vaddr_t ctrl_addr, paddr_t jr_offset)
 {
 	/*
@@ -260,3 +263,4 @@ vaddr_t caam_hal_ctrl_get_smvaddr(vaddr_t ctrl_addr, paddr_t jr_offset)
 	 */
 	return io_caam_read32(ctrl_addr + JRX_SMVBAR(JRX_IDX(jr_offset))) << 16;
 }
+#endif /* CFG_CRYPTO_DRV_SM */
