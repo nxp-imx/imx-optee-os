@@ -36,6 +36,22 @@ struct __packed mem_info {
 #define OF_MEM_INFO(p) (struct mem_info *)((uint8_t *)(p) - MEM_INFO_SIZE)
 
 /*
+ * Read the first byte at the given @addr to ensure that
+ * virtual page is mapped before getting its physical address.
+ *
+ * @addr: address to read
+ */
+static inline void touch_page(uint8_t *addr)
+{
+	uint8_t val = 0;
+#ifdef ARM64
+	asm volatile("ldrb %w0, [%1]" : "=r"(val) : "r"(addr));
+#else
+	asm volatile("ldrb %0, [%1]" : "=r"(val) : "r"(addr));
+#endif
+}
+
+/*
  * Allocate an area of given size in bytes. Add the memory allocator
  * information in the newly allocated area.
  *
@@ -389,6 +405,8 @@ int caam_mem_get_pa_area(struct caambuf *buf, struct caambuf **out_pabufs)
 	 */
 	va = (vaddr_t)buf->data;
 	pa = virt_to_phys((void *)va);
+	if (!pa)
+		return -1;
 
 	nb_pa_area = 0;
 	if (pabufs) {
@@ -404,10 +422,20 @@ int caam_mem_get_pa_area(struct caambuf *buf, struct caambuf **out_pabufs)
 		len_tohandle =
 			MIN(SMALL_PAGE_SIZE - (va & SMALL_PAGE_MASK), len);
 		next_va = va + len_tohandle;
-		next_pa = virt_to_phys((void *)next_va);
-
 		if (pabufs)
 			pabufs[nb_pa_area].length += len_tohandle;
+
+		/*
+		 * Reaches the end of buffer, exits here because
+		 * the next virtual address is out of scope.
+		 */
+		if (len == len_tohandle)
+			break;
+
+		touch_page((uint8_t *)next_va);
+		next_pa = virt_to_phys((void *)next_va);
+		if (!next_pa)
+			return -1;
 
 		if (next_pa != (pa + len_tohandle)) {
 			nb_pa_area++;
