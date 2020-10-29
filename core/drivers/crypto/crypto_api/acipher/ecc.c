@@ -175,7 +175,7 @@ TEE_Result crypto_acipher_gen_ecc_key(struct ecc_keypair *key,
 		ret = ecc->gen_keypair(key, get_ecc_keysize(key->curve));
 
 	CRYPTO_TRACE("ECC Keypair (%zu bits) generate ret = 0x%" PRIx32,
-		     size_bits, ret);
+		     key_size, ret);
 
 	return ret;
 }
