@@ -923,11 +923,12 @@ do_copy:
 
 		if (offset) {
 			copy_size = MIN(dst_rlen, sgtdata->length - offset);
-			memcpy(dst, &sgtdata->dma[offset], copy_size);
+			memmove(dst, &sgtdata->dma[offset], copy_size);
 			offset = 0;
 		} else {
 			copy_size = MIN(dst_rlen, sgtdata->length);
-			memcpy(dst, sgtdata->dma, copy_size);
+			if (dst != sgtdata->dma)
+				memmove(dst, sgtdata->dma, copy_size);
 		}
 
 		dst += copy_size;
