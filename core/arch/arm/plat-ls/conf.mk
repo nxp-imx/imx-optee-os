@@ -87,7 +87,7 @@ endif
 
 ifeq ($(PLATFORM_FLAVOR),lx2160aqds)
 CFG_NXP_CAAM ?= y
-CFG_HW_UNQ_KEY_REQUEST ?= y
+$(call force,CFG_HW_UNQ_KEY_REQUEST, n)
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_CAAM_LITTLE_ENDIAN,y)
 $(call force,CFG_TEE_CORE_NB_CORE,16)
@@ -105,7 +105,7 @@ endif
 
 ifeq ($(PLATFORM_FLAVOR),lx2160ardb)
 CFG_NXP_CAAM ?= y
-CFG_HW_UNQ_KEY_REQUEST ?= y
+$(call force,CFG_HW_UNQ_KEY_REQUEST, n)
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_CAAM_LITTLE_ENDIAN,y)
 $(call force,CFG_TEE_CORE_NB_CORE,16)
