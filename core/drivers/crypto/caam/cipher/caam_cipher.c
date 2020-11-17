@@ -405,6 +405,7 @@ void caam_cipher_copy_state(void *dst_ctx, void *src_ctx)
 			.data = src->ctx.data,
 			.length = src->ctx.length
 		};
+		cache_operation(TEE_CACHEINVALIDATE, ctx.data, ctx.length);
 		copy_ctx_data(&dst->ctx, &ctx);
 	}
 
