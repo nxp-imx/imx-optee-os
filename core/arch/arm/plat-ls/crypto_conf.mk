@@ -39,6 +39,11 @@ $(call force,CFG_JR_INT, 174)
 $(call force,CFG_NB_JOBS_QUEUE, 80)  # Default JR index used
 endif
 
+ifneq (,$(filter $(PLATFORM_FLAVOR),lx2160aqds))
+$(call force,CFG_JR_INT, 174)
+$(call force,CFG_NB_JOBS_QUEUE, 80)  # Default JR index used
+endif
+
 #
 # Configuration of the Crypto Driver
 #

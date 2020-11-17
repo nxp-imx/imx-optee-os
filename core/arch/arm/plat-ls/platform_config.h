@@ -111,6 +111,7 @@
 #define GICC_OFFSET                     0x0
 #define GICD_OFFSET                     0x0
 #define GPIO1_BASE			0x2300000
+#define CAAM_BASE			0x08000000
 #endif
 
 #endif /*PLATFORM_CONFIG_H*/
