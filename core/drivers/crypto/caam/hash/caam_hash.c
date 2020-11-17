@@ -681,6 +681,8 @@ void caam_hash_hmac_copy_state(struct hashctx *dst, struct hashctx *src)
 	dst->alg = src->alg;
 
 	if (src->ctx.length) {
+		cache_operation(TEE_CACHEINVALIDATE, src->ctx.data,
+				src->ctx.length);
 		memcpy(dst->ctx.data, src->ctx.data, src->ctx.length);
 		dst->ctx.length = src->ctx.length;
 		cache_operation(TEE_CACHECLEAN, dst->ctx.data, dst->ctx.length);
