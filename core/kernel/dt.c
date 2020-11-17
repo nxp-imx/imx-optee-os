@@ -83,6 +83,7 @@ int dt_disable_status(void *fdt, int node)
 	return 0;
 }
 
+#if !defined(CFG_EMBED_DT)
 int dt_enable_secure_status(void *fdt, int node)
 {
 	if (dt_disable_status(fdt, node)) {
@@ -95,6 +96,7 @@ int dt_enable_secure_status(void *fdt, int node)
 
 	return 0;
 }
+#endif
 
 int dt_map_dev(const void *fdt, int offs, vaddr_t *base, size_t *size)
 {
