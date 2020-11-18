@@ -31,9 +31,6 @@ CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
 CFG_DBG_CAAM_BUF ?= 0x0
 
-# Enable the BLOB module used for the hardware unique key
-# CFG_NXP_CAAM_BLOB_DRV ?= y
-
 ifeq ($(CFG_MX7ULP), y)
 # i.MX 7ULP is sharing one single line of interrupt for the 2 Job Ring interfaces
 # disable the use of interrupts in OP-TEE.
