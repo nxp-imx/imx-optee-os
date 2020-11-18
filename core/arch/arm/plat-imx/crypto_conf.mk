@@ -31,9 +31,6 @@ CFG_DBG_CAAM_TRACE ?= 0x2
 CFG_DBG_CAAM_DESC ?= 0x0
 CFG_DBG_CAAM_BUF ?= 0x0
 
-# Enable the BLOB module used for the hardware unique key
-# CFG_NXP_CAAM_BLOB_DRV ?= y
-
 # Value to round up to when allocating SGT entries
 CFG_CAAM_SGT_ALIGN ?= 1
 
