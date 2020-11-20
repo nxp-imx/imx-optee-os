@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2019,2021 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
@@ -50,7 +50,6 @@ uint32_t imx_soc_type(void);
 void imx_gpcv2_set_core1_pdn_by_software(void);
 void imx_gpcv2_set_core1_pup_by_software(void);
 void imx_gpcv2_set_core_pgc(bool enable, uint32_t offset);
-bool imx_is_device_closed(void);
 #ifdef CFG_PSCI_ARM32
 void plat_cpu_wakeup_late(void);
 #else

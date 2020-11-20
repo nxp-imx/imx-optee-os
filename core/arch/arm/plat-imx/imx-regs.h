@@ -45,8 +45,6 @@
 #error "CFG_MX6/7/7ULP or CFG_MX8MQ/8MM/8MN/8MP/8QX/8QM/8DXL is not defined"
 #endif
 
-#include <registers/snvs-regs.h>
-
 #define IOMUXC_GPR4_OFFSET	0x10
 #define IOMUXC_GPR5_OFFSET	0x14
 #define ARM_WFI_STAT_MASK(n)	BIT(n)

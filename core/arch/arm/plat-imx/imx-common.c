@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (C) 2016 Freescale Semiconductor, Inc.
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2019, 2021 NXP
  *
  * Peng Fan <peng.fan@nxp.com>
  */
 
 #include <console.h>
-#include <drivers/imx_snvs.h> 
-#include <io.h>
+#include <drivers/nxp_snvs.h>
 #include <imx.h>
-#include <mm/core_mmu.h>
+#include <io.h>
 #include <mm/core_memprot.h>
+#include <mm/core_mmu.h>
 #include <platform_config.h>
 
 static int imx_cpu_type = -1;
@@ -166,7 +166,7 @@ uint16_t soc_revision(void)
 /*
  * Returns if the device is closed (full secure) or not
  */
-bool __weak imx_is_device_closed(void)
+bool __weak snvs_is_device_closed(void)
 {
 	return false;
 }

@@ -9,6 +9,7 @@
 #include <console.h>
 #include <drivers/imx_uart.h>
 #include <drivers/imx_wdog.h>
+#include <drivers/nxp_snvs.h>
 #include <io.h>
 #include <imx.h>
 #include <imx_pm.h>

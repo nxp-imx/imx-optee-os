@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018 NXP
+ * Copyright 2018, 2021 NXP
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * All rights reserved.
  *
@@ -59,6 +59,8 @@ static struct ns16550_data console_data;
 
 register_phys_mem_pgdir(MEM_AREA_IO_NSEC, CONSOLE_UART_BASE,
 			CORE_MMU_PGDIR_SIZE);
+
+register_phys_mem_pgdir(MEM_AREA_IO_SEC, SNVS_BASE, CORE_MMU_PGDIR_SIZE);
 
 #if defined(PLATFORM_FLAVOR_ls1043ardb)
 register_phys_mem_pgdir(MEM_AREA_IO_NSEC, DCFG_BASE, CORE_MMU_PGDIR_SIZE);

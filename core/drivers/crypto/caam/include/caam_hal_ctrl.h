@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2021 NXP
  *
  * Brief   CAAM Controller Hardware Abstration Layer header.
  */
@@ -94,4 +94,9 @@ void caam_hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct caambuf *msg_mpmr);
  * @jr_offset  Job ring offset
  */
 vaddr_t caam_hal_ctrl_get_smvaddr(vaddr_t ctrl_addr, paddr_t jr_offset);
+
+/*
+ * Indicate if the platform supports MPCURVE
+ */
+bool is_caam_mpcurve_supported(void);
 #endif /* __CAAM_HAL_CTRL_H__ */

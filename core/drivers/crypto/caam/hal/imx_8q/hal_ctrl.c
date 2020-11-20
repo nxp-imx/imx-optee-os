@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * Brief   CAAM Controller Hardware Abstration Layer.\n
  *	   Implementation of primitives to access HW
@@ -11,4 +11,9 @@
 /* Nothing to do, can't access to MCFGR register (Only accessible by SECO) */
 void caam_hal_ctrl_init(vaddr_t baseaddr __unused)
 {
+}
+
+bool is_caam_mpcurve_supported(void)
+{
+	return true;
 }

@@ -158,7 +158,7 @@ $(call force,CFG_MX7ULP,y)
 $(call force,CFG_TEE_CORE_NB_CORE,1)
 $(call force,CFG_TZC380,n)
 $(call force,CFG_CSU,n)
-$(call force,CFG_IMX_SNVS,n)
+$(call force,CFG_NXP_SNVS,n)
 include core/arch/arm/cpu/cortex-a7.mk
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8mq-flavorlist)))
 $(call force,CFG_MX8MQ,y)
@@ -187,7 +187,7 @@ CFG_TEE_CORE_NB_CORE ?= 4
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qm-flavorlist)))
 $(call force,CFG_MX8QM,y)
 $(call force,CFG_ARM64_core,y)
-$(call force,CFG_IMX_SNVS,n)
+$(call force,CFG_NXP_SNVS,n)
 CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 6
@@ -196,7 +196,7 @@ $(call force,CFG_IMX_SC,y)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qx-flavorlist)))
 $(call force,CFG_MX8QX,y)
 $(call force,CFG_ARM64_core,y)
-$(call force,CFG_IMX_SNVS,n)
+$(call force,CFG_NXP_SNVS,n)
 CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 4
@@ -205,7 +205,7 @@ $(call force,CFG_IMX_SC,y)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8dxl-flavorlist)))
 $(call force,CFG_MX8DXL,y)
 $(call force,CFG_ARM64_core,y)
-$(call force,CFG_IMX_SNVS,n)
+$(call force,CFG_NXP_SNVS,n)
 CFG_IMX_LPUART ?= y
 CFG_DRAM_BASE ?= 0x80000000
 $(call force,CFG_TEE_CORE_NB_CORE,2)
@@ -407,7 +407,7 @@ endif
 ifneq (,$(filter y, $(CFG_MX6) $(CFG_MX7) $(CFG_MX7ULP)))
 $(call force,CFG_GIC,y)
 
-CFG_IMX_SNVS ?= y
+CFG_NXP_SNVS ?= y
 CFG_BOOT_SECONDARY_REQUEST ?= y
 CFG_DT ?= y
 CFG_PAGEABLE_ADDR ?= 0
@@ -419,7 +419,7 @@ endif
 ifneq (,$(filter y, $(CFG_MX6) $(CFG_MX7) $(CFG_MX8MM)))
 $(call force,CFG_IMX_UART,y)
 ifeq ($(CFG_RPMB_FS),y)
-CFG_IMX_SNVS ?= y
+CFG_NXP_SNVS ?= y
 endif
 endif
 
@@ -454,7 +454,7 @@ $(call force,CFG_WITH_ARM_TRUSTED_FW,y)
 $(call force,CFG_SECURE_TIME_SOURCE_CNTPCT,y)
 
 CFG_CRYPTO_WITH_CE ?= y
-CFG_IMX_SNVS ?= y
+CFG_NXP_SNVS ?= y
 supported-ta-targets = ta_arm64
 endif
 

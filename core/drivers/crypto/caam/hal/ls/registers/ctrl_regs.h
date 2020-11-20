@@ -36,6 +36,13 @@
 
 /* Security Configuration */
 #define SCFGR 0x000C
+#define BS_SCFGR_MPCURVE 28
+#define BM_SCFGR_MPCURVE SHIFT_U32(0xF, BS_SCFGR_MPCURVE)
+#define BM_SCFGR_MPMRL	 BIT32(26)
+
+/* Manufacturing Protection Message */
+#define MPMR	    0x0380
+#define MPMR_NB_REG 0x20
 
 #endif /* __CTRL_REGS_H__ */
 

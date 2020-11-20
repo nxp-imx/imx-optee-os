@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2019, 2021 NXP
  *
  * Brief   CAAM Controller Hardware Abstration Layer.
  *         Implementation of primitives to access HW
@@ -42,4 +42,9 @@ void caam_hal_ctrl_init(vaddr_t baseaddr)
 	io_mask32(baseaddr + MCFGR, MCFGR_AXIPIPE(1), BM_MCFGR_AXIPIPE);
 
 	caam_pwr_add_backup(baseaddr, ctrl_backup, ARRAY_SIZE(ctrl_backup));
+}
+
+bool is_caam_mpcurve_supported(void)
+{
+	return true;
 }
