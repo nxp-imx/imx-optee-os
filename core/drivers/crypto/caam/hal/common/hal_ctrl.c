@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2021 NXP
  *
  * Brief   CAAM Controller Hardware Abstration Layer.
  *         Implementation of primitives to access HW.
@@ -9,11 +9,12 @@
 #include <caam_io.h>
 #include <caam_trace.h>
 #include <config.h>
+#include <drivers/nxp_snvs.h>
+#include <kernel/panic.h>
 #include <platform_config.h>
 #include <registers/ctrl_regs.h>
 #include <registers/jr_regs.h>
 #include <registers/version_regs.h>
-#include <kernel/panic.h>
 
 uint8_t caam_hal_ctrl_era(vaddr_t baseaddr)
 {
@@ -136,18 +137,14 @@ uint8_t caam_hal_ctrl_get_mpcurve(vaddr_t ctrl_addr)
 {
 	uint32_t val_scfgr = 0;
 
-	/*
-	 * On i.MX8MQ B0, the MP is not usable, hence
-	 * return UINT8_MAX
-	 */
-	if (soc_is_imx8mq_b0_layer())
+	if (!is_caam_mpcurve_supported())
 		return UINT8_MAX;
 
 	/*
 	 * Verify if the device is closed or not
 	 * If device is closed, check get the MPCurve
 	 */
-	if (imx_is_device_closed()) {
+	if (snvs_is_device_closed()) {
 		/* Get the SCFGR content */
 		val_scfgr = io_caam_read32(ctrl_addr + SCFGR);
 

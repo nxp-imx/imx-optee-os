@@ -8,11 +8,11 @@
 
 #include <config.h>
 #include <console.h>
-#include <drivers/imx_snvs.h>
-#include <io.h>
+#include <drivers/nxp_snvs.h>
 #include <imx.h>
-#include <mm/core_mmu.h>
+#include <io.h>
 #include <mm/core_memprot.h>
+#include <mm/core_mmu.h>
 #include <platform_config.h>
 
 #define SOC_TYPE(reg)	       (((reg) & (0x00FF0000)) >> 16)
@@ -194,7 +194,7 @@ bool soc_is_imx8mq_b0_layer(void)
 /*
  * Returns if the device is closed (full secure) or not
  */
-bool __weak imx_is_device_closed(void)
+bool __weak snvs_is_device_closed(void)
 {
 	return false;
 }

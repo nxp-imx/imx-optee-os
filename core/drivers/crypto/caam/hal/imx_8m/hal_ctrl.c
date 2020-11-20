@@ -1,16 +1,26 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2019, 2021 NXP
  *
  * Brief   CAAM Controller Hardware Abstration Layer.
  *         Implementation of primitives to access HW.
  */
+#include <imx.h>
+
 #include <caam_hal_ctrl.h>
-#include <caam_io.h>
 #include <registers/ctrl_regs.h>
 
 void caam_hal_ctrl_init(vaddr_t baseaddr)
 {
 	/* Enable DECO watchdogs */
 	io_setbits32(baseaddr + MCFGR, MCFGR_WDE);
+}
+
+bool is_caam_mpcurve_supported(void)
+{
+	/* On i.MX8MQ B0, the MP is not usable */
+	if (soc_is_imx8mq_b0_layer())
+		return false;
+
+	return true;
 }

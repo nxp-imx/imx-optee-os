@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /**
- * @copyright 2019 NXP
+ * Copyright 2019, 2021 NXP
  *
  * @file    snvs_mstkey.c
  *
  * @brief   Device Master key selection
  */
 /* Global includes */
-#include <drivers/imx_snvs.h>
+#include <drivers/nxp_snvs.h>
 #include <io.h>
 #include <kernel/panic.h>
 #include <mm/core_memprot.h>
 #include <platform_config.h>
-
-/* Platform includes */
-#include <imx.h>
 
 /**
  * @brief   Checks if the master key is the OTPMK
@@ -85,13 +82,13 @@ static inline int set_mks_otpmk(void)
 		return (-1);
 
 	io_mask32(snvs_base + SNVS_HPCOMR, BM_SNVS_HPCOMR_MKS_EN,
-			BM_SNVS_HPCOMR_MKS_EN);
+		  BM_SNVS_HPCOMR_MKS_EN);
 	io_mask32(snvs_base + SNVS_LPMKCR, 0, BM_SNVS_LP_MKCR_MKS_SEL);
 
 	io_mask32(snvs_base + SNVS_HPLR, BM_SNVS_HPLR_MKS_SL,
-			BM_SNVS_HPLR_MKS_SL);
+		  BM_SNVS_HPLR_MKS_SL);
 	io_mask32(snvs_base + SNVS_LPLR, BM_SNVS_LPLR_MKS_HL,
-			BM_SNVS_LPLR_MKS_HL);
+		  BM_SNVS_LPLR_MKS_HL);
 
 	return 0;
 }
@@ -109,10 +106,9 @@ static inline bool is_otpmk_valid(void)
 
 	uint32_t hp_status;
 
-	hp_status = io_read32(snvs_base + SNVS_HPSTATUS);
+	hp_status = io_read32(snvs_base + SNVS_HPSR);
 
-	hp_status &= (BM_SNVS_HPSTATUS_OTPMK_ZERO |
-			BM_SNVS_HPSTATUS_OTPMK_SYND);
+	hp_status &= (BM_SNVS_HPSR_OTPMK_ZERO | BM_SNVS_HPSR_OTPMK_SYND);
 
 	if (hp_status) {
 		EMSG("OTPK Key is not valid");
@@ -120,7 +116,6 @@ static inline bool is_otpmk_valid(void)
 	}
 
 	return true;
-
 }
 
 /**
@@ -141,7 +136,7 @@ void snvs_set_master_otpmk(void)
 		status = set_mks_otpmk();
 	}
 
-	if (!imx_is_device_closed() && (status != 0)) {
+	if (!snvs_is_device_closed() && status != 0) {
 		IMSG("*******************************************************");
 		IMSG("* The system not in Trusted State                     *");
 		IMSG("* This mode is only suitable for development purposes *");
@@ -152,7 +147,7 @@ void snvs_set_master_otpmk(void)
 		IMSG("* will not be recoverable once this device will be    *");
 		IMSG("* closed                                              *");
 		IMSG("*******************************************************");
-	} else if (imx_is_device_closed() && (status != 0)) {
+	} else if (snvs_is_device_closed() && (status != 0)) {
 		IMSG("*******************************************************");
 		IMSG("* The system in Trusted State                         *");
 		IMSG("* ERROR: Master Key is cannot be set to OTPMK         *");

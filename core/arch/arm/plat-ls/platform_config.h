@@ -37,6 +37,10 @@
 /* console uart define */
 #define CONSOLE_UART_BASE		UART0_BASE
 
+/* Base address of the SNVS/Security Monitor */
+#define SNVS_BASE 0x01E90000
+#define SNVS_SIZE 0x40000
+
 /* Platform specific defines */
 #if defined(PLATFORM_FLAVOR_ls1021aqds) || defined(PLATFORM_FLAVOR_ls1021atwr)
 /*  DUART 1 */

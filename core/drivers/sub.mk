@@ -42,6 +42,6 @@ subdirs-y += crypto
 subdirs-$(CFG_BNXT_FW) += bnxt
 subdirs-$(CFG_SCMI_MSG_DRIVERS) += scmi-msg
 subdirs-y += imx
-subdirs-$(CFG_IMX_SNVS) += imx_snvs
+subdirs-$(CFG_NXP_SNVS) += nxp_snvs
 subdirs-$(CFG_IMX_SC) += sc
 
