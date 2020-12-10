@@ -29,7 +29,6 @@ CFG_BOOT_SECONDARY_REQUEST ?= y
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1012ardb)
-CFG_HW_UNQ_KEY_REQUEST ?= y
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_TEE_CORE_NB_CORE,1)
 $(call force,CFG_DRAM0_SIZE,0x40000000)
@@ -38,7 +37,6 @@ CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1012afrwy)
-CFG_HW_UNQ_KEY_REQUEST ?= y
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_TEE_CORE_NB_CORE,1)
 $(call force,CFG_CORE_CLUSTER_SHIFT,2)
@@ -47,7 +45,6 @@ CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1043ardb)
-CFG_HW_UNQ_KEY_REQUEST ?= y
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_TEE_CORE_NB_CORE,4)
 $(call force,CFG_DRAM0_SIZE,0x80000000)
@@ -56,7 +53,6 @@ CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1046ardb)
-CFG_HW_UNQ_KEY_REQUEST ?= y
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_CAAM_BIG_ENDIAN,y)
 $(call force,CFG_TEE_CORE_NB_CORE,4)
@@ -66,7 +62,6 @@ CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1088ardb)
-CFG_HW_UNQ_KEY_REQUEST ?= y
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_TEE_CORE_NB_CORE,8)
 $(call force,CFG_DRAM0_SIZE,0x80000000)
@@ -76,7 +71,6 @@ CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls2088ardb)
-CFG_HW_UNQ_KEY_REQUEST ?= y
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_TEE_CORE_NB_CORE,8)
 $(call force,CFG_DRAM0_SIZE,0x80000000)
@@ -86,8 +80,6 @@ CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
 ifeq ($(PLATFORM_FLAVOR),lx2160aqds)
-CFG_NXP_CAAM ?= y
-$(call force,CFG_HW_UNQ_KEY_REQUEST, n)
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_CAAM_LITTLE_ENDIAN,y)
 $(call force,CFG_TEE_CORE_NB_CORE,16)
@@ -104,8 +96,6 @@ CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
 ifeq ($(PLATFORM_FLAVOR),lx2160ardb)
-CFG_NXP_CAAM ?= y
-$(call force,CFG_HW_UNQ_KEY_REQUEST, n)
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_CAAM_LITTLE_ENDIAN,y)
 $(call force,CFG_TEE_CORE_NB_CORE,16)
@@ -122,7 +112,6 @@ CFG_SHMEM_SIZE ?= 0x00200000
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1028ardb)
-CFG_HW_UNQ_KEY_REQUEST ?= y
 include core/arch/arm/cpu/cortex-armv8-0.mk
 $(call force,CFG_TEE_CORE_NB_CORE,2)
 $(call force,CFG_DRAM0_SIZE,0x80000000)
@@ -161,7 +150,7 @@ CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 
 # NXP CAAM support is not enabled by default and can be enabled
 # on the command line
-CFG_NXP_CAAM ?= n
+CFG_NXP_CAAM ?= y
 
 ifeq ($(CFG_NXP_CAAM),y)
 # If NXP CAAM Driver is supported, the Crypto Driver interfacing

@@ -24,6 +24,9 @@ CFG_DBG_CAAM_BUF ?= 0x0
 
 $(call force, CFG_CAAM_SIZE_ALIGN,4)
 
+# Enable the BLOB module used for the hardware unique key
+CFG_NXP_CAAM_BLOB_DRV ?= y
+
 #
 # CAAM Job Ring configuration
 #  - Normal boot settings
@@ -56,8 +59,8 @@ $(call force, CFG_NXP_CAAM_RUNTIME_JR, y)
 #
 # Definition of all HW accelerations for all LS
 #
-$(call force, CFG_NXP_CAAM_RNG_DRV, y)
-$(call force, CFG_WITH_SOFTWARE_PRNG,n)
+$(call force, CFG_NXP_CAAM_RNG_DRV, n)
+$(call force, CFG_WITH_SOFTWARE_PRNG,y)
 
 # Force to 'y' the CFG_NXP_CAAM_xxx_DRV to enable the CAAM HW driver
 # and enable the associated CFG_CRYPTO_DRV_xxx Crypto driver
@@ -77,11 +80,7 @@ cryphw-one-enabled = $(call cfg-one-enabled, \
                         $(foreach v,$(1), CFG_NXP_CAAM_$(v)_DRV))
 
 # Definition of the HW and Cryto Driver Algorithm supported by all LS
-$(eval $(call cryphw-enable-drv-hw, HASH))
-$(eval $(call cryphw-enable-drv-hw, CIPHER))
-$(eval $(call cryphw-enable-drv-hw, HMAC))
-$(eval $(call cryphw-enable-drv-hw, CMAC))
-$(eval $(call cryphw-enable-drv-hw, RSA))
+# HASH, CIPHER, HMAC, CMAC, RSA support is disabled
 
 # Define the RSA Private Key Format used by the CAAM
 #   Format #1: (n, d)
