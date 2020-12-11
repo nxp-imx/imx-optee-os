@@ -35,17 +35,43 @@ CFG_NXP_CAAM_BLOB_DRV ?= y
 $(call force,CFG_JR_BLOCK_SIZE,0x10000)
 $(call force,CFG_JR_INDEX,2)  # Default JR index used
 
-ifneq (,$(filter $(PLATFORM_FLAVOR),ls1046ardb))
+ifneq (,$(filter $(PLATFORM_FLAVOR),ls1012afrwy))
+$(call force,CFG_CAAM_BIG_ENDIAN,y)
+$(call force,CFG_JR_INT,105)  # Default JR IT Number (73 + 32) = 105
+else ifneq (,$(filter $(PLATFORM_FLAVOR),ls1012ardb))
+$(call force,CFG_CAAM_BIG_ENDIAN,y)
+$(call force,CFG_JR_INT,105)  # Default JR IT Number (73 + 32) = 105
+else ifneq (,$(filter $(PLATFORM_FLAVOR),ls1021atwr))
+$(call force,CFG_CAAM_LITTLE_ENDIAN,y)
+$(call force,CFG_JR_INT,137)
+else ifneq (,$(filter $(PLATFORM_FLAVOR),ls1021aqds))
+$(call force,CFG_CAAM_LITTLE_ENDIAN,y)
+$(call force,CFG_JR_INT,137)
+else ifneq (,$(filter $(PLATFORM_FLAVOR),ls1043ardb))
+$(call force,CFG_CAAM_BIG_ENDIAN,y)
+$(call force,CFG_JR_INT,105)  # Default JR IT Number (73 + 32) = 105
+else ifneq (,$(filter $(PLATFORM_FLAVOR),ls1046ardb))
+$(call force,CFG_CAAM_BIG_ENDIAN,y)
 $(call force,CFG_JR_INT,137)  # Default JR IT Number (105 + 32) = 137
-endif
-
-ifneq (,$(filter $(PLATFORM_FLAVOR),lx2160ardb))
+# Linux indicate the IRQ is 73 + 32 = 105
+else ifneq (,$(filter $(PLATFORM_FLAVOR),ls1088ardb))
+$(call force,CFG_CAAM_LITTLE_ENDIAN,y)
+$(call force,CFG_JR_INT,175)  # Default JR IT Number (142 + 32) = 175
+else ifneq (,$(filter $(PLATFORM_FLAVOR),ls2088ardb))
+$(call force,CFG_CAAM_LITTLE_ENDIAN,y)
+$(call force,CFG_JR_INT,175)  # Default JR IT Number (142 + 32) = 175
+else ifneq (,$(filter $(PLATFORM_FLAVOR),ls1028ardb))
+$(call force,CFG_CAAM_LITTLE_ENDIAN,y)
+$(call force,CFG_JR_INT,175)  # Default JR IT Number (142 + 32) = 175
+else ifneq (,$(filter $(PLATFORM_FLAVOR),lx2160aqds))
+$(call force,CFG_CAAM_LITTLE_ENDIAN,y)
 $(call force,CFG_JR_INT, 174)
+# Linux indicate the IRQ is 175
 $(call force,CFG_NB_JOBS_QUEUE, 80)  # Default JR index used
-endif
-
-ifneq (,$(filter $(PLATFORM_FLAVOR),lx2160aqds))
+else ifneq (,$(filter $(PLATFORM_FLAVOR),lx2160ardb))
+$(call force,CFG_CAAM_LITTLE_ENDIAN,y)
 $(call force,CFG_JR_INT, 174)
+# Linux indicate the IRQ is 175
 $(call force,CFG_NB_JOBS_QUEUE, 80)  # Default JR index used
 endif
 
