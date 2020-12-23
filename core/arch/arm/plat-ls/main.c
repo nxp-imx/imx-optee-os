@@ -59,6 +59,31 @@ static struct ns16550_data console_data;
 
 register_phys_mem_pgdir(MEM_AREA_IO_NSEC, CONSOLE_UART_BASE,
 			CORE_MMU_PGDIR_SIZE);
+
+#if defined(PLATFORM_FLAVOR_ls1043ardb)
+register_phys_mem_pgdir(MEM_AREA_IO_NSEC, DCFG_BASE, CORE_MMU_PGDIR_SIZE);
+
+#define SVR_MINOR(svr) (((svr) >> 0) & 0xf)
+static uint32_t get_svr_reg_value(void)
+{
+	paddr_t dcfg_base = 0;
+	uint32_t svr_offset = 0;
+	vaddr_t svr_reg = 0;
+	uint32_t svr_reg_val = 0;
+
+	dcfg_base = DCFG_BASE;
+	svr_offset = DCFG_SVR_OFFSET;
+	svr_reg = (vaddr_t)phys_to_virt(dcfg_base + svr_offset,
+					MEM_AREA_IO_NSEC);
+	if (!svr_reg) {
+		EMSG("Failed to get virtual address for svr regs\n");
+		panic();
+	}
+	svr_reg_val = get_be32((void *)svr_reg);
+	return svr_reg_val;
+}
+#endif
+
 #if !defined(PLATFORM_FLAVOR_lx2160aqds) && !defined(PLATFORM_FLAVOR_lx2160ardb)
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, GIC_BASE, CORE_MMU_PGDIR_SIZE);
 #endif
@@ -179,6 +204,21 @@ void main_init_gic(void)
 #if defined(PLATFORM_FLAVOR_lx2160aqds) || defined(PLATFORM_FLAVOR_lx2160ardb)
 	if (get_gic_base_addr_from_dt(&gic_base))
 		EMSG("Failed to get GIC base addr from DT");
+#elif defined(PLATFORM_FLAVOR_ls1043ardb)
+	uint32_t svr_reg_val = 0;
+	/*
+	 * Read the System Version Register to check the Revision of SoC.
+	 * Based on this value will set the GIC offset.
+	 */
+	svr_reg_val = get_svr_reg_value();
+	if (SVR_MINOR(svr_reg_val) == 1) {
+		gicc_offset = GICC_OFFSET_REV1_1;
+		gicd_offset = GICD_OFFSET_REV1_1;
+	} else {
+		gicc_offset = GICC_OFFSET_REV1;
+		gicd_offset = GICD_OFFSET_REV1;
+	}
+	gic_base = GIC_BASE;
 #else
 	gic_base = GIC_BASE;
 	gicc_offset = GICC_OFFSET;
