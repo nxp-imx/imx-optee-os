@@ -112,8 +112,8 @@ cryphw-one-enabled = $(call cfg-one-enabled, \
 # Definition of the HW and Cryto Driver Algorithm supported by all i.MX
 $(eval $(call cryphw-enable-drv-hw, HASH))
 $(eval $(call cryphw-enable-drv-hw, CIPHER))
-$(eval $(call cryphw-enable-drv-hw, HMAC))
-$(eval $(call cryphw-enable-drv-hw, CMAC))
+$(call force, CFG_NXP_CAAM_CMAC_DRV, y)
+$(call force, CFG_NXP_CAAM_HMAC_DRV, y)
 $(eval $(call cryphw-enable-drv-hw, SM))
 $(eval $(call cryphw-enable-drv-hw, BLOB))
 
