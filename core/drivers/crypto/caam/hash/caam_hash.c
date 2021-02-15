@@ -697,8 +697,10 @@ void caam_hash_hmac_copy_state(struct hashctx *dst, struct hashctx *src)
 		caam_cpy_block_src(&dst->blockbuf, &srcdata, 0);
 	}
 
-	if (src->key.data)
+	if (src->key.data) {
 		memcpy(dst->key.data, src->key.data, src->key.length);
+		dst->key.length = src->key.length;
+	}
 }
 
 enum caam_status caam_hash_init(struct caam_jrcfg *caam_jrcfg)
