@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2020 NXP
+ * Copyright 2020-2021 NXP
  *
  * CAAM DMA data object utilities.
  */
@@ -751,6 +751,9 @@ TEE_Result caam_dmaobj_init_output(struct caamdmaobj *obj, const void *data,
 			ret = TEE_ERROR_OUT_OF_MEMORY;
 			goto end;
 		}
+
+		/* Add the additional size in the DMA buffer length */
+		add_dma_require(obj->priv, newbuf.length);
 
 		entry->nocopy = true;
 		entry->newbuf = true;
