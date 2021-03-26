@@ -38,6 +38,8 @@ boards_list=(
 	imx-mx8mpevk \
 	imx-mx8qxpmek \
 	imx-mx8qmmek \
+	imx-mx8qmmekcockpita53 \
+	imx-mx8qmmekcockpita72 \
 	imx-mx8dxlevk \
 	imx-mx8ulpevk \
 	ls-ls1021atwr \

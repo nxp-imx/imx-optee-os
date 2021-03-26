@@ -14,7 +14,8 @@
 #define UART3_BASE	0x5a090000
 #define UART4_BASE	0x5a0a0000
 #define CAAM_BASE	0x31400000
-#define SC_IPC_BASE_SECURE 0x5d1b0000
+#define SC_IPC0_BASE	0x5d1b0000
+#define SC_IPC3_BASE	0x5d1e0000
 #define SC_IPC_SIZE	   0x10000
 
 #endif /* __IMX8Q_H__ */
