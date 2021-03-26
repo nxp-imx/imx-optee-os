@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2021 NXP
  */
 
 #ifndef __IMX8Q_H__
@@ -12,7 +12,8 @@
 #define UART1_BASE	   0x5a070000
 #define UART2_BASE	   0x5a080000
 #define UART3_BASE	   0x5a090000
-#define SC_IPC_BASE_SECURE 0x5d1b0000
+#define SC_IPC0_BASE	   0x5d1b0000
+#define SC_IPC3_BASE	   0x5d1e0000
 #define CAAM_BASE	   0x31400000
 #define SECMEM_BASE	   0x31800000
 
