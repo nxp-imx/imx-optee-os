@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (c) 2014, STMicroelectronics International N.V.
+ * Copyright 2021 NXP
  */
 
 #define PROTOTYPES
@@ -807,6 +808,19 @@ static void gen_malloc_add_pool(struct malloc_ctx *ctx, void *buf, size_t len)
 	}
 
 	exceptions = malloc_lock(ctx);
+
+#ifdef CFG_COCKPIT
+	/*
+	 * reset the buffer pool descriptors (Global variable),
+	 * this is needed when partition reboots without reloading optee image
+	 */
+	ctx->pool = (void *)0;
+	ctx->pool_len = 0;
+	ctx->poolset.freelist.bh.bsize = 0;
+	ctx->poolset.freelist.bh.prevfree = 0;
+	ctx->poolset.freelist.ql.blink = &ctx->poolset.freelist;
+	ctx->poolset.freelist.ql.flink = &ctx->poolset.freelist;
+#endif
 
 	tag_asan_free((void *)start, end - start);
 	bpool((void *)start, end - start, &ctx->poolset);
