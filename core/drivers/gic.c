@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2016-2017, Linaro Limited
  * Copyright (c) 2014, STMicroelectronics International N.V.
+ * Copyright 2021 NXP
  */
 
 #include <arm.h>
@@ -169,6 +170,20 @@ void gic_init(struct gic_data *gd, vaddr_t gicc_base __maybe_unused,
 	size_t n;
 
 	gic_init_base_addr(gd, gicc_base, gicd_base);
+
+#ifdef CFG_COCKPIT
+	/* check if GICD already configured,
+	 * if yes, do not touch it,
+	 * else it would break other partition's interrupts
+	 */
+	uint32_t gicd_ctlr = io_read32(gicd_base + GICD_CTLR);
+
+	if (gicd_ctlr &
+	    (GICC_CTLR_ENABLEGRP0 | GICC_CTLR_ENABLEGRP1 | GICC_CTLR_FIQEN)) {
+		IMSG("GIC Distributor already configured: skip %s\n", __func__);
+		return;
+	}
+#endif
 
 	for (n = 0; n <= gd->max_it / NUM_INTS_PER_REG; n++) {
 		/* Disable interrupts */
