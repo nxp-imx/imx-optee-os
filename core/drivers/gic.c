@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2016-2017, Linaro Limited
  * Copyright (c) 2014, STMicroelectronics International N.V.
+ * Copyright 2021 NXP
  */
 
 #include <arm.h>
@@ -244,6 +245,17 @@ void gic_init(paddr_t gicc_base_pa, paddr_t gicd_base_pa)
 
 	gic_init_base_addr(gicc_base_pa, gicd_base_pa);
 
+#ifdef CFG_COCKPIT
+	/* check if GICD already configured,
+	 * if yes, do not touch it,
+	 * else it would break other partition's interrupts
+	 */
+	if (io_read32(gd->gicd_base + GICD_CTLR) &
+	    (GICC_CTLR_ENABLEGRP0 | GICC_CTLR_ENABLEGRP1 | GICC_CTLR_FIQEN)) {
+		IMSG("GIC Distributor already configured: skip %s\n", __func__);
+		return;
+	}
+#endif
 	/* GIC configuration is initialized from TF-A when embedded */
 #ifndef CFG_WITH_ARM_TRUSTED_FW
 	for (n = 0; n <= gd->max_it / NUM_INTS_PER_REG; n++) {
