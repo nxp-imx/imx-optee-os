@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2019-2020 NXP
+ * Copyright 2019-2021 NXP
  *
  * Brief   CAAM Generation of an encapsulated DEK blob
  *         Use the CAAM Blob encapsulation from CAAM Secure Memory
@@ -125,6 +125,7 @@ TEE_Result caam_blob_sm_encapsulate(struct crypto_blob *blob,
 
 	cache_operation(TEE_CACHECLEAN, blob->payload.data,
 			blob->payload.length);
+	caam_dmaobj_cache_push(&resblob);
 
 	jobctx.desc = desc;
 	retstatus = caam_jr_enqueue(&jobctx, NULL);
