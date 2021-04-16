@@ -455,7 +455,6 @@
 	.endm
 
 FUNC imx7_suspend, :
-UNWIND(	.cantunwind)
 	push	{r4-r12}
 
 	/* make sure SNVS clk is enabled */
@@ -658,7 +657,6 @@ dsm_ddr_retention_out:
 END_FUNC imx7_suspend
 
 FUNC ca7_cpu_resume, :
-UNWIND(	.cantunwind)
 	mov     r0, #0	@ ; write the cache size selection register to be
 	write_csselr r0	@ ; sure we address the data cache
 	isb		@ ; isb to sync the change to the cachesizeid reg

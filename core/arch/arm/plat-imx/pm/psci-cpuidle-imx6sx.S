@@ -4,7 +4,6 @@
  *
  */
 
-#include <kernel/unwind.h>
 #include <asm.S>
 #include <arm.h>
 #include <arm32_macros.S>
@@ -656,7 +655,6 @@
 
 	.align 3
 FUNC imx6sx_low_power_idle, :
-UNWIND(	.fnstart)
 mx6sx_lpm_wfi_start:
 	push	{r4 - r10}
 
@@ -906,5 +904,4 @@ wakeup:
 	bx	lr
 	.ltorg
 mx6sx_lpm_wfi_end:
-UNWIND( .fnend)
 END_FUNC imx6sx_low_power_idle
