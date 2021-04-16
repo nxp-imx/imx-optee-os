@@ -4,7 +4,6 @@
  *
  */
 
-#include <kernel/unwind.h>
 #include <asm.S>
 #include <arm.h>
 #include <arm32_macros.S>
@@ -523,7 +522,6 @@
 
 	.align 3
 FUNC imx6sll_low_power_idle, :
-UNWIND( .fnstart)
 	push	{r4 - r10}
 
 	/* get necessary info from pm_info */
@@ -772,5 +770,4 @@ wakeup:
 	mov	pc, lr
 	.ltorg
 mx6sll_lpm_wfi_end:
-UNWIND( .fnend)
 END_FUNC  imx6sll_low_power_idle

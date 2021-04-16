@@ -11,7 +11,6 @@
 #include <kernel/cache_helpers.h>
 #include <kernel/tz_proc_def.h>
 #include <kernel/tz_ssvce_def.h>
-#include <kernel/unwind.h>
 #include <platform_config.h>
 
 	.section .text.psci.suspend
@@ -370,7 +369,6 @@
 
 	.align 3
 FUNC imx6_suspend, :
-UNWIND( .fnstart)
 	ldr	r1, [r0, #PM_INFO_PBASE_OFF]
 	ldr	r4, [r0, #PM_INFO_INFO_SIZE_OFF]
 
@@ -700,7 +698,6 @@ dsm_only_resume_io:
 	resume_io
 dsm_resume_mmdc_done:
 	bx	lr
-UNWIND( .fnend)
 END_FUNC imx6_suspend
 
 /*
@@ -708,7 +705,6 @@ END_FUNC imx6_suspend
  * This maybe changed in future.
  */
 FUNC v7_cpu_resume, :
-UNWIND( .fnstart)
 /* arm_cl1_d_invbysetway */
 	mov	r0, #0
 	mcr	p15, 2, r0, c0, c0, 0
@@ -740,5 +736,4 @@ _inv_nextLine:
 	blx	plat_cpu_reset_early
 
 	b	sm_pm_cpu_resume
-UNWIND( .fnend)
 END_FUNC v7_cpu_resume
