@@ -130,4 +130,10 @@ CFG_CRYPTO_SIZE_OPTIMIZATION ?= n
 
 # NXP CAAM support is not enabled by default and can be enabled
 # on the command line
-CFG_NXP_CAAM ?= n
+CFG_NXP_CAAM ?= y
+
+ifeq ($(CFG_NXP_CAAM),y)
+# If NXP CAAM Driver is supported, the Crypto Driver interfacing
+# it with generic crypto API can be enabled.
+CFG_CRYPTO_DRIVER ?= y
+endif
