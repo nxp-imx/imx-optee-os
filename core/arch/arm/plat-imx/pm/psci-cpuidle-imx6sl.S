@@ -4,7 +4,6 @@
  *
  */
 
-#include <kernel/unwind.h>
 #include <asm.S>
 #include <arm.h>
 #include <arm32_macros.S>
@@ -612,7 +611,6 @@ poll_dvfs_set:
  */
 	.align 3
 FUNC imx6sl_low_power_idle, :
-UNWIND( .fnstart)
 	push {r4-r12}
 
 	tlb_set_to_ocram
@@ -756,5 +754,4 @@ skip_analog_restore:
 	 */
 	.ltorg
 mx6sl_lpm_wfi_end:
-UNWIND( .fnend)
 END_FUNC imx6sl_low_power_idle
