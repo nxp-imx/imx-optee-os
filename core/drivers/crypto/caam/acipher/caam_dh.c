@@ -485,7 +485,7 @@ enum caam_status caam_dh_init(struct caam_jrcfg *caam_jrcfg)
 	enum caam_status retstatus = CAAM_FAILURE;
 	vaddr_t jr_base = caam_jrcfg->base + caam_jrcfg->offset;
 
-	if (caam_hal_ctrl_pknum(ctrl_addr) &&
+	if (caam_hal_ctrl_pknum(jr_base) &&
 	    drvcrypt_register_dh(&driver_dh) == TEE_SUCCESS)
 		retstatus = CAAM_NO_ERROR;
 
