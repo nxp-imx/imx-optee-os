@@ -144,7 +144,6 @@ endif
 #   Format #3: (p, q, dp, dq, qp)
 CFG_NXP_CAAM_RSA_KEY_FORMAT ?= 3
 
-CFG_PTA_MP ?= y
 endif
 
 $(call force, CFG_NXP_CAAM_ACIPHER_DRV, $(call cryphw-one-enabled, RSA ECC DH DSA))
