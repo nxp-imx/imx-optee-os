@@ -44,13 +44,12 @@ const struct csu_setting csu_setting_imx6ul[] = {
 const struct csu_setting csu_setting_imx6ull[] = {
 	{ 13, 0xFF0033 },	/* Protect ROMCP */
 	{ 16, 0x3300FF },	/* Protect TZASC */
-	{ 34, 0xFF0033 },	/* Protect DCP */
 	{ 39, 0x3300FF },	/* Protect OCRAM */
 	{ (-1), 0 },
 };
 
 const struct csu_setting csu_setting_imx6sl[] = {
-	{ 13, 0x3F0033 },	/* Protect DCP/ROMCP */
+	{ 13, 0xFF0033 },	/* Protect ROMCP */
 	{ 16, 0xFF0033 },	/* Protect TZASC */
 	{ 26, 0xFF0033 },	/* Protect OCRAM */
 	{ (-1), 0 },
