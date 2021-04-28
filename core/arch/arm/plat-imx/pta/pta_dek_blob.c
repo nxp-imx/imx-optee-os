@@ -80,7 +80,7 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 
 	memset((void *)dek_blob.blob.data, 0x0, dek_blob.blob.length);
 
-	/* Let the place to the HAB DEK blob header inot the output blob */
+	/* Let the place to the HAB DEK blob header into the output blob */
 	dek_blob.blob.data += sizeof(struct hab_dek_blob_header);
 	dek_blob.blob.length -= sizeof(struct hab_dek_blob_header);
 
@@ -91,8 +91,11 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 	 * | Length of the payload | AES - 0x55 | CCM - 0x66 |
 	 * ---------------------------------------------------
 	 */
-	dek_blob.key[0] = SHIFT_U32(dek_blob.payload.length & 0xFF, 16) |
-			  SHIFT_U32(0x55, 8) | SHIFT_U32(0x66, 0);
+	dek_blob.key[0] = SHIFT_U32(dek_blob.payload.length & 0xFFFF, 16) |
+			  SHIFT_U32(HAB_HDR_ALG_AES, 8) |
+			  SHIFT_U32(HAB_HDR_MODE_CCM, 0);
+
+	dek_blob.type = BLOB_RED;
 
 	res = caam_blob_sm_encapsulate(&dek_blob, &sm_page);
 	if (res != TEE_SUCCESS) {
