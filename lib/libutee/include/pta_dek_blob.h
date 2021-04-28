@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2019 NXP
+ * Copyright 2019, 2021 NXP
  *
  * brief   PTA DEK Blob interface identification.
  */
@@ -41,9 +41,27 @@ struct hab_dek_blob_header {
 /*
  * Commands Definition
  */
-/* HAB DEK Blob encapsulation */
+
+/*
+ * HAB DEK Blob encapsulation
+ * old interface:
+ * params[0].memref Data to place in the DEK blob
+ * params[1].memref DEK blob created: header and data
+ *
+ * new interface:
+ * params[0].memref Data to place in the DEK blob
+ * params[1].memref DEK blob created: header and data
+ * params[2].value.a First Secure Memory page to use
+ * params[2].value.b Additional pages to allocate
+ * params[3].value.a Secure Memory partition where the pages must be allocated
+ */
 #define PTA_DEK_CMD_BLOB_ENCAPSULATE	0
-/* Free all partitions */
+
+/*
+ * Free a Secure Memory partition
+ *
+ * params[0].value.a Index of the Secure Memory partition to free
+ */
 #define PTA_DEK_CMD_FREE_PARTITION	1
 
 #endif /* __PTA_DEK_BLOB_H__ */
