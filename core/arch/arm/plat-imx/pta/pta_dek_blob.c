@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Cpyright 2019, 2021 NXP
+ * Copyright 2019, 2021 NXP
  *
  * Brief  Pseudo Trusted Application.
  *        DEK Blob encapsulation.
@@ -119,8 +119,13 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 		  params[1].memref.size);
 	res = TEE_SUCCESS;
 out:
-	if (backward_compatibility)
-		res = caam_sm_free_partition(sm_page.partition);
+	if (backward_compatibility) {
+		/* Keep operation result if not success */
+		if (res)
+			(void)caam_sm_free_partition(sm_page.partition);
+		else
+			res = caam_sm_free_partition(sm_page.partition);
+	}
 
 	return res;
 }
