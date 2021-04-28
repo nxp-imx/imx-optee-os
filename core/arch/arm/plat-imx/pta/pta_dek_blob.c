@@ -82,7 +82,7 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 
 	/* Let the place to the HAB DEK blob header inot the output blob */
 	dek_blob.blob.data += sizeof(struct hab_dek_blob_header);
-	dek_blob.blob.length += sizeof(struct hab_dek_blob_header);
+	dek_blob.blob.length -= sizeof(struct hab_dek_blob_header);
 
 	/*
 	 * Create the key modifier:
