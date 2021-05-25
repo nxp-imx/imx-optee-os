@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2017-2019 NXP
+ * Copyright 2017-2019, 2021 NXP
  */
 
 #ifndef __IMX7ULP_H__
@@ -38,6 +38,7 @@
 #define MMDC_BASE		0x40ab0000
 #define IOMUXC1_BASE		0x40ac0000
 #define MMDC_IO_BASE		0x40ad0000
+#define PCR_BASE		0x40ae0000
 #define PCC3_BASE		0x40b30000
 #define PMC0_BASE		0x410a1000
 #define SIM_BASE		0x410a3000
