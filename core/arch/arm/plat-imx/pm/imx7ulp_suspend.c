@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2017-2018 NXP
+ * Copyright 2017-2018, 2021 NXP
  *
  */
 #include <arm.h>
@@ -37,6 +37,7 @@ static vaddr_t tpm5_base;
 static vaddr_t smc1_base;
 static vaddr_t pmc0_base;
 static vaddr_t pmc1_base;
+static vaddr_t pcr_base[4];
 
 #define GPIO_PDOR	0x0
 #define GPIO_PDDR	0x14
@@ -122,6 +123,8 @@ static uint32_t scg1_offset[] = {
 	0x104,
 };
 
+static uint32_t pcr_regs[4][20];
+static unsigned int pcr_nums[] = { 20, 12, 16, 20 };
 
 static void imx7ulp_gpio_save(struct imx7ulp_pm_info *p)
 {
@@ -201,6 +204,28 @@ static void imx7ulp_tpm_restore(struct imx7ulp_pm_info *p __unused)
 	io_write32(tpm5_base + TPM_MOD, tpm5_regs[1]);
 	io_write32(tpm5_base + TPM_C0SC, tpm5_regs[2]);
 	io_write32(tpm5_base + TPM_C0V, tpm5_regs[3]);
+}
+
+static void imx7ulp_pcr_save(void)
+{
+	unsigned int j = 0;
+	unsigned int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(pcr_nums); i++) {
+		for (j = 0; j < pcr_nums[i]; j++)
+			pcr_regs[i][j] = io_read32(pcr_base[i] + j * 0x4);
+	}
+}
+
+static void imx7ulp_pcr_restore(void)
+{
+	unsigned int j = 0;
+	unsigned int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(pcr_nums); i++) {
+		for (j = 0; j < pcr_nums[i]; j++)
+			io_write32(pcr_base[i] + j * 0x4, pcr_regs[i][j]);
+	}
 }
 
 static void imx7ulp_set_dgo(struct imx7ulp_pm_info *p, uint32_t val)
@@ -311,6 +336,7 @@ int imx7ulp_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		imx7ulp_pcc3_save(p);
 		imx7ulp_tpm_save(p);
 		imx7ulp_iomuxc_save(p);
+		imx7ulp_pcr_save();
 		imx7ulp_set_lpm(VLLS);
 		ret = sm_pm_cpu_suspend((uint32_t)p, (int (*)(uint32_t))
 				(suspend_ocram_base + sizeof(*p)));
@@ -318,6 +344,7 @@ int imx7ulp_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 		imx7ulp_pcc3_restore(p);
 		imx7ulp_set_dgo(p, 0);
 		imx7ulp_tpm_restore(p);
+		imx7ulp_pcr_restore();
 		imx7ulp_set_lpm(RUN);
 	} else if (type == PSCI_POWER_STATE_TYPE_STANDBY) {
 		imx7ulp_set_lpm(VLPS);
