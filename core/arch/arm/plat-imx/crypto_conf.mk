@@ -56,7 +56,8 @@ $(call force, CFG_CAAM_SIZE_ALIGN,4)
 $(call force, CFG_JR_BLOCK_SIZE,0x10000)
 $(call force,CFG_JR_INDEX,3)  # Job Ring 3
 $(call force,CFG_JR_INT,486)  # CAAM_INT3 = 486
-else ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8MQ)))
+else ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8MQ) \
+			 $(CFG_MX8ULP)))
 $(call force, CFG_CAAM_SIZE_ALIGN,1)
 #
 # CAAM Job Ring configuration
