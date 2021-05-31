@@ -39,6 +39,7 @@ boards_list=(
 	mx8qmmekcockpita53 \
 	mx8qmmekcockpita72 \
 	mx8dxlevk \
+	mx8ulpevk \
 	ls1021atwr \
 	ls1021aqds \
 	ls1012ardb \
