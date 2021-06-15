@@ -67,6 +67,12 @@ enum caam_status caam_hal_cfg_get_conf(struct caam_jrcfg *jrcfg)
 
 	retstatus = CAAM_NO_ERROR;
 
+#ifdef CFG_NXP_CAAM_RUNTIME_JR
+	caam_hal_jr_prepare_backup(jrcfg->base, jrcfg->offset);
+#endif
+
+	caam_hal_cfg_hab_jr_mgmt(jrcfg);
+
 exit_get_conf:
 	HAL_TRACE("HAL CFG Get CAAM config ret (0x%x)\n", retstatus);
 	return retstatus;
@@ -80,6 +86,12 @@ void __weak caam_hal_cfg_setup_nsjobring(struct caam_jrcfg *jrcfg)
 
 	for (jrnum = caam_hal_ctrl_jrnum(jrcfg->base); jrnum; jrnum--) {
 		jr_offset = jrnum * JRX_BLOCK_SIZE;
+
+		/*
+		 * Skip configuration for the JR used by the HAB
+		 */
+		if (caam_hal_cfg_is_hab_jr(jr_offset))
+			continue;
 
 #ifdef CFG_NXP_CAAM_RUNTIME_JR
 		/*
@@ -98,4 +110,13 @@ void __weak caam_hal_cfg_setup_nsjobring(struct caam_jrcfg *jrcfg)
 		if (status == CAAM_NO_ERROR)
 			caam_hal_jr_prepare_backup(jrcfg->base, jr_offset);
 	}
+}
+
+__weak void caam_hal_cfg_hab_jr_mgmt(struct caam_jrcfg *jrcfg __unused)
+{
+}
+
+__weak bool caam_hal_cfg_is_hab_jr(paddr_t jr_offset __unused)
+{
+	return false;
 }
