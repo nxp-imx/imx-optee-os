@@ -227,6 +227,7 @@ CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 2
 $(call force,CFG_TZC380,n)
 $(call force,CFG_NXP_SNVS,n)
+$(call force,CFG_NXP_CAAM,n)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
