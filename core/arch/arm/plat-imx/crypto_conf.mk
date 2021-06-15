@@ -70,6 +70,12 @@ $(call force, CFG_JR_BLOCK_SIZE,0x1000)
 # Use another Job ring other than the one used by HAB.
 $(call force, CFG_JR_INDEX,2)  # Default JR index used
 $(call force, CFG_JR_INT,146)  # Default JR IT Number (114 + 32) = 146
+
+# Default JR used by the HAB
+# The HAB needs the JR to be assigned to secure world to decrypt the
+# kernel images.
+# By default it uses the JR0
+$(call force, CFG_JR_HAB_INDEX,0)
 else
 $(call force, CFG_CAAM_SIZE_ALIGN,1)
 #

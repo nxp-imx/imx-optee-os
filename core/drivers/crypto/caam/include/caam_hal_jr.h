@@ -1,11 +1,13 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2019, 2021 NXP
  *
  * Brief   CAAM Job Rings Hardware Abstration Layer header.
  */
 #ifndef __CAAM_HAL_JR_H__
 #define __CAAM_HAL_JR_H__
+
+#include <caam_common.h>
 
 /*
  * Configures the Job Ring Owner and lock it.
