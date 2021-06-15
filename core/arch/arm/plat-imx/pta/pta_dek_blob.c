@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Cpyright 2019 NXP
+ * Cpyright 2019, 2021 NXP
  *
  * Brief  Pseudo Trusted Application.
  *        DEK Blob encapsulation.
@@ -71,7 +71,7 @@ static TEE_Result generate_dek_blob_pta(uint32_t param_types,
 		sm_page.partition = params[3].value.a;
 	} else {
 		/* Default behavior is to use Page 2 from Partition 1 */
-		sm_page.page = 2;
+		sm_page.page = 3;
 		sm_page.nb_pages = 1;
 		sm_page.partition = 1;
 		/* keep compatibility with imx_3.2.y based optee-os */
