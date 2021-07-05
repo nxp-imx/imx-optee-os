@@ -68,9 +68,9 @@ GIT_CLANG_FORMAT_BIN=${GIT_CLANG_FORMAT_BIN:-git-clang-format}
 CLANG_FORMAT_BIN=${CLANG_FORMAT_BIN:-clang-format}
 CLANG_FILE_FORMAT=${CLANG_FILE_FORMAT:-.clang-format}
 
-[[ ! -f "$GIT_CLANG_FORMAT_BIN" ]] && echo 'Error: "$GIT_CLANG_FORMAT_BIN" not found' && exit 1
-[[ ! -f "$CLANG_FORMAT_BIN" ]] && echo 'Error: "$CLANG_FORMAT_BIN" not found' && exit 1
-[[ ! -f "$CLANG_FILE_FORMAT" ]] && echo 'Error: "$CLANG_FILE_FORMAT" not found' && exit 1
+[[ ! -x "$(command -v "$GIT_CLANG_FORMAT_BIN")" ]] && echo "Error: $GIT_CLANG_FORMAT_BIN not found" && exit 1
+[[ ! -x "$(command -v "$CLANG_FORMAT_BIN")" ]] && echo "Error: $CLANG_FORMAT_BIN not found" && exit 1
+[[ ! -f "$CLANG_FILE_FORMAT" ]] && echo "Error: $CLANG_FILE_FORMAT not found" && exit 1
 
 op=${1:---working}
 case "$op" in
