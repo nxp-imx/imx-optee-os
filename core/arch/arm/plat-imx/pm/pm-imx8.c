@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2019 NXP
+ * Copyright 2019, 2021 NXP
  *
  */
 
@@ -28,9 +28,9 @@ unsigned long thread_cpu_resume_handler(unsigned long a0,
 	 * This can be:
 	 *	PM_CORE_LEVEL i.e. "0" in case of Core level
 	 *	PM_CLUSTER_LEVEL i.e. "1" in case of Cluster level
-	 *	PM_SYSTEM_LEVEL "2" in case of System level (Not tested)
+	 *	PM_SYSTEM_LEVEL "2" in case of System level
 	 */
-	if (a0 == PM_CLUSTER_LEVEL)
+	if (a0 == PM_SYSTEM_LEVEL)
 		retstatus = pm_change_state(PM_OP_RESUME,
 					PM_HINT_CONTEXT_STATE);
 
@@ -58,9 +58,9 @@ unsigned long thread_cpu_suspend_handler(unsigned long a0,
 	 * This can be:
 	 *	PM_CORE_LEVEL i.e. "0" in case of Core level
 	 *	PM_CLUSTER_LEVEL i.e. "1" in case of Cluster level
-	 *	PM_SYSTEM_LEVEL "2" in case of System level (Not tested)
+	 *	PM_SYSTEM_LEVEL "2" in case of System level
 	 */
-	if (a0 == PM_CLUSTER_LEVEL)
+	if (a0 == PM_SYSTEM_LEVEL)
 		retstatus = pm_change_state(PM_OP_SUSPEND,
 					PM_HINT_CONTEXT_STATE);
 
