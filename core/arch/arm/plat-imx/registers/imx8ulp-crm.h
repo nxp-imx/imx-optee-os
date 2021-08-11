@@ -9,7 +9,6 @@
 
 #define PCC_CGC_BIT_SHIFT 30
 #define PCC_ENABLE_CLOCK  BIT32(PCC_CGC_BIT_SHIFT)
-#define PCC_DISABLE_CLOCK BIT32(0)
 #define PCC_CAAM	  0xB8
 
 #endif /* __IMX8ULP_CRM_H__ */

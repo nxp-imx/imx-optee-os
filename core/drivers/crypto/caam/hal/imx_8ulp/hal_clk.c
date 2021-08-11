@@ -15,7 +15,7 @@ void caam_hal_clk_enable(bool enable)
 						  PCC3_SIZE);
 
 	if (enable)
-		io_write32(pcc3_base + PCC_CAAM, PCC_ENABLE_CLOCK);
+		io_setbits32(pcc3_base + PCC_CAAM, PCC_ENABLE_CLOCK);
 	else
-		io_write32(pcc3_base + PCC_CAAM, PCC_DISABLE_CLOCK);
+		io_clrbits32(pcc3_base + PCC_CAAM, PCC_ENABLE_CLOCK);
 }
