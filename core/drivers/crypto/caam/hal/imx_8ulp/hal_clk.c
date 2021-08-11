@@ -14,7 +14,7 @@ void caam_hal_clk_enable(bool enable)
 	vaddr_t pcc3_base = (vaddr_t)phys_to_virt(PCC3_BASE, MEM_AREA_IO_SEC);
 
 	if (enable)
-		io_write32(pcc3_base + PCC_CAAM, PCC_ENABLE_CLOCK);
+		io_setbits32(pcc3_base + PCC_CAAM, PCC_ENABLE_CLOCK);
 	else
-		io_write32(pcc3_base + PCC_CAAM, PCC_DISABLE_CLOCK);
+		io_clrbits32(pcc3_base + PCC_CAAM, PCC_ENABLE_CLOCK);
 }
