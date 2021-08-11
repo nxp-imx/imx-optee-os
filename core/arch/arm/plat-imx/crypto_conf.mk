@@ -69,7 +69,12 @@ $(call force, CFG_JR_BLOCK_SIZE,0x1000)
 # HAB can still be reuse in u-boot to authenticate linux
 # Use another Job ring other than the one used by HAB.
 $(call force, CFG_JR_INDEX,2)  # Default JR index used
+
+ifeq ($(CFG_MX8ULP), y)
+$(call force, CFG_JR_INT,114)  # Default JR IT Number (82 + 32) = 114
+else
 $(call force, CFG_JR_INT,146)  # Default JR IT Number (114 + 32) = 146
+endif
 
 # Default JR used by the HAB
 # The HAB needs the JR to be assigned to secure world to decrypt the
