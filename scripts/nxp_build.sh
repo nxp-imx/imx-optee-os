@@ -1,183 +1,173 @@
-#!/bin/bash
-
+#!/bin/bash -e
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Copyright 2021 NXP
+#
 boards_list=(
-	mx6dhmbedge \
-	mx6dlsabreauto \
-	mx6dlsabresd \
-	mx6dlhmbedge \
-	mx6qsabrelite \
-	mx6qsabresd \
-	mx6qsabreauto
-	mx6qhmbedge \
-	mx6qpsabresd \
-	mx6qpsabreauto \
-	mx6shmbedge \
-	mx6slevk \
-	mx6sllevk \
-	mx6solosabresd \
-	mx6solosabreauto \
-	mx6sxsabreauto \
-	mx6sxsabresd \
-	mx6sxudooneofull \
-	mx6ulevk \
-	mx6ul9x9evk \
-	mx6ulccimx6ulsbcpro\
-	mx6ullevk \
-	mx7dsabresd \
-	mx7dpico_mbl \
-	mx7swarp7 \
-	mx7swarp7_mbl \
-	mx7dclsom \
-	mx7ulpevk \
-	mx8dxmek \
-	mx8mqevk \
-	mx8mmevk \
-	mx8mnevk \
-	mx8qxpmek \
-	mx8qmmek \
-	mx8qmmekcockpita53 \
-	mx8qmmekcockpita72 \
-	mx8dxlevk \
-	mx8ulpevk \
-	ls1021atwr \
-	ls1021aqds \
-	ls1012ardb \
-	ls1012afrwy \
-	ls1043ardb \
-	ls1046ardb \
-	ls1088ardb \
-	ls2088ardb \
-	lx2160ardb \
+	imx-mx6dhmbedge \
+	imx-mx6dlsabreauto \
+	imx-mx6dlsabresd \
+	imx-mx6dlhmbedge \
+	imx-mx6qsabrelite \
+	imx-mx6qsabresd \
+	imx-mx6qsabreauto
+	imx-mx6qhmbedge \
+	imx-mx6qpsabresd \
+	imx-mx6qpsabreauto \
+	imx-mx6shmbedge \
+	imx-mx6slevk \
+	imx-mx6sllevk \
+	imx-mx6solosabresd \
+	imx-mx6solosabreauto \
+	imx-mx6sxsabreauto \
+	imx-mx6sxsabresd \
+	imx-mx6sxudooneofull \
+	imx-mx6ulevk \
+	imx-mx6ul9x9evk \
+	imx-mx6ulccimx6ulsbcpro\
+	imx-mx6ullevk \
+	imx-mx7dsabresd \
+	imx-mx7dpico_mbl \
+	imx-mx7swarp7 \
+	imx-mx7swarp7_mbl \
+	imx-mx7dclsom \
+	imx-mx7ulpevk \
+	imx-mx8dxmek \
+	imx-mx8mqevk \
+	imx-mx8mmevk \
+	imx-mx8mnevk \
+	imx-mx8mpevk \
+	imx-mx8qxpmek \
+	imx-mx8qmmek \
+	imx-mx8qmmekcockpita53 \
+	imx-mx8qmmekcockpita72 \
+	imx-mx8dxlevk \
+	imx-mx8ulpevk \
+	ls-ls1021atwr \
+	ls-ls1021aqds \
+	ls-ls1012ardb \
+	ls-ls1012afrwy \
+	ls-ls1043ardb \
+	ls-ls1046ardb \
+	ls-ls1088ardb \
+	ls-ls2088ardb \
+	ls-lx2160ardb \
 )
 
 CROSS_COMPILE="${CROSS_COMPILE:-arm-linux-gnueabihf-}"
 CROSS_COMPILE64="${CROSS_COMPILE64:-aarch64-linux-gnu-}"
+CCACHE="${CCACHE:-ccache}"
 MKIMAGE="${MKIMAGE:-mkimage}"
 O="${O:-.}"
 NB_CORES="${NB_CORES:-1}"
 CFG_TEE_CORE_LOG_LEVEL="${CFG_TEE_CORE_LOG_LEVEL:-1}"
 CFG_TEE_TA_LOG_LEVEL="${CFG_TEE_TA_LOG_LEVEL:-0}"
 
-mx67build()
+usage()
 {
-	platform=$1 && \
-	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
-		CFG_TEE_CORE_LOG_LEVEL=${CFG_TEE_CORE_LOG_LEVEL} \
-		CFG_TEE_TA_LOG_LEVEL=${CFG_TEE_TA_LOG_LEVEL} \
-		CFG_WERROR=y \
-		PLATFORM=imx PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
-	${CROSS_COMPILE}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
-	ln -s -rf ${O}/build.$platform/tee.bin ${O}/build.$platform/tee-$platform.bin && \
-	imx_load_addr=`${CROSS_COMPILE}readelf -h ${O}/build.$platform/core/tee.elf | grep "Entry point address" | awk '{print $4}'` && \
-	${MKIMAGE} -A arm -O linux -C none -a $imx_load_addr -e $imx_load_addr \
-			-d ${O}/build.$platform/tee.bin ${O}/build.$platform/uTee && \
-	ln -s -rf ${O}/build.$platform/uTee ${O}/build.$platform/uTee-$platform && \
-	return 0
+cat << EOF
+Usage: $(basename "$0") [all] [all-silence] [list] [<board>]
+	all          compile all platform supported
+	all-silence  compile all platforms supported with build error only
+	list         list of supported platforms
+	<board>      build the given platform
+EOF
 }
 
-mx8build()
-{
-	platform=$1 && \
-	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
-		PLATFORM=imx PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
-	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
-	ln -s -rf ${O}/build.$platform/tee.bin ${O}/build.$platform/tee-$platform.bin && \
-	return 0
-}
-
-lsbuild()
-{
-	platform=$1 && \
-	make -j$NB_CORES CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE64=${CROSS_COMPILE64} \
-		PLATFORM=ls PLATFORM_FLAVOR=$platform O=${O}/build.$platform && \
-	${CROSS_COMPILE64}objcopy -O binary ${O}/build.$platform/core/tee.elf ${O}/build.$platform/tee.bin && \
-	ln -s -rf ${O}/build.$platform/tee.bin ${O}/build.$platform/tee-$platform.bin && \
-	return 0
-}
-
+# Build the board given in parameter $1
 build()
 {
-	case $1 in
-		mx[6-7]*) mx67build $1 ;;
-		mx8*) mx8build $1 ;;
-		l[s-x]*) lsbuild $1 ;;
-		*) echo "No function to build $1"; return 0;;
-	esac
+	set -e
+	local plat="$1"
 
+	# Use ccache if installed
+	if [[ "$(command -v "$CCACHE" )" ]]
+	then
+		_CROSS_COMPILE=""$CCACHE" "$CROSS_COMPILE""
+		_CROSS_COMPILE64=""$CCACHE" "$CROSS_COMPILE64""
+	else
+		_CROSS_COMPILE="$CROSS_COMPILE"
+		_CROSS_COMPILE64="$CROSS_COMPILE64"
+	fi
+
+	# Compile the tee.bin for all platforms
+	make -j"$NB_CORES" \
+		CROSS_COMPILE="$_CROSS_COMPILE" \
+		CROSS_COMPILE64="$_CROSS_COMPILE64" \
+		CFG_TEE_CORE_LOG_LEVEL="$CFG_TEE_CORE_LOG_LEVEL" \
+		CFG_TEE_TA_LOG_LEVEL="$CFG_TEE_TA_LOG_LEVEL" \
+		CFG_WERROR=y \
+		PLATFORM="$plat" \
+		O="$O"/build."$plat" || return 1
+
+	ln -s -rf "$O"/build."$plat"/core/tee.bin \
+		"$O"/build."$plat"/tee-"$plat".bin
+
+	# Generate the uTee binary for armv7 platforms
+	if [[ "$plat" == *mx[6-7]* ]];
+	then
+		# Fetch the platform load address
+		imx_load_addr="$("$CROSS_COMPILE"readelf -h \
+			"$O"/build."$plat"/core/tee.elf | \
+			grep "Entry point address" | \
+			awk '{print $4}')"
+
+		if [[ -z "$imx_load_addr" ]]
+		then
+			echo "Error, imx_load_addr is empty"
+			return 1
+		fi
+
+		# Generate the uTee file
+		"$MKIMAGE" -A arm -O linux -C none -a "$imx_load_addr" \
+			-e "$imx_load_addr" \
+			-d "$O"/build."$plat"/core/tee.bin \
+			"$O"/build."$plat"/uTee || return 1
+
+		ln -s -rf "$O"/build."$plat"/uTee \
+			"$O"/build."$plat"/uTee-"$plat"
+	fi
+
+	return 0
+}
+
+build_all()
+{
+	start=`date +%s`
+	for b in "${boards_list[@]}"
+	do
+		echo "=============Building ""$b""================"
+
+		build "$b"
+
+		if [ $? -ne 0 ]
+		then
+			echo "=============Fail building ""$b""================"
+			exit 1
+		fi
+	done
+	end=`date +%s`
+	echo "Compilation time ""$((end-start))"" seconds"
+
+	return 0
 }
 
 list_board()
 {
-
-	i=0
-
-	while ((i<=${#boards_list[@]}))
+	for b in "${boards_list[@]}"
 	do
-		echo ${boards_list[i]}
-		let ++i
+		echo "$b"
 	done
+
+	return 0
 }
 
-help()
-{
-	echo "Make sure you have you cross compile toolchain ready"
-	echo "./build.sh help"
-	echo "Build all boards"
-	echo "./build.sh all"
-	echo "Build all boards with only building error output"
-	echo "./build.sh all-silence"
-	echo "Build specfic board"
-	echo "./build.sh 'boardname'"
-	echo "supported boards:"
-	list_board
-}
+# Main
+[[ $# -eq 0 ]] && usage && exit 1
+[[ "$1" == "help" ]] && usage && exit 0
+[[ "$1" == "list" ]] && list_board && exit 0
+[[ "$1" == "all" ]] && build_all && exit 0
 
-arg_num=$#
-if [ ${arg_num} -eq 0 ]
-then
-	help
-	exit 0
-fi
+build "$1"
 
-if [ "$1" == "help" ]
-then
-	help
-	exit 0
-fi
-
-if [ "$1" == "all" ]
-then
-	i=0
-
-	while ((i<${#boards_list[@]}))
-	do
-		echo "=============Building ${boards_list[i]}================"
-		build ${boards_list[i]}
-		if [ $? -ne 0 ]; then
-			echo "=============Fail building ${boards_list[i]}================"
-			exit 1
-		fi
-		let ++i
-	done
-	exit 0
-fi
-
-if [ "$1" == "all-silence" ]
-then
-	i=0
-
-	while ((i<${#boards_list[@]}))
-	do
-		echo "=============Building ${boards_list[i]}================"
-		build ${boards_list[i]} > /dev/null
-		if [ $? -ne 0 ]; then
-			echo "=============Fail building ${boards_list[i]}================"
-			exit 1
-		fi
-		let ++i
-	done
-	exit 0
-fi
-
-build $1
-
+exit 0
