@@ -71,6 +71,9 @@ $(call force, CFG_JR_BLOCK_SIZE,0x1000)
 $(call force, CFG_JR_INDEX,2)  # Default JR index used
 
 ifeq ($(CFG_MX8ULP), y)
+# i.MX 8ULP is sharing one single line of interrupt for the 4 Job Ring
+# interfaces. Disable the use of interrupts in OP-TEE.
+$(call force, CFG_CAAM_NO_ITR,y)
 $(call force, CFG_JR_INT,114)  # Default JR IT Number (82 + 32) = 114
 else
 $(call force, CFG_JR_INT,146)  # Default JR IT Number (114 + 32) = 146
