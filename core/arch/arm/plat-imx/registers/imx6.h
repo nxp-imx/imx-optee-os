@@ -44,10 +44,12 @@
 #define ANATOP_BASE			0x020C8000
 #define ANATOP_SIZE			0x1000
 #define SNVS_BASE			0x020CC000
+#define SNVS_SIZE			0x10000
 #define GPC_BASE			0x020DC000
 #define GPC_SIZE			0x4000
 #define WDOG_BASE			0x020BC000
 #define CSU_BASE			0x021C0000
+#define CSU_SIZE			0x4000
 #define SEMA4_BASE			0x02290000
 #define SEMA4_SIZE			0x4000
 #define MMDC_P0_BASE			0x021B0000
@@ -75,6 +77,7 @@
 
 #define SCU_BASE			0x00A00000
 #define PL310_BASE			0x00A02000
+#define PL310_SIZE			0x1000
 #define SRC_BASE			0x020D8000
 #define IRAM_BASE			0x00900000
 
