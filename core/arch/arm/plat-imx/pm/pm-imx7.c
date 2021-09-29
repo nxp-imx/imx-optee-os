@@ -164,27 +164,32 @@ int imx7_suspend_init(void)
 	p->pa_base = imx_get_ocram_tz_start_addr() + SUSPEND_OCRAM_OFFSET;
 	p->tee_resume = virt_to_phys((void *)(vaddr_t)ca7_cpu_resume);
 	p->pm_info_size = sizeof(*p);
-	p->ccm_va_base = core_mmu_get_va(CCM_BASE, MEM_AREA_IO_SEC, 1);
+	p->ccm_va_base = core_mmu_get_va(CCM_BASE, MEM_AREA_IO_SEC, CCM_SIZE);
 	p->ccm_pa_base = CCM_BASE;
-	p->ddrc_va_base = core_mmu_get_va(DDRC_BASE, MEM_AREA_IO_SEC, 1);
+	p->ddrc_va_base = core_mmu_get_va(DDRC_BASE, MEM_AREA_IO_SEC,
+					  DDRC_SIZE);
 	p->ddrc_pa_base = DDRC_BASE;
 	p->ddrc_phy_va_base = core_mmu_get_va(DDRC_PHY_BASE, MEM_AREA_IO_SEC,
-					      1);
+					      DDRC_PHY_SIZE);
 	p->ddrc_phy_pa_base = DDRC_PHY_BASE;
-	p->src_va_base = core_mmu_get_va(SRC_BASE, MEM_AREA_IO_SEC, 1);
+	p->src_va_base = core_mmu_get_va(SRC_BASE, MEM_AREA_IO_SEC, SRC_SIZE);
 	p->src_pa_base = SRC_BASE;
 	p->iomuxc_gpr_va_base = core_mmu_get_va(IOMUXC_GPR_BASE,
-						MEM_AREA_IO_SEC, 1);
+						MEM_AREA_IO_SEC,
+						IOMUXC_SIZE);
 	p->iomuxc_gpr_pa_base = IOMUXC_GPR_BASE;
-	p->gpc_va_base = core_mmu_get_va(GPC_BASE, MEM_AREA_IO_SEC, 1);
+	p->gpc_va_base = core_mmu_get_va(GPC_BASE, MEM_AREA_IO_SEC, GPC_SIZE);
 	p->gpc_pa_base = GPC_BASE;
-	p->anatop_va_base = core_mmu_get_va(ANATOP_BASE, MEM_AREA_IO_SEC, 1);
+	p->anatop_va_base = core_mmu_get_va(ANATOP_BASE, MEM_AREA_IO_SEC,
+					    ANATOP_SIZE);
 	p->anatop_pa_base = ANATOP_BASE;
-	p->snvs_va_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC, 1);
+	p->snvs_va_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC,
+					  SNVS_SIZE);
 	p->snvs_pa_base = SNVS_BASE;
-	p->lpsr_va_base = core_mmu_get_va(LPSR_BASE, MEM_AREA_IO_SEC, 1);
+	p->lpsr_va_base = core_mmu_get_va(LPSR_BASE, MEM_AREA_IO_SEC,
+					  LPSR_SIZE);
 	p->lpsr_pa_base = LPSR_BASE;
-	p->gic_va_base = core_mmu_get_va(GIC_BASE, MEM_AREA_IO_SEC, 1);
+	p->gic_va_base = core_mmu_get_va(GIC_BASE, MEM_AREA_IO_SEC, GIC_SIZE);
 	p->gic_pa_base = GIC_BASE;
 
 	/* TODO:lpsr disabled now */
