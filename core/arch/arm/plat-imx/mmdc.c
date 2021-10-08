@@ -38,7 +38,7 @@ int imx_get_ddr_type(void)
 		off = MMDC_MDMISC;
 
 	mmdc_base = core_mmu_get_va(MMDC_P0_BASE, MEM_AREA_IO_SEC,
-				    off + sizeof(uint32_t));
+				    MMDC_P0_SIZE);
 	val = io_read32(mmdc_base + off);
 
 	if (is_mx7) {
