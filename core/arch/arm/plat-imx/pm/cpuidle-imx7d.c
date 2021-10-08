@@ -142,7 +142,7 @@ static void imx_pen_unlock(int cpu)
 static uint32_t get_online_cpus(void)
 {
 	vaddr_t src_a7rcr1 = core_mmu_get_va(SRC_BASE + SRC_A7RCR1,
-					     MEM_AREA_IO_SEC, sizeof(uint32_t));
+					     MEM_AREA_IO_SEC, SRC_SIZE);
 	uint32_t val = io_read32(src_a7rcr1);
 
 	return (val & (1 << SRC_A7RCR1_A7_CORE1_ENABLE_OFFSET)) ? 2 : 1;
