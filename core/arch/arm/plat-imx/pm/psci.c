@@ -59,7 +59,7 @@ int psci_cpu_on(uint32_t core_idx, uint32_t entry,
 		uint32_t context_id)
 {
 	uint32_t val;
-	vaddr_t va = core_mmu_get_va(SRC_BASE, MEM_AREA_IO_SEC, 1);
+	vaddr_t va = core_mmu_get_va(SRC_BASE, MEM_AREA_IO_SEC, SRC_SIZE);
 
 	if (!va)
 		EMSG("No SRC mapping\n");
@@ -121,8 +121,7 @@ int psci_affinity_info(uint32_t affinity,
 {
 	vaddr_t va = core_mmu_get_va(SRC_BASE, MEM_AREA_IO_SEC, 1);
 	vaddr_t gpr5 = core_mmu_get_va(IOMUXC_BASE, MEM_AREA_IO_SEC,
-				       IOMUXC_GPR5_OFFSET + sizeof(uint32_t)) +
-				       IOMUXC_GPR5_OFFSET;
+				      IOMUXC_SIZE);
 	uint32_t cpu, val;
 	bool wfi;
 
@@ -131,7 +130,8 @@ int psci_affinity_info(uint32_t affinity,
 	if (soc_is_imx7ds())
 		wfi = true;
 	else
-		wfi = io_read32(gpr5) & ARM_WFI_STAT_MASK(cpu);
+		wfi = io_read32(gpr5 + IOMUXC_GPR5_OFFSET) &
+		      ARM_WFI_STAT_MASK(cpu);
 
 	if ((imx_get_src_gpr(cpu) == 0) || !wfi)
 		return PSCI_AFFINITY_LEVEL_ON;
@@ -169,7 +169,8 @@ int psci_affinity_info(uint32_t affinity,
 void __noreturn psci_system_off(void)
 {
 #ifndef CFG_MX7ULP
-	vaddr_t snvs_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC, 1);
+	vaddr_t snvs_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC,
+					    SNVS_SIZE);
 
 	io_write32(snvs_base + SNVS_LPCR, BM_SNVS_LPCR_TOP |
 						  BM_SNVS_LPCR_DP_EN |
