@@ -117,7 +117,7 @@ int dt_disable_status(void *fdt, int node);
  *
  * Returns 0 on success or -1 on failure
  */
-#if !defined(CFG_EMBED_DT)
+#if !defined(CFG_EMBED_DTB)
 int dt_enable_secure_status(void *fdt, int node);
 #else
 static inline int dt_enable_secure_status(void *fdt __unused, int node __unused)
