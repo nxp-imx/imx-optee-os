@@ -83,7 +83,7 @@ int dt_disable_status(void *fdt, int node)
 	return 0;
 }
 
-#if !defined(CFG_EMBED_DT)
+#if !defined(CFG_EMBED_DTB)
 int dt_enable_secure_status(void *fdt, int node)
 {
 	if (dt_disable_status(fdt, node)) {
