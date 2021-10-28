@@ -15,6 +15,19 @@
 #include <tee/cache.h>
 #include <util.h>
 
+/*
+ * Perform the cache management operation necessary so the hardware
+ * can properly read the SGT table
+ *
+ * @sgtbuf     SGT table to manage
+ */
+static void caam_sgt_entries_cache_op(const struct caamsgtbuf *sgtbuf)
+{
+	cache_operation(TEE_CACHECLEAN, (void *)sgtbuf->sgt,
+			ROUNDUP(sgtbuf->number, CFG_CAAM_SGT_ALIGN) *
+				sizeof(*sgtbuf->sgt));
+}
+
 void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt,
 		       size_t length)
 {
@@ -22,9 +35,7 @@ void caam_sgt_cache_op(enum utee_cache_operation op, struct caamsgtbuf *insgt,
 	size_t op_size = 0;
 	size_t rem_length = length;
 
-	cache_operation(TEE_CACHECLEAN, (void *)insgt->sgt,
-			ROUNDUP(insgt->number, CFG_CAAM_SGT_ALIGN) *
-				sizeof(union caamsgt));
+	caam_sgt_entries_cache_op(insgt);
 
 	SGT_TRACE("SGT @%p %d entries", insgt, insgt->number);
 	for (idx = 0; idx < insgt->number && rem_length; idx++) {
@@ -105,8 +116,7 @@ enum caam_status caam_sgt_derive(struct caamsgtbuf *sgt,
 		 * Push the SGT Table into memory now because
 		 * derived objects are not pushed.
 		 */
-		cache_operation(TEE_CACHECLEAN, sgt->sgt,
-				sgt->number * sizeof(*sgt->sgt));
+		caam_sgt_entries_cache_op(sgt);
 
 		sgt->paddr = virt_to_phys(sgt->sgt);
 	} else {
