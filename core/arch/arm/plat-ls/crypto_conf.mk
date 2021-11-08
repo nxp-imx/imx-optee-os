@@ -95,6 +95,7 @@ endif
 ifeq ($(CFG_CRYPTO_DRIVER),y)
 
 $(call force, CFG_NXP_CAAM_RUNTIME_JR, y)
+$(call force, CFG_CAAM_JR_DISABLE_NODE,y)
 
 #
 # Definition of all HW accelerations for all LS

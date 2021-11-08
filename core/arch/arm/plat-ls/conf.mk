@@ -38,6 +38,8 @@ $(call force,CFG_TEE_CORE_NB_CORE,1)
 $(call force,CFG_DRAM0_SIZE,0x40000000)
 $(call force,CFG_CORE_CLUSTER_SHIFT,2)
 CFG_SHMEM_SIZE ?= 0x00200000
+CFG_DT ?= y
+CFG_EXTERNAL_DTB_OVERLAY = y
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1012afrwy)
@@ -54,6 +56,8 @@ $(call force,CFG_TEE_CORE_NB_CORE,4)
 $(call force,CFG_DRAM0_SIZE,0x80000000)
 $(call force,CFG_CORE_CLUSTER_SHIFT,2)
 CFG_SHMEM_SIZE ?= 0x00200000
+CFG_DT ?= y
+CFG_EXTERNAL_DTB_OVERLAY = y
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1046ardb)
@@ -62,6 +66,8 @@ $(call force,CFG_TEE_CORE_NB_CORE,4)
 $(call force,CFG_DRAM0_SIZE,0x80000000)
 $(call force,CFG_CORE_CLUSTER_SHIFT,2)
 CFG_SHMEM_SIZE ?= 0x00200000
+CFG_DT ?= y
+CFG_EXTERNAL_DTB_OVERLAY = y
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls1088ardb)
@@ -72,6 +78,8 @@ $(call force,CFG_CORE_CLUSTER_SHIFT,2)
 $(call force,CFG_ARM_GICV3,y)
 CFG_SHMEM_SIZE ?= 0x00200000
 $(call force,CFG_NXP_CAAM,n)
+CFG_DT ?= y
+CFG_EXTERNAL_DTB_OVERLAY = y
 endif
 
 ifeq ($(PLATFORM_FLAVOR),ls2088ardb)
@@ -82,6 +90,8 @@ $(call force,CFG_CORE_CLUSTER_SHIFT,1)
 $(call force,CFG_ARM_GICV3,y)
 CFG_SHMEM_SIZE ?= 0x00200000
 $(call force,CFG_NXP_CAAM,n)
+CFG_DT ?= y
+CFG_EXTERNAL_DTB_OVERLAY = y
 endif
 
 ifeq ($(PLATFORM_FLAVOR),lx2160aqds)
@@ -128,6 +138,8 @@ $(call force,CFG_DRAM0_SIZE,0x80000000)
 $(call force,CFG_CORE_CLUSTER_SHIFT,1)
 $(call force,CFG_ARM_GICV3,y)
 CFG_SHMEM_SIZE ?= 0x00200000
+CFG_DT ?= y
+CFG_EXTERNAL_DTB_OVERLAY = y
 endif
 
 ifeq ($(platform-flavor-armv8),1)
