@@ -189,6 +189,11 @@ TEE_Result caam_hal_ctrl_read_mpmr(vaddr_t ctrl_addr, struct caambuf *mpmr)
 	return TEE_SUCCESS;
 }
 
+bool caam_hal_ctrl_is_mp_set(vaddr_t ctrl_addr)
+{
+	return io_caam_read32(ctrl_addr + SCFGR) & BM_SCFGR_MPMRL;
+}
+
 void caam_hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct caambuf *msg_mpmr)
 {
 	size_t i = 0;
@@ -199,7 +204,7 @@ void caam_hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct caambuf *msg_mpmr)
 	size_t remain_size = 0;
 
 	/* check if the MPMR is filled */
-	if (io_caam_read32(ctrl_addr + SCFGR) & BM_SCFGR_MPMRL)
+	if (caam_hal_ctrl_is_mp_set(ctrl_addr))
 		is_filled = true;
 
 	DMSG("is_filled = %s", is_filled ? "true" : "false");

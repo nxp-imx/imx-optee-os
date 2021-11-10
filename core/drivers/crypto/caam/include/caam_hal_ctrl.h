@@ -88,6 +88,13 @@ TEE_Result caam_hal_ctrl_read_mpmr(vaddr_t ctrl_addr, struct caambuf *mpmr);
 void caam_hal_ctrl_fill_mpmr(vaddr_t ctrl_addr, struct caambuf *msg_mpmr);
 
 /*
+ * Indicate if the MP is set
+ *
+ * @ctrl_addr  Controller base address
+ */
+bool caam_hal_ctrl_is_mp_set(vaddr_t ctrl_addr);
+
+/*
  * Get the Secure Memory Virtual base address setup in the given job ring
  *
  * @ctrl_addr  Controller base address
