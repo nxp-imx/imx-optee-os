@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2020 NXP
+ * Copyright 2018-2021 NXP
  *
  * Brief   CAAM Manufacturing Protection.
  */
@@ -11,6 +11,7 @@
 #include <caam_utils_mem.h>
 #include <caam_utils_status.h>
 #include <drivers/caam/crypto_extension.h>
+#include <kernel/pm.h>
 #include <mm/core_memprot.h>
 #include <string.h>
 #include <tee/cache.h>
@@ -358,13 +359,12 @@ enum caam_status caam_mp_init(vaddr_t ctrl_addr)
 	struct caambuf msg_mpmr = { .data = (uint8_t *)mpmr_data,
 				    .length = strlen(mpmr_data) };
 
+	/* Keep the CAAM controller base address */
+	mp_privdata.ctrl_addr = ctrl_addr;
+
 	curve = caam_hal_ctrl_get_mpcurve(ctrl_addr);
 
 	if (curve == UINT8_MAX) {
-		EMSG("*************************************");
-		EMSG("* Warning: Manufacturing protection *");
-		EMSG("*          is not supported         *");
-		EMSG("*************************************");
 		/*
 		 * Don't register the driver and return
 		 * no error to not stop the boot. Because
@@ -373,6 +373,11 @@ enum caam_status caam_mp_init(vaddr_t ctrl_addr)
 		 */
 		return CAAM_NOT_SUPPORTED;
 	}
+
+	if (caam_hal_ctrl_is_mp_set(ctrl_addr))
+		return CAAM_NO_ERROR;
+
+	MP_TRACE("MP needs to be set");
 
 	if (!curve) {
 		/*
@@ -402,10 +407,6 @@ enum caam_status caam_mp_init(vaddr_t ctrl_addr)
 
 		if (retstatus != CAAM_NO_ERROR) {
 			MP_TRACE("do_mppriv_gen failed!");
-			EMSG("*************************************");
-			EMSG("* Warning: Manufacturing protection *");
-			EMSG("*          is not supported         *");
-			EMSG("*************************************");
 			return retstatus;
 		}
 	} else {
@@ -437,8 +438,11 @@ enum caam_status caam_mp_init(vaddr_t ctrl_addr)
 	/* Fill the MPMR content then lock it */
 	caam_hal_ctrl_fill_mpmr(ctrl_addr, &msg_mpmr);
 
-	/* Keep the CAAM controller base address */
-	mp_privdata.ctrl_addr = ctrl_addr;
-
 	return CAAM_NO_ERROR;
+}
+
+void caam_mp_resume(uint32_t pm_hint)
+{
+	if (pm_hint == PM_HINT_CONTEXT_STATE)
+		caam_mp_init(mp_privdata.ctrl_addr);
 }

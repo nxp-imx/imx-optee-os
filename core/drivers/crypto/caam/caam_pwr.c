@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2018-2019 NXP
+ * Copyright 2018-2019, 2021 NXP
  *
  * Brief   CAAM Power state management.
  */
@@ -8,6 +8,7 @@
 #include <caam_hal_clk.h>
 #include <caam_io.h>
 #include <caam_jr.h>
+#include <caam_mp.h>
 #include <caam_pwr.h>
 #include <kernel/pm.h>
 #include <kernel/panic.h>
@@ -148,6 +149,8 @@ static TEE_Result pm_resume(uint32_t pm_hint)
 	}
 
 	caam_jr_resume(pm_hint);
+
+	caam_mp_resume(pm_hint);
 
 	return TEE_SUCCESS;
 }
