@@ -520,10 +520,11 @@ ifeq ($(CFG_ARM64_core),y)
 CFG_DT ?= y
 CFG_EXTERNAL_DTB_OVERLAY = y
 #few special case to handle
-ifneq (,$(filter y, $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8DX) $(CFG_MX8DXL) \
-		    $(CFG_MX8ULP)))
+ifneq (,$(filter y, $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8DX) $(CFG_MX8DXL)))
 # New device will have base addresses within the first 1GB of DDR
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x16000000)
+else ifneq (,$(filter y, $(CFG_MX8ULP)))
+CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x26000000)
 else
 # for backward compatibility all the other will keep existing location at the end of DDR.
 # put optee end of ddr for AARCH64
