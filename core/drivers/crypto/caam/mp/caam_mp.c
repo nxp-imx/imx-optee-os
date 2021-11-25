@@ -26,6 +26,7 @@ struct mp_privdata {
 	uint8_t curve;     /* PDB curve selection */
 	uint8_t sec_size;  /* Security key size in bytes */
 	vaddr_t ctrl_addr; /* Base address of the controller */
+	enum caam_status mp_status; /* Indicate the MP status */
 };
 
 /*
@@ -139,6 +140,11 @@ TEE_Result crypto_mp_export_publickey(struct cryptobuf *pubkey)
 #else
 #define MP_PUB_DESC_ENTRIES 6
 #endif
+
+	/* Return the status of MP if it is not operational */
+	if (mp_privdata.mp_status != CAAM_NO_ERROR)
+		return caam_status_to_tee_result(mp_privdata.mp_status);
+
 	if (!pubkey->data)
 		return TEE_ERROR_BAD_PARAMETERS;
 
@@ -227,6 +233,10 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 #else
 #define MP_SIGN_DESC_ENTRIES 9
 #endif
+
+	/* Return the status of MP if it is not operational */
+	if (mp_privdata.mp_status != CAAM_NO_ERROR)
+		return caam_status_to_tee_result(mp_privdata.mp_status);
 
 	if (!sdata->signature.data)
 		return TEE_ERROR_BAD_PARAMETERS;
@@ -361,6 +371,7 @@ enum caam_status caam_mp_init(vaddr_t ctrl_addr)
 
 	/* Keep the CAAM controller base address */
 	mp_privdata.ctrl_addr = ctrl_addr;
+	mp_privdata.mp_status = CAAM_NOT_INIT;
 
 	curve = caam_hal_ctrl_get_mpcurve(ctrl_addr);
 
@@ -371,11 +382,14 @@ enum caam_status caam_mp_init(vaddr_t ctrl_addr)
 		 * Driver is not registered, the MP will not
 		 * be used.
 		 */
+		mp_privdata.mp_status = CAAM_NOT_SUPPORTED;
 		return CAAM_NOT_SUPPORTED;
 	}
 
-	if (caam_hal_ctrl_is_mp_set(ctrl_addr))
+	if (caam_hal_ctrl_is_mp_set(ctrl_addr)) {
+		mp_privdata.mp_status = CAAM_NO_ERROR;
 		return CAAM_NO_ERROR;
+	}
 
 	MP_TRACE("MP needs to be set");
 
@@ -437,6 +451,7 @@ enum caam_status caam_mp_init(vaddr_t ctrl_addr)
 
 	/* Fill the MPMR content then lock it */
 	caam_hal_ctrl_fill_mpmr(ctrl_addr, &msg_mpmr);
+	mp_privdata.mp_status = CAAM_NO_ERROR;
 
 	return CAAM_NO_ERROR;
 }
