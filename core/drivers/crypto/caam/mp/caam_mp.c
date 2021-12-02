@@ -17,6 +17,8 @@
 #include <tee/cache.h>
 #include <utee_defines.h>
 
+#define MP_SIGN_MAX_MSG_SIZE (4 * 1024)
+
 /*
  * MP module private data
  * We know that curve is 4 bits and the Security key size will not
@@ -227,6 +229,7 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 	size_t sign_len = 0;
 	struct caamdmaobj sign_c = {};
 	struct caamdmaobj sign_d = {};
+	uint8_t *aligned_msg = NULL;
 
 #ifdef CFG_PHYS_64BIT
 #define MP_SIGN_DESC_ENTRIES 13
@@ -245,6 +248,22 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 		sdata->signature.length = 2 * mp_privdata.sec_size;
 		return TEE_ERROR_SHORT_BUFFER;
 	}
+
+	if (sdata->message.length > MP_SIGN_MAX_MSG_SIZE)
+		return TEE_ERROR_EXCESS_DATA;
+
+	/*
+	 * Allocate a buffer which is cache aligned to avoid issues when
+	 * a big message is provided and cannot be DMA mapped by
+	 * CAAM
+	 */
+	aligned_msg = caam_alloc(sdata->message.length);
+	if (!aligned_msg) {
+		MP_TRACE("Message reallocation error");
+		ret = TEE_ERROR_OUT_OF_MEMORY;
+		goto exit_mpsign;
+	}
+	memcpy(aligned_msg, sdata->message.data, sdata->message.length);
 
 	/*
 	 * Allocate the hash buffer of the Message + MPMR payload
@@ -288,7 +307,7 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 	caam_dmaobj_cache_push(&sign_c);
 
 	/* Prepare the input message CAAM descriptor entry */
-	ret = caam_dmaobj_input_sgtbuf(&msg, sdata->message.data,
+	ret = caam_dmaobj_input_sgtbuf(&msg, aligned_msg,
 				       sdata->message.length);
 	if (ret)
 		goto exit_mpsign;
@@ -350,6 +369,7 @@ TEE_Result crypto_mp_sign(struct crypto_mp_sign *sdata)
 	}
 
 exit_mpsign:
+	caam_free(aligned_msg);
 	caam_free_buf(&hash);
 	caam_free_desc(&desc);
 	caam_dmaobj_free(&msg);
