@@ -713,3 +713,5 @@ ifeq ($(CFG_WITH_PAGER),y)
 CFG_PREALLOC_RPC_CACHE ?= n
 endif
 CFG_PREALLOC_RPC_CACHE ?= y
+$(eval $(call cfg-enable-all-depends,CFG_MEMPOOL_REPORT_LAST_OFFSET, \
+	 CFG_WITH_STATS))
