@@ -217,6 +217,13 @@ static void init_tz_ocram(void)
 
 		io_write32(iomux_base
 				+ IOMUX_GPRx_OFFSET(IOMUX_GPR_S_OCRAM_ID), val);
+
+		/* Lock the OCRAM_S */
+		lock = BM_IOMUX_GPR_OCRAM_TZ_ADDR_6UL |
+		       IOMUX_GPR_OCRAM_TZ_ENABLE_6UL;
+		io_setbits32(iomux_base +
+				IOMUX_GPRx_OFFSET(IOMUX_GPR_S_OCRAM_ID),
+			     IOMUX_GPR_OCRAM_LOCK(lock));
 	}
 }
 
