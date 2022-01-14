@@ -2,7 +2,7 @@
 /*
  * Copyright 2020 Pengutronix, Rouven Czerwinski <entwicklung@pengutronix.de>
  */
-#include <drivers/imx_snvs.h>
+#include <drivers/nxp_snvs.h>
 #include <imx.h>
 #include <tee/tee_fs.h>
 
