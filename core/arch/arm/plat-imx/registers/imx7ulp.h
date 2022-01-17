@@ -33,6 +33,8 @@
 #define GPIOF_BASE		0x400f00c0
 #define TPM5_BASE		0x40260000
 #define TPM5_SIZE		0x10000
+#define WDOG_BASE		0x403d0000
+#define WDOG_SIZE		0x10
 #define SCG1_BASE		0x403e0000
 #define SCG1_SIZE		0x10000
 #define PCC2_BASE		0x403f0000
