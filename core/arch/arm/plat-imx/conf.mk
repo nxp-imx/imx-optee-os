@@ -235,6 +235,7 @@ $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_SC_IPC_BASE,SC_IPC0_BASE)
 $(call force,CFG_TZC380,n)
 CFG_IMX_MU ?= y
+CFG_IMX_ELE ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx93-flavorlist)))
 $(call force,CFG_MX93,y)
 $(call force,CFG_ARM64_core,y)
