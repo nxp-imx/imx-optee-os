@@ -231,6 +231,7 @@ $(call force,CFG_NXP_SNVS,n)
 $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_SC_IPC_BASE,SC_IPC0_BASE)
 $(call force,CFG_TZC380,n)
+CFG_IMX_MU ?= y
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -560,6 +561,7 @@ CFG_NXP_CAAM ?= y
 ifeq ($(CFG_NXP_CAAM),y)
 ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX) $(CFG_MX8DXL)), y)
 CFG_IMX_SC ?= y
+CFG_IMX_MU ?= y
 endif
 
 # If NXP CAAM Driver is supported, the Crypto Driver interfacing
