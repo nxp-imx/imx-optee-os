@@ -232,6 +232,7 @@ $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_SC_IPC_BASE,SC_IPC0_BASE)
 $(call force,CFG_TZC380,n)
 CFG_IMX_MU ?= y
+CFG_IMX_ELE ?= y
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
