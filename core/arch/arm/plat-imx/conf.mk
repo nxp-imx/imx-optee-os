@@ -545,6 +545,11 @@ endif
 # it with generic crypto API can be enabled.
 CFG_CRYPTO_DRIVER ?= y
 
+# Enable DEK Blob feature by default on i.MX 8mscale family.
+ifeq ($(CFG_MX8M),y)
+CFG_IMX_DEK_HAB ?=y
+endif
+
 # As NXP CAAM Driver is enabled, disable the small local CAAM driver
 # used just to release Job Rings to Non-Secure world
 $(call force,CFG_IMX_CAAM,n)
