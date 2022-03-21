@@ -527,9 +527,18 @@ CFG_EXTERNAL_DTB_OVERLAY = y
 supported-ta-targets = ta_arm64
 endif
 
+ifneq (,$(filter y, $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8DX) $(CFG_MX8DXL) $(CFG_MX93)))
+CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x16000000)
+else ifneq (,$(filter y, $(CFG_MX8ULP)))
+CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x26000000)
+else ifneq (,$(filter y, $(CFG_MX8MM) $(CFG_MX8MQ) $(CFG_MX8QM) $(CFG_MX8QX)))
+CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) - 0x02000000 + $(CFG_DDR_SIZE))
+else
+CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x04000000)
+endif
+
 CFG_TZDRAM_SIZE ?= 0x01e00000
 CFG_SHMEM_SIZE ?= 0x00200000
-CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) - $(CFG_TZDRAM_SIZE) - $(CFG_SHMEM_SIZE) + $(CFG_DDR_SIZE))
 CFG_SHMEM_START ?= ($(CFG_TZDRAM_START) + $(CFG_TZDRAM_SIZE))
 
 # Enable embedded tests by default
