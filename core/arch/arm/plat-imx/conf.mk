@@ -498,6 +498,10 @@ ifeq ($(filter y, $(CFG_MX8QM) $(CFG_MX8QX) $(CFG_MX8DXL)), y)
 CFG_IMX_SC ?= y
 endif
 
+# If NXP CAAM Driver is supported, the Crypto Driver interfacing
+# it with generic crypto API can be enabled.
+CFG_CRYPTO_DRIVER ?= y
+
 # As NXP CAAM Driver is enabled, disable the small local CAAM driver
 # used just to release Job Rings to Non-Secure world
 $(call force,CFG_IMX_CAAM,n)
