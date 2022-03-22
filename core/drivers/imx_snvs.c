@@ -181,7 +181,7 @@ static enum snvs_security_cfg snvs_get_security_cfg(void)
 }
 #endif
 
-static bool snvs_is_device_closed(void)
+bool snvs_is_device_closed(void)
 {
 	return (snvs_get_security_cfg() == SNVS_SECURITY_CFG_CLOSED);
 }

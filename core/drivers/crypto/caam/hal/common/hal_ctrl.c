@@ -9,6 +9,7 @@
 #include <caam_io.h>
 #include <caam_trace.h>
 #include <config.h>
+#include <drivers/imx_snvs.h>
 #include <platform_config.h>
 #include <registers/ctrl_regs.h>
 #include <registers/jr_regs.h>
@@ -147,7 +148,7 @@ uint8_t caam_hal_ctrl_get_mpcurve(vaddr_t ctrl_addr)
 	 * Verify if the device is closed or not
 	 * If device is closed, check get the MPCurve
 	 */
-	if (imx_is_device_closed()) {
+	if (snvs_is_device_closed()) {
 		/* Get the SCFGR content */
 		val_scfgr = io_caam_read32(ctrl_addr + SCFGR);
 
