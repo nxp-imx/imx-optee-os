@@ -26,6 +26,8 @@
 register_phys_mem(MEM_AREA_IO_SEC, TZASC2_BASE, TZASC_SIZE);
 #endif
 
+register_phys_mem(MEM_AREA_IO_SEC, TZASC_BASE, TZASC_SIZE);
+
 static int imx_tzc_auto_configure(vaddr_t addr, vaddr_t rsize, uint32_t attr,
 				  uint8_t region)
 {
