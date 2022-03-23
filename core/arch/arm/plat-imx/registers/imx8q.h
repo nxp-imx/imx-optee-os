@@ -19,5 +19,7 @@
 #define SC_IPC0_BASE	0x5d1b0000
 #define SC_IPC3_BASE	0x5d1e0000
 #define SC_IPC_SIZE	   0x10000
+#define SECMEM_BASE        0x31800000
+#define SECMEM_SIZE        0x10000
 
 #endif /* __IMX8Q_H__ */
