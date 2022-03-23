@@ -201,6 +201,7 @@ CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 6
 $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_SC_IPC_BASE,SC_IPC0_BASE)
+$(call force,CFG_TZC380,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8qx-flavorlist)))
 $(call force,CFG_MX8QX,y)
 $(call force,CFG_ARM64_core,y)
@@ -210,6 +211,7 @@ CFG_DRAM_BASE ?= 0x80000000
 CFG_TEE_CORE_NB_CORE ?= 4
 $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_SC_IPC_BASE,SC_IPC0_BASE)
+$(call force,CFG_TZC380,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8dxl-flavorlist)))
 $(call force,CFG_MX8DXL,y)
 $(call force,CFG_ARM64_core,y)
@@ -220,6 +222,7 @@ $(call force,CFG_TEE_CORE_NB_CORE,2)
 $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_NXP_CAAM,n)
 $(call force,CFG_SC_IPC_BASE,SC_IPC0_BASE)
+$(call force,CFG_TZC380,n)
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8ulp-flavorlist)))
 $(call force,CFG_MX8ULP,y)
 $(call force,CFG_ARM64_core,y)
@@ -229,6 +232,7 @@ CFG_TEE_CORE_NB_CORE ?= 2
 $(call force,CFG_NXP_SNVS,n)
 $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_SC_IPC_BASE,SC_IPC0_BASE)
+$(call force,CFG_TZC380,n)
 CFG_IMX_MU ?= y
 CFG_IMX_ELE ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx93-flavorlist)))
@@ -542,6 +546,7 @@ $(call force,CFG_IMX_OCOTP,n)
 endif
 CFG_IMX_OCOTP ?= y
 CFG_IMX_DIGPROG ?= y
+CFG_TZC380 ?= y
 
 # Almost all platforms include CAAM HW Modules, except the
 # ones forced to be disabled
