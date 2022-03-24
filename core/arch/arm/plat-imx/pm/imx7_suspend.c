@@ -11,15 +11,11 @@
 #include <io.h>
 #include <imx.h>
 #include <imx_pm.h>
-#include <kernel/panic.h>
-#include <kernel/cache_helpers.h>
 #include <kernel/boot.h>
-#include <kernel/misc.h>
 #include <mm/core_mmu.h>
 #include <mm/core_memprot.h>
 #include <sm/sm.h>
 #include <sm/pm.h>
-#include <sm/psci.h>
 #include <stdint.h>
 
 int imx7_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
