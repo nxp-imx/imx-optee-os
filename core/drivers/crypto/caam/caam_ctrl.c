@@ -17,7 +17,6 @@
 #include <caam_pwr.h>
 #include <caam_rng.h>
 #include <caam_sm.h>
-#include <caam_utils_mem.h>
 #include <drivers/imx_snvs.h>
 #include <initcall.h>
 #include <kernel/panic.h>
