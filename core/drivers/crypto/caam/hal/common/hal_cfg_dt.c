@@ -21,6 +21,8 @@
 #define DTB_JR_PATH "/soc@0/bus@30800000/crypto@30900000/jr"
 #elif defined(CFG_MX8QM) || defined(CFG_MX8QXP) || defined(CFG_MX8DXL)
 #define DTB_JR_PATH "/bus@31400000/crypto@31400000/jr"
+#elif defined(CFG_MX8ULP)
+#define DTB_JR_PATH "/soc@0/bus@29000000/crypto@292e0000/jr"
 #else
 #define DTB_JR_PATH ""
 #endif
