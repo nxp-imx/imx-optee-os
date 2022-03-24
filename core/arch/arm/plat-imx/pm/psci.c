@@ -15,7 +15,6 @@
 #include <imx-regs.h>
 #include <kernel/boot.h>
 #include <kernel/misc.h>
-#include <kernel/panic.h>
 #include <kernel/pm.h>
 #include <mm/core_mmu.h>
 #include <mm/core_memprot.h>
@@ -24,8 +23,6 @@
 #include <sm/optee_smc.h>
 #include <sm/psci.h>
 #include <sm/std_smc.h>
-#include <tee/entry_std.h>
-#include <tee/entry_fast.h>
 
 int psci_features(uint32_t psci_fid)
 {
