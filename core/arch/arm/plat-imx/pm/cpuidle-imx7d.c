@@ -15,10 +15,8 @@
 #include <imx_pm.h>
 #include <kernel/cache_helpers.h>
 #include <kernel/boot.h>
-#include <kernel/interrupt.h>
 #include <kernel/misc.h>
 #include <kernel/panic.h>
-#include <kernel/spinlock.h>
 #include <mm/core_mmu.h>
 #include <mm/core_memprot.h>
 #include <platform_config.h>
@@ -28,8 +26,6 @@
 #include <sm/pm.h>
 #include <sm/sm.h>
 #include <string.h>
-#include <tee/entry_std.h>
-#include <tee/entry_fast.h>
 #include <util.h>
 
 /*
