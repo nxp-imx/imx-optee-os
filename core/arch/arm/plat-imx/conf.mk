@@ -559,6 +559,7 @@ CFG_IMX_OCOTP ?= y
 CFG_IMX_DIGPROG ?= y
 CFG_PKCS11_TA ?= y
 CFG_TZC380 ?= y
+CFG_CORE_HUK_SUBKEY_COMPAT_USE_OTP_DIE_ID ?= y
 
 # Almost all platforms include CAAM HW Modules, except the
 # ones forced to be disabled
