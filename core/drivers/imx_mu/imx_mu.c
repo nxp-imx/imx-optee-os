@@ -4,12 +4,12 @@
  */
 #include <assert.h>
 #include <drivers/imx_mu.h>
-#include <kernel/mutex.h>
+#include <kernel/spinlock.h>
 #include <local.h>
 #include <string.h>
 #include <trace.h>
 
-static struct mutex imx_mu_mutex = MUTEX_INITIALIZER;
+static unsigned int s_mu_spinlock;
 
 __weak void imx_mu_hal_init(vaddr_t base __unused)
 {
@@ -110,9 +110,11 @@ void imx_mu_init(vaddr_t base)
 		return;
 	}
 
-	mutex_lock(&imx_mu_mutex);
+	cpu_spin_lock(&s_mu_spinlock);
+
 	imx_mu_hal_init(base);
-	mutex_unlock(&imx_mu_mutex);
+
+	cpu_spin_unlock(&s_mu_spinlock);
 }
 
 TEE_Result imx_mu_call(vaddr_t base, struct imx_mu_msg *msg,
@@ -123,13 +125,13 @@ TEE_Result imx_mu_call(vaddr_t base, struct imx_mu_msg *msg,
 	if (!base || !msg)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	mutex_lock(&imx_mu_mutex);
+	cpu_spin_lock(&s_mu_spinlock);
 
 	res = imx_mu_send_msg(base, msg);
 	if (res == TEE_SUCCESS && wait_for_answer)
 		res = imx_mu_receive_msg(base, msg);
 
-	mutex_unlock(&imx_mu_mutex);
+	cpu_spin_unlock(&s_mu_spinlock);
 
 	return res;
 }
