@@ -12,10 +12,15 @@
 /* Set the OTPMK Key as Master key */
 #ifdef CFG_IMX_SNVS
 TEE_Result imx_snvs_set_master_otpmk(void);
+bool snvs_is_device_closed(void);
 #else
 static inline TEE_Result imx_snvs_set_master_otpmk(void)
 {
 	return TEE_ERROR_NOT_IMPLEMENTED;
+}
+static inline bool snvs_is_device_closed(void)
+{
+        return false;
 }
 #endif
 
