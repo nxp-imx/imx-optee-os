@@ -6,6 +6,7 @@
  */
 
 #include <drivers/imx_snvs.h>
+#include <initcall.h>
 #include <io.h>
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
@@ -205,3 +206,17 @@ void imx_snvs_shutdown(void)
 		   SNVS_LPCR_DP_EN_MASK |
 		   SNVS_LPCR_SRTC_ENV_MASK);
 }
+
+static TEE_Result snvs_set_npswa_en(void)
+{
+	if (snvs_is_device_closed()) {
+		vaddr_t snvs_base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC,
+						    SNVS_SIZE);
+
+		io_mask32(snvs_base + SNVS_HPCOMR, SNVS_HPCOMR_NPSWA_EN,
+			  SNVS_HPCOMR_NPSWA_EN);
+	}
+
+	return TEE_SUCCESS;
+}
+driver_init(snvs_set_npswa_en);
