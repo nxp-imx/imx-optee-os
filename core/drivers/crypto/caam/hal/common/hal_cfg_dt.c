@@ -23,6 +23,14 @@
 #define DTB_JR_PATH "/bus@31400000/crypto@31400000/jr"
 #elif defined(CFG_MX8ULP)
 #define DTB_JR_PATH "/soc@0/bus@29000000/crypto@292e0000/jr"
+#elif defined(PLATFORM_FLAVOR_ls1046ardb) || \
+	defined(PLATFORM_FLAVOR_ls1043ardb) || \
+	defined(PLATFORM_FLAVOR_ls1012ardb)
+#define DTB_JR_PATH "/soc/crypto@1700000/jr"
+#elif defined(PLATFORM_FLAVOR_ls1028ardb) || \
+	defined(PLATFORM_FLAVOR_ls1088ardb) || \
+	defined(PLATFORM_FLAVOR_ls2088ardb)
+#define DTB_JR_PATH "/soc/crypto@8000000/jr"
 #else
 #define DTB_JR_PATH ""
 #endif
