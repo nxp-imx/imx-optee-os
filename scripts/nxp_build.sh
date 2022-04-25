@@ -87,7 +87,7 @@ function build()
 			CFG_WERROR=y \
 			PLATFORM="$plat" \
 			O="$O"/build."$plat" \
-			uTee || exit 1
+			all uTee || exit 1
 	else
 		make -j"$NB_CORES" \
 			CROSS_COMPILE="$CROSS_COMPILE" \
