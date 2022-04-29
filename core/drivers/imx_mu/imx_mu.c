@@ -4,10 +4,13 @@
  */
 #include <assert.h>
 #include <drivers/imx_mu.h>
+#include <kernel/delay.h>
 #include <kernel/spinlock.h>
 #include <local.h>
 #include <string.h>
 #include <trace.h>
+
+#define RX_TIMEOUT (100 * 1000)
 
 static unsigned int s_mu_spinlock;
 
@@ -41,10 +44,16 @@ static TEE_Result imx_mu_receive_msg(vaddr_t base, struct imx_mu_msg *msg)
 	unsigned int count = 0;
 	uint32_t response = 0;
 	unsigned int nb_channel = 0;
+	uint64_t tout_rx = timeout_init_us(RX_TIMEOUT);
 
 	assert(base && msg);
 
-	res = imx_mu_hal_receive(base, 0, &response);
+	do {
+		res = imx_mu_hal_receive(base, 0, &response);
+		if (timeout_elapsed(tout_rx))
+			break;
+	} while (res == TEE_ERROR_NO_DATA);
+
 	if (res)
 		return res;
 

@@ -61,7 +61,7 @@ TEE_Result imx_mu_hal_receive(vaddr_t base, unsigned int index, uint32_t *msg)
 
 	/* Wait RX register to be full */
 	if (mu_wait_for(base + MU_RSR, MU_RSR_RFn(index)))
-		return TEE_ERROR_BUSY;
+		return TEE_ERROR_NO_DATA;
 
 	*msg = io_read32(base + MU_RRn(index));
 
