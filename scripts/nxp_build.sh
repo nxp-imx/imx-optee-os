@@ -128,6 +128,9 @@ function list_board()
 [[ "$1" == "list" ]] && list_board && exit 0
 [[ "$1" == "all" ]] && build_all && exit 0
 
-build "$1"
+for b in "$@"
+do
+	build "$b"
+done
 
 exit 0
