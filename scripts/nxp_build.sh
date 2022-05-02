@@ -25,6 +25,7 @@ boards_list=(
 	imx-mx6ul9x9evk \
 	imx-mx6ulccimx6ulsbcpro\
 	imx-mx6ullevk \
+	imx-mx6ulzevk \
 	imx-mx7dsabresd \
 	imx-mx7dpico_mbl \
 	imx-mx7swarp7 \
