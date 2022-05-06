@@ -18,17 +18,12 @@
 #define ELE_REQUEST_TAG	    0x17
 #define ELE_RESPONSE_TAG    0xe1
 
-/* Definitions for get_device_id API */
-#define ELE_CMD_READ_FUSE	    0x97
-#define ELE_CMD_READ_FUSE_DEVICE_ID 0x01
-#define ELE_CMD_SUCCESS		    0xD6
-
 #define UID_SIZE (4 * sizeof(uint32_t))
 
 /* Definitions for ELE API */
 #define ELE_CMD_SESSION_OPEN  0x10
 #define ELE_CMD_SESSION_CLOSE 0x11
-
+#define ELE_CMD_SESSION_DEVICE_INFO 0x16
 #define ELE_CMD_RNG_OPEN  0x20
 #define ELE_CMD_RNG_CLOSE 0x21
 #define ELE_CMD_RNG_GET	  0x22
@@ -147,32 +142,112 @@ static TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 	return TEE_SUCCESS;
 }
 
-static TEE_Result imx_ele_get_device_id(uint32_t uid[])
+/*
+ * Get device information from EdgeLock Enclave
+ *
+ * @session_handle: EdgeLock Enclave session handler
+ * @user_sab_id: user SAB
+ * @uid_w0: Chip UUID word 0
+ * @uid_w1: Chip UUID word 1
+ * @uid_w2: Chip UUID word 2
+ * @uid_w3: Chip UUID word 3
+ * @life_cycle: Chip current lifecycle state
+ * @monotonic_counter: Chip monotonic counter
+ * @ele_version: EdgeLock enclave version
+ * @ele_version_ext: EdgeLock enclave version ext
+ * @fips_mode: EdgeLock enclave FIPS mode
+ */
+static TEE_Result imx_ele_session_get_device_info(
+	uint32_t session_handle, uint32_t *user_sab_id, uint32_t *uid_w0,
+	uint32_t *uid_w1, uint32_t *uid_w2, uint32_t *uid_w3,
+	uint16_t *life_cycle, uint16_t *monotonic_counter,
+	uint32_t *ele_version, uint32_t *ele_version_ext, uint8_t *fips_mode)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	struct imx_mu_msg msg = {
-		.header.version = 0x06,
-		.header.size = 2,
-		.header.tag = ELE_REQUEST_TAG,
-		.header.command = ELE_CMD_READ_FUSE,
-		.data.u32[0] = ELE_CMD_READ_FUSE_DEVICE_ID,
+
+	struct session_get_device_info_cmd {
+		uint32_t session_handle;
+	} cmd = {
+		.session_handle = session_handle,
 	};
 
-	res = imx_mu_call(imx_ele_va, &msg, true);
+	struct session_get_device_info_rsp {
+		uint32_t rsp_code;
+		uint32_t user_sab_id;
+		uint32_t chip_uid_w0;
+		uint32_t chip_uid_w1;
+		uint32_t chip_uid_w2;
+		uint32_t chip_uid_w3;
+		uint16_t chip_life_cycle;
+		uint16_t chip_monotonic_counter;
+		uint32_t ele_version;
+		uint32_t ele_version_ext;
+		uint8_t fips_mode;
+		uint8_t reserved[3];
+		uint32_t crc;
+	} __packed *rsp = NULL;
+
+	struct imx_mu_msg msg = {
+		.header.version = ELE_VERSION,
+		.header.size = SIZE_MSG(cmd),
+		.header.tag = ELE_REQUEST_TAG,
+		.header.command = ELE_CMD_SESSION_DEVICE_INFO,
+	};
+
+	memcpy(msg.data.u8, &cmd, sizeof(cmd));
+
+	res = imx_ele_call(&msg);
 	if (res)
 		return res;
 
-	if (msg.header.command == ELE_CMD_READ_FUSE && msg.header.size == 0x7 &&
-	    msg.data.u32[0] == ELE_CMD_SUCCESS) {
-		uid[0] = msg.data.u32[1];
-		uid[1] = msg.data.u32[2];
-		uid[2] = msg.data.u32[3];
-		uid[3] = msg.data.u32[4];
+	rsp = (void *)msg.data.u32;
 
-		return TEE_SUCCESS;
-	}
+	if (user_sab_id)
+		*user_sab_id = rsp->user_sab_id;
+	if (uid_w0)
+		*uid_w0 = rsp->chip_uid_w0;
+	if (uid_w1)
+		*uid_w1 = rsp->chip_uid_w1;
+	if (uid_w2)
+		*uid_w2 = rsp->chip_uid_w2;
+	if (uid_w3)
+		*uid_w3 = rsp->chip_uid_w3;
+	if (life_cycle)
+		*life_cycle = rsp->chip_life_cycle;
+	if (monotonic_counter)
+		*monotonic_counter = rsp->chip_monotonic_counter;
+	if (ele_version)
+		*ele_version = rsp->ele_version;
+	if (ele_version_ext)
+		*ele_version_ext = rsp->ele_version_ext;
+	if (fips_mode)
+		*fips_mode = rsp->fips_mode;
 
-	return TEE_ERROR_COMMUNICATION;
+	return TEE_SUCCESS;
+}
+
+/*
+ * Get device information from EdgeLock Enclave
+ *
+ * @session_handle: EdgeLock Enclave session handler
+ */
+static TEE_Result imx_ele_get_device_id(uint32_t uid[] __unused)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t session_handle = 0;
+	uint32_t device_info[9] = { };
+
+	res = imx_ele_session_open(&session_handle);
+	if (res)
+		goto exit;
+
+	res = imx_ele_session_get_device_info(session_handle, device_info,
+					      sizeof(device_info));
+
+	if (imx_ele_session_close(session_handle))
+		return TEE_ERROR_GENERIC;
+exit:
+	return res;
 }
 
 int tee_otp_get_die_id(uint8_t *buffer, size_t len)
@@ -434,15 +509,35 @@ exit:
 	return res;
 }
 
-unsigned long plat_get_aslr_seed(void)
+int tee_otp_get_die_id(uint8_t *buffer, size_t len)
 {
-	unsigned long aslr = 0;
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t session_handle = 0;
+	uint32_t uid[UID_SIZE] = {};
 
-	if (imx_ele_init())
-		panic("Failed to init");
+	res = imx_ele_session_open(&session_handle);
+	if (res)
+		goto err;
 
-	if (imx_ele_get_rng((paddr_t)&aslr, sizeof(aslr)))
-		panic("Failed to get RNG");
+	res = imx_ele_session_get_device_info(session_handle, NULL, &uid[0],
+					      &uid[1], &uid[2], &uid[3], NULL,
+					      NULL, NULL, NULL, NULL);
+	if (res)
+		goto err;
 
-	return aslr;
+	res = imx_ele_session_close(session_handle);
+	if (res)
+		goto err;
+
+	/*
+	 * In the device info array return by the ELE, the words 2, 3, 4 and 5
+	 * are the device UID.
+	 */
+	memcpy(buffer, uid, MIN(UID_SIZE, len));
+	DHEXDUMP(uid, UID_SIZE);
+
+	return 0;
+err:
+	panic("Fail to get the device UID");
+	return -1;
 }
