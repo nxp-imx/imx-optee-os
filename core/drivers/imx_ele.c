@@ -90,6 +90,7 @@ static TEE_Result imx_ele_init(void)
 
 	return TEE_SUCCESS;
 }
+service_init(imx_ele_init);
 
 static struct response_code get_response_code(uint32_t word)
 {
@@ -445,10 +446,3 @@ unsigned long plat_get_aslr_seed(void)
 
 	return aslr;
 }
-
-static TEE_Result imx_ele_mu_init(void)
-{
-	return imx_ele_init();
-}
-
-service_init(imx_ele_mu_init);
