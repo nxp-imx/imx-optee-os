@@ -278,7 +278,7 @@ int imx7ulp_cpu_suspend(uint32_t power_state __unused, uintptr_t entry,
 			uint32_t context_id __unused, struct sm_nsec_ctx *nsec)
 {
 	uint32_t i;
-	int ret;
+	int ret = 0;
 	/*
 	 * TODO: move the code to a platform init place, note that
 	 * need to change kernel pm-imx6.c to avoid use LPRAM.
