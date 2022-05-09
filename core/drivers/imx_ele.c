@@ -34,6 +34,8 @@
 
 #define CRC_TO_COMPUTE 0xdeadbeef
 
+#define SIZE_MSG(_msg) size_msg(sizeof(_msg))
+
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, MU_BASE, MU_SIZE);
 
 struct response_code {
@@ -69,6 +71,23 @@ static void dump_message(const struct imx_mu_msg *msg __maybe_unused)
 		DMSG("word %" PRIu64 ": %" PRIx32, i, data[i]);
 }
 
+static size_t size_msg(size_t cmd)
+{
+	size_t words = ROUNDUP(cmd, sizeof(uint32_t)) / sizeof(uint32_t);
+
+	/* Add the header size */
+	words = words + 1;
+
+	/* If the message if bigger than 4 word, a CRC is needed */
+	if (words > SIZE_CRC_REQUIRED)
+		words = words + 1;
+
+	return words;
+}
+
+/*
+ * EdgeLock Enclave and MU driver initialization.
+ */
 static TEE_Result imx_ele_init(void)
 {
 	vaddr_t va = 0;
@@ -98,6 +117,12 @@ static struct response_code get_response_code(uint32_t word)
 	return rsp;
 }
 
+/*
+ * Initiate a communication with the EdgeLock Enclave. It sends a message
+ * and expects an answer.
+ *
+ * @msg: MU message
+ */
 static TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
@@ -227,49 +252,14 @@ static TEE_Result imx_ele_session_get_device_info(
 }
 
 /*
- * Get device information from EdgeLock Enclave
+ * Open a session with EdgeLock Enclave. It return a session handler.
  *
  * @session_handle: EdgeLock Enclave session handler
  */
-static TEE_Result imx_ele_get_device_id(uint32_t uid[] __unused)
+static TEE_Result imx_ele_session_open(uint32_t *session_handle)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	uint32_t session_handle = 0;
-	uint32_t device_info[9] = { };
-
-	res = imx_ele_session_open(&session_handle);
-	if (res)
-		goto exit;
-
-	res = imx_ele_session_get_device_info(session_handle, device_info,
-					      sizeof(device_info));
-
-	if (imx_ele_session_close(session_handle))
-		return TEE_ERROR_GENERIC;
-exit:
-	return res;
-}
-
-int tee_otp_get_die_id(uint8_t *buffer, size_t len)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-	uint32_t uid[UID_SIZE / sizeof(uint32_t)] = {};
-
-	res = imx_ele_get_device_id(uid);
-	if (res) {
-		EMSG("Error while getting die ID");
-		return -1;
-	}
-
-	memcpy(buffer, uid, MIN(UID_SIZE, len));
-
-	return 0;
-}
-
-static TEE_Result open_session(uint32_t *session_handle)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct open_session_msg_cmd {
+	struct open_session_cmd {
 		uint8_t mu_id;
 		uint8_t interrupt_num;
 		uint8_t tz;
@@ -277,7 +267,7 @@ static TEE_Result open_session(uint32_t *session_handle)
 		uint8_t priority;
 		uint8_t op_mode;
 		uint16_t reserved;
-	} __packed open_cmd = {
+	} __packed cmd = {
 		.mu_id = ELE_MU_ID,
 		.interrupt_num = ELE_MU_IRQ,
 		.tz = 0,
@@ -287,64 +277,62 @@ static TEE_Result open_session(uint32_t *session_handle)
 		.reserved = 0,
 	};
 
-	struct open_session_msg_rsp {
+	struct open_session_rsp {
 		uint32_t rsp_code;
 		uint32_t session_handle;
-	} *open_rsp = NULL;
+	} *rsp = NULL;
 
 	struct imx_mu_msg msg = {
 		.header.version = ELE_VERSION,
-		.header.size = 1 + (sizeof(open_cmd) / sizeof(uint32_t)),
+		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_SESSION_OPEN,
 	};
 
-	memcpy(msg.data.u8, &open_cmd, sizeof(open_cmd));
+	memcpy(msg.data.u8, &cmd, sizeof(cmd));
 
 	res = imx_ele_call(&msg);
-	if (res) {
-		EMSG("Failed to get open session");
+	if (res)
 		return res;
-	}
 
-	open_rsp = (void *)msg.data.u32;
+	rsp = (void *)msg.data.u32;
 
 	if (session_handle)
-		*session_handle = open_rsp->session_handle;
-
-	return TEE_SUCCESS;
-}
-
-static TEE_Result close_session(uint32_t session_handle)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct close_session_msg_cmd {
-		uint32_t session_handle;
-	} close_cmd = {
-		.session_handle = session_handle,
-	};
-
-	struct imx_mu_msg msg = {
-		.header.version = ELE_VERSION,
-		.header.size = 1 + (sizeof(close_cmd) / sizeof(uint32_t)),
-		.header.tag = ELE_REQUEST_TAG,
-		.header.command = ELE_CMD_SESSION_CLOSE,
-	};
-
-	memcpy(msg.data.u8, &close_cmd, sizeof(close_cmd));
-
-	res = imx_ele_call(&msg);
-	if (res) {
-		EMSG("Failed to get close session");
-		return res;
-	}
+		*session_handle = rsp->session_handle;
 
 	return TEE_SUCCESS;
 }
 
 /*
+ * Close a session with EdgeLock Enclave.
+ *
+ * @session_handle: EdgeLock Enclave session handler
+ */
+static TEE_Result imx_ele_session_close(uint32_t session_handle)
+{
+	struct close_session_cmd {
+		uint32_t session_handle;
+	} cmd = {
+		.session_handle = session_handle,
+	};
+
+	struct imx_mu_msg msg = {
+		.header.version = ELE_VERSION,
+		.header.size = SIZE_MSG(cmd),
+		.header.tag = ELE_REQUEST_TAG,
+		.header.command = ELE_CMD_SESSION_CLOSE,
+	};
+
+	memcpy(msg.data.u8, &cmd, sizeof(cmd));
+
+	return imx_ele_call(&msg);
+}
+
+/*
  * The CRC for the message is computed xor-ing all the words of the message:
  * the header and all the words except the word storing the crc
+ *
+ * msg: MU message to hash
  */
 static uint32_t compute_crc(const struct imx_mu_msg *msg)
 {
@@ -362,45 +350,54 @@ static uint32_t compute_crc(const struct imx_mu_msg *msg)
 
 /*
  * The CRC is the last word of the message
+ *
+ * msg: MU message to hash
  */
 static void update_crc(struct imx_mu_msg *msg)
 {
 	msg->data.u32[msg->header.size - 2] = compute_crc(msg);
 }
 
-static TEE_Result open_service_rng(uint32_t session_handle, paddr_t buffer,
+/*
+ * Open a RNG session with EdgeLock Enclave.
+ *
+ * @session_handle: EdgeLock Enclave session handler
+ * @buffer: Output memory for the RNG session transactions
+ * @rng_handle: EdgeLock Enclave RNG handler
+ */
+static TEE_Result imx_ele_rng_open(uint32_t session_handle, paddr_t buffer,
 				   uint32_t *rng_handle)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	struct rng_open_msg_cmd {
+	struct rng_open_cmd {
 		uint32_t session_handle;
 		uint32_t msbi;
 		uint32_t msbo;
 		uint8_t flags;
-		uint8_t rsv[3];
+		uint8_t reserved[3];
 		uint32_t crc;
-	} __packed open_rng_cmd = {
+	} __packed cmd = {
 		.session_handle = session_handle,
 		.msbi = 0,
-		.msbo = ((uint64_t)buffer) >> 32,
+		.msbo = (uint64_t)buffer >> 32,
 		.flags = 0,
-		.rsv = {},
+		.reserved = {},
 		.crc = CRC_TO_COMPUTE,
 	};
 
 	struct rng_open_msg_rsp {
 		uint32_t rsp_code;
 		uint32_t rng_handle;
-	} *open_rng_rsp = NULL;
+	} *rsp = NULL;
 
 	struct imx_mu_msg msg = {
 		.header.version = ELE_VERSION,
-		.header.size = 1 + (sizeof(open_rng_cmd) / sizeof(uint32_t)),
+		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_RNG_OPEN,
 	};
 
-	memcpy(msg.data.u8, &open_rng_cmd, sizeof(open_rng_cmd));
+	memcpy(msg.data.u8, &cmd, sizeof(cmd));
 	update_crc(&msg);
 
 	res = imx_ele_call(&msg);
@@ -409,104 +406,108 @@ static TEE_Result open_service_rng(uint32_t session_handle, paddr_t buffer,
 		return res;
 	}
 
-	open_rng_rsp = (void *)msg.data.u32;
+	rsp = (void *)msg.data.u32;
 
 	if (rng_handle)
-		*rng_handle = open_rng_rsp->rng_handle;
+		*rng_handle = rsp->rng_handle;
 
 	return TEE_SUCCESS;
 }
 
-static TEE_Result close_service_rng(uint32_t rng_handle)
+/*
+ * Close RNG session with EdgeLock Enclave.
+ *
+ * @rng_handle: EdgeLock Enclave RNG handler
+ */
+static TEE_Result imx_ele_rng_close(uint32_t rng_handle)
 {
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct rng_close_msg_cmd {
+	struct rng_close_cmd {
 		uint32_t rng_handle;
-	} close_rng_cmd = {
+	} cmd = {
 		.rng_handle = rng_handle,
 	};
 
 	struct imx_mu_msg msg = {
 		.header.version = ELE_VERSION,
-		.header.size = 1 + (sizeof(close_rng_cmd) / sizeof(uint32_t)),
+		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_RNG_CLOSE,
 	};
 
-	memcpy(msg.data.u8, &close_rng_cmd, sizeof(close_rng_cmd));
+	memcpy(msg.data.u8, &cmd, sizeof(cmd));
 
-	res = imx_ele_call(&msg);
-	if (res) {
-		EMSG("Failed to get close rng session");
-		return res;
-	}
-
-	return TEE_SUCCESS;
+	return imx_ele_call(&msg);
 }
 
-static TEE_Result service_rng_get_random(uint32_t rng_handle, paddr_t buffer,
-					 uint32_t buf_size)
+/*
+ * Get random data from the EdgeLock Enclave
+ *
+ * @rng_handle: EdgeLock Enclave RNG handler
+ * @buffer: RNG data output
+ * @size: RNG data size
+ */
+static TEE_Result imx_ele_rng_get_random(uint32_t rng_handle, paddr_t buffer,
+					 size_t size)
 {
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct rng_get_rnd_msg_cmd {
+	struct rng_get_random_cmd {
 		uint32_t rng_handle;
 		uint32_t out_addr;
 		uint32_t out_size;
 		uint32_t crc;
-	} get_random_cmd = {
+	} cmd = {
 		.rng_handle = rng_handle,
-		.out_addr = ((uint64_t)buffer) & GENMASK_32(31, 0),
-		.out_size = buf_size,
+		.out_addr = (uint64_t)buffer & GENMASK_32(31, 0),
+		.out_size = (uint32_t)size,
 		.crc = CRC_TO_COMPUTE,
 	};
 
 	struct imx_mu_msg msg = {
 		.header.version = ELE_VERSION,
-		.header.size = 1 + (sizeof(get_random_cmd) / sizeof(uint32_t)),
+		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_RNG_GET,
 	};
 
-	memcpy(msg.data.u8, &get_random_cmd, sizeof(get_random_cmd));
+	memcpy(msg.data.u8, &cmd, sizeof(cmd));
 	update_crc(&msg);
 
-	res = imx_ele_call(&msg);
-	if (res) {
-		EMSG("Failed to get random");
-		return res;
-	}
-
-	return TEE_SUCCESS;
+	return imx_ele_call(&msg);
 }
 
-static TEE_Result imx_ele_get_rng(paddr_t buffer, size_t nb_byte_req)
+unsigned long plat_get_aslr_seed(void)
 {
-	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t session_handle = 0;
 	uint32_t rng_handle = 0;
+	unsigned long aslr = 0;
 
-	res = open_session(&session_handle);
-	if (res)
-		goto exit;
+	/*
+	 * In this function, we assume that virtual address is also a physical
+	 * address. Make sure the MMU is disabled before going further.
+	 */
+	assert(!cpu_mmu_enabled());
 
-	res = open_service_rng(session_handle, buffer, &rng_handle);
-	if (res)
-		goto close_session;
+	if (imx_ele_init())
+		goto err;
 
-	res = service_rng_get_random(rng_handle, buffer, nb_byte_req);
-	if (res)
-		goto close_rng;
+	if (imx_ele_session_open(&session_handle))
+		goto err;
 
-close_rng:
-	if (close_service_rng(rng_handle))
-		return TEE_ERROR_GENERIC;
+	if (imx_ele_rng_open(session_handle, (paddr_t)aslr, &rng_handle))
+		goto err;
 
-close_session:
-	if (close_session(session_handle))
-		return TEE_ERROR_GENERIC;
+	if (imx_ele_rng_get_random(rng_handle, (paddr_t)&aslr, sizeof(aslr)))
+		goto err;
 
-exit:
-	return res;
+	if (imx_ele_rng_close(rng_handle))
+		goto err;
+
+	if (imx_ele_session_close(session_handle))
+		goto err;
+
+	return aslr;
+err:
+	panic("Fail to the seed the ASLR");
+	return 0;
 }
 
 int tee_otp_get_die_id(uint8_t *buffer, size_t len)
