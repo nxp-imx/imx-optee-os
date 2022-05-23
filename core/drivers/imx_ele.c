@@ -34,6 +34,8 @@
 
 #define CRC_TO_COMPUTE 0xdeadbeef
 
+#define SIZE_CRC_REQUIRED 4
+
 #define SIZE_MSG(_msg) size_msg(sizeof(_msg))
 
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, MU_BASE, MU_SIZE);
@@ -83,6 +85,36 @@ static size_t size_msg(size_t cmd)
 		words = words + 1;
 
 	return words;
+}
+
+/*
+ * The CRC for the message is computed xor-ing all the words of the message:
+ * the header and all the words except the word storing the crc
+ *
+ * msg: MU message to hash
+ */
+static uint32_t compute_crc(const struct imx_mu_msg *msg)
+{
+	uint32_t crc = 0;
+	size_t i = 0;
+	/* The CRC is included in the size */
+	size_t size = msg->header.size - 1;
+	uint32_t *payload = (uint32_t *)msg;
+
+	for (i = 0; i < size; i++)
+		crc ^= payload[i];
+
+	return crc;
+}
+
+/*
+ * The CRC is the last word of the message
+ *
+ * msg: MU message to hash
+ */
+static void update_crc(struct imx_mu_msg *msg)
+{
+	msg->data.u32[msg->header.size - 2] = compute_crc(msg);
 }
 
 /*
@@ -227,6 +259,9 @@ static TEE_Result imx_ele_session_get_device_info(
 
 	rsp = (void *)msg.data.u32;
 
+	if (compute_crc(&msg) != rsp->crc)
+		return TEE_ERROR_CORRUPT_OBJECT;
+
 	if (user_sab_id)
 		*user_sab_id = rsp->user_sab_id;
 	if (uid_w0)
@@ -326,36 +361,6 @@ static TEE_Result imx_ele_session_close(uint32_t session_handle)
 	memcpy(msg.data.u8, &cmd, sizeof(cmd));
 
 	return imx_ele_call(&msg);
-}
-
-/*
- * The CRC for the message is computed xor-ing all the words of the message:
- * the header and all the words except the word storing the crc
- *
- * msg: MU message to hash
- */
-static uint32_t compute_crc(const struct imx_mu_msg *msg)
-{
-	uint32_t crc = 0;
-	size_t i = 0;
-	/* The CRC is included in the size */
-	size_t size = msg->header.size - 1;
-	uint32_t *payload = (uint32_t *)msg;
-
-	for (i = 0; i < size; i++)
-		crc ^= payload[i];
-
-	return crc;
-}
-
-/*
- * The CRC is the last word of the message
- *
- * msg: MU message to hash
- */
-static void update_crc(struct imx_mu_msg *msg)
-{
-	msg->data.u32[msg->header.size - 2] = compute_crc(msg);
 }
 
 /*
