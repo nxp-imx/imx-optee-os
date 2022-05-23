@@ -227,7 +227,7 @@ TEE_Result imx_snvs_set_master_otpmk(void)
 	if (!snvs_is_device_closed())
 		return TEE_ERROR_BAD_STATE;
 
-	if (is_otpmk_valid())
+	if (!is_otpmk_valid())
 		return TEE_ERROR_BAD_STATE;
 
 	if (is_mks_locked()) {
