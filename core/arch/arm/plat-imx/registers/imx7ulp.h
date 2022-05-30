@@ -61,6 +61,7 @@
 #define SIM_SIZE		0x1000
 
 #define CAAM_BASE		0x40240000
+#define CAAM_SIZE		0x10000
 #define UART4_BASE		0x402d0000
 #define UART5_BASE		0x402e0000
 #define UART6_BASE		0x40a60000
