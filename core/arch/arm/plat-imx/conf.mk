@@ -529,7 +529,7 @@ CFG_EXTERNAL_DTB_OVERLAY = y
 supported-ta-targets = ta_arm64
 endif
 
-ifneq (,$(filter y, $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8DX) $(CFG_MX8DXL)))
+ifneq (,$(filter y, $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8DX) $(CFG_MX8DXL) $(CFG_MX93)))
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x16000000)
 else ifneq (,$(filter y, $(CFG_MX8ULP)))
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x26000000)
