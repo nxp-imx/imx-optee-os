@@ -43,6 +43,7 @@ boards_list=(
 	imx-mx8qmmekcockpita72 \
 	imx-mx8dxlevk \
 	imx-mx8ulpevk \
+	imx-mx93evk \
 	ls-ls1021atwr \
 	ls-ls1021aqds \
 	ls-ls1012ardb \
