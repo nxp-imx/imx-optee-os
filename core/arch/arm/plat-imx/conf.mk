@@ -88,6 +88,9 @@ mx8dxl-flavorlist = \
 mx8ulp-flavorlist = \
 	mx8ulpevk \
 
+mx93-flavorlist = \
+	mx93evk \
+
 ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx6ul-flavorlist)))
 $(call force,CFG_MX6,y)
 $(call force,CFG_MX6UL,y)
@@ -233,6 +236,17 @@ $(call force,CFG_SC_IPC_BASE,SC_IPC0_BASE)
 $(call force,CFG_TZC380,n)
 CFG_IMX_MU ?= y
 CFG_IMX_ELE ?= y
+else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx93-flavorlist)))
+$(call force,CFG_MX93,y)
+$(call force,CFG_ARM64_core,y)
+CFG_IMX_LPUART ?= y
+CFG_DRAM_BASE ?= 0x80000000
+CFG_TEE_CORE_NB_CORE ?= 2
+$(call force,CFG_NXP_SNVS,n)
+$(call force,CFG_IMX_OCOTP,n)
+$(call force,CFG_TZC380,n)
+$(call force,CFG_CRYPTO_DRIVER,n)
+$(call force,CFG_NXP_CAAM,n)
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
@@ -435,6 +449,11 @@ CFG_DDR_SIZE ?= 0x80000000
 CFG_UART_BASE ?= UART5_BASE
 endif
 
+ifneq (,$(filter $(PLATFORM_FLAVOR),mx93evk))
+CFG_DDR_SIZE ?= 0x80000000
+CFG_UART_BASE ?= UART1_BASE
+endif
+
 # i.MX6 Solo/SL/SoloX/DualLite/Dual/Quad specific config
 ifeq ($(filter y, $(CFG_MX6QP) $(CFG_MX6Q) $(CFG_MX6D) $(CFG_MX6DL) $(CFG_MX6S) \
 	$(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6SX)), y)
@@ -522,7 +541,7 @@ CFG_EXTERNAL_DTB_OVERLAY = y
 supported-ta-targets = ta_arm64
 endif
 
-ifneq (,$(filter y, $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8DX) $(CFG_MX8DXL)))
+ifneq (,$(filter y, $(CFG_MX8MN) $(CFG_MX8MP) $(CFG_MX8DX) $(CFG_MX8DXL) $(CFG_MX93)))
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x16000000)
 else ifneq (,$(filter y, $(CFG_MX8ULP)))
 CFG_TZDRAM_START ?= ($(CFG_DRAM_BASE) + 0x26000000)
