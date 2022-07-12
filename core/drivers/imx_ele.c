@@ -28,6 +28,7 @@
 #define ELE_CMD_RNG_OPEN  0x20
 #define ELE_CMD_RNG_CLOSE 0x21
 #define ELE_CMD_RNG_GET	  0x22
+#define ELE_CMD_TRNG_STATE	    0xA4
 
 #define ELE_MU_ID  0x2
 #define ELE_MU_IRQ 0x0
@@ -480,11 +481,44 @@ static TEE_Result imx_ele_rng_get_random(uint32_t rng_handle, paddr_t buffer,
 	return imx_ele_call(&msg);
 }
 
+#define IMX_ELE_TRNG_STATUS_READY 0x3
+
+/* Get the current state of the ELE TRNG */
+static TEE_Result imx_ele_rng_get_trng_state(void)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+
+	struct rng_get_trng_state_msg_rsp {
+		uint32_t rsp_code;
+		uint8_t trng_state;
+		uint8_t csal_state;
+	} __packed *rsp = NULL;
+
+	struct imx_mu_msg msg = {
+		.header.version = ELE_VERSION_BASELINE,
+		.header.size = 1,
+		.header.tag = ELE_REQUEST_TAG,
+		.header.command = ELE_CMD_TRNG_STATE,
+	};
+
+	res = imx_ele_call(&msg);
+	if (res)
+		EMSG("Failed to get TRNG current state");
+
+	rsp = (void *)msg.data.u32;
+
+	if (rsp->trng_state != IMX_ELE_TRNG_STATUS_READY)
+		return TEE_ERROR_BUSY;
+	else
+		return TEE_SUCCESS;
+}
+
 unsigned long plat_get_aslr_seed(void)
 {
 	uint32_t session_handle = 0;
 	uint32_t rng_handle = 0;
 	unsigned long aslr = 0;
+	uint64_t timeout = timeout_init_us(10 * 1000);
 
 	/*
 	 * In this function, we assume that virtual address is also a physical
@@ -494,6 +528,15 @@ unsigned long plat_get_aslr_seed(void)
 
 	if (imx_ele_init())
 		goto err;
+
+	/*
+	 * Check the current TRNG state of the ELE. The TRNG must be started
+	 * with a command earlier in the boot to allow the TRNG to generate
+	 * enough entropy.
+	 */
+	while (imx_ele_rng_get_trng_state() == TEE_ERROR_BUSY)
+		if (timeout_elapsed(timeout))
+			return TEE_ERROR_BAD_STATE;
 
 	if (imx_ele_session_open(&session_handle))
 		goto err;
