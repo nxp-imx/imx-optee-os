@@ -12,7 +12,8 @@
 #include <mm/core_memprot.h>
 
 /* Definitions for communication protocol */
-#define ELE_VERSION	    0x07
+#define ELE_VERSION_BASELINE 0x06
+#define ELE_VERSION_HSM	     0x07
 #define ELE_COMMAND_SUCCEED 0x00
 #define ELE_COMMAND_FAILED  0x29
 #define ELE_REQUEST_TAG	    0x17
@@ -245,7 +246,7 @@ static TEE_Result imx_ele_session_get_device_info(
 	} __packed *rsp = NULL;
 
 	struct imx_mu_msg msg = {
-		.header.version = ELE_VERSION,
+		.header.version = ELE_VERSION_HSM,
 		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_SESSION_DEVICE_INFO,
@@ -318,7 +319,7 @@ static TEE_Result imx_ele_session_open(uint32_t *session_handle)
 	} *rsp = NULL;
 
 	struct imx_mu_msg msg = {
-		.header.version = ELE_VERSION,
+		.header.version = ELE_VERSION_HSM,
 		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_SESSION_OPEN,
@@ -352,7 +353,7 @@ static TEE_Result imx_ele_session_close(uint32_t session_handle)
 	};
 
 	struct imx_mu_msg msg = {
-		.header.version = ELE_VERSION,
+		.header.version = ELE_VERSION_HSM,
 		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_SESSION_CLOSE,
@@ -396,7 +397,7 @@ static TEE_Result imx_ele_rng_open(uint32_t session_handle, paddr_t buffer,
 	} *rsp = NULL;
 
 	struct imx_mu_msg msg = {
-		.header.version = ELE_VERSION,
+		.header.version = ELE_VERSION_HSM,
 		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_RNG_OPEN,
@@ -433,7 +434,7 @@ static TEE_Result imx_ele_rng_close(uint32_t rng_handle)
 	};
 
 	struct imx_mu_msg msg = {
-		.header.version = ELE_VERSION,
+		.header.version = ELE_VERSION_HSM,
 		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_RNG_CLOSE,
@@ -467,7 +468,7 @@ static TEE_Result imx_ele_rng_get_random(uint32_t rng_handle, paddr_t buffer,
 	};
 
 	struct imx_mu_msg msg = {
-		.header.version = ELE_VERSION,
+		.header.version = ELE_VERSION_HSM,
 		.header.size = SIZE_MSG(cmd),
 		.header.tag = ELE_REQUEST_TAG,
 		.header.command = ELE_CMD_RNG_GET,
