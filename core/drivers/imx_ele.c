@@ -519,7 +519,15 @@ int tee_otp_get_die_id(uint8_t *buffer, size_t len)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t session_handle = 0;
-	uint32_t uid[UID_SIZE] = {};
+	/*
+	 * The die ID must be cached because some board configuration prevents
+	 * the MU to be used by OPTEE at runtime.
+	 */
+	static uint32_t uid[UID_SIZE];
+	static bool is_fetched;
+
+	if (is_fetched)
+		goto out;
 
 	res = imx_ele_session_open(&session_handle);
 	if (res)
@@ -535,11 +543,14 @@ int tee_otp_get_die_id(uint8_t *buffer, size_t len)
 	if (res)
 		goto err;
 
+out:
 	/*
 	 * In the device info array return by the ELE, the words 2, 3, 4 and 5
 	 * are the device UID.
 	 */
 	memcpy(buffer, uid, MIN(UID_SIZE, len));
+	is_fetched = true;
+
 	DHEXDUMP(uid, UID_SIZE);
 
 	return 0;
