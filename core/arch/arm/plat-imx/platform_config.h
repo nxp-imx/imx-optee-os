@@ -72,10 +72,9 @@
  * Calculate Non Secure memory region, after Secure memory carved out.
  * Assumption is memory for TEE is 32M
  * Those defines are used to register dynamic shared memory
- * Currently enable only mscale family.
  */
-#if defined(CFG_MX8MQ) || defined(CFG_MX8MM) || defined(CFG_MX8MN) ||          \
-	defined(CFG_MX8MP)
+#if defined(CFG_MX8MQ) || defined(CFG_MX8MM) || defined(CFG_MX8MN) || \
+	defined(CFG_MX8MP) || defined(CFG_MX93)
 #define DRAM0_NSEC_BASE CFG_DRAM_BASE
 #define DRAM0_NSEC_SIZE (CFG_TZDRAM_START - CFG_DRAM_BASE)
 #define DRAM1_NSEC_BASE (CFG_TZDRAM_START + 0x2000000)
