@@ -247,6 +247,7 @@ $(call force,CFG_IMX_OCOTP,n)
 $(call force,CFG_TZC380,n)
 $(call force,CFG_CRYPTO_DRIVER,n)
 $(call force,CFG_NXP_CAAM,n)
+CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
