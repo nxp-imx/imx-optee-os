@@ -37,8 +37,6 @@
 
 #define CRC_TO_COMPUTE 0xdeadbeef
 
-#define SIZE_CRC_REQUIRED 4
-
 #define SIZE_MSG(_msg) size_msg(sizeof(_msg))
 
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, MU_BASE, MU_SIZE);
@@ -93,10 +91,6 @@ static size_t size_msg(size_t cmd)
 
 	/* Add the header size */
 	words = words + 1;
-
-	/* If the message if bigger than 4 word, a CRC is needed */
-	if (words > SIZE_CRC_REQUIRED)
-		words = words + 1;
 
 	return words;
 }
