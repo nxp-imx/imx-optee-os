@@ -33,7 +33,14 @@
 
 #define ELE_MU_ID  0x2
 #define ELE_MU_IRQ 0x0
+
+#if defined(CFG_MX8ULP)
 #define ELE_MU_DID 0x7
+#elif defined(CFG_MX93)
+#define ELE_MU_DID 0x3
+#else
+#error "ELE_MU_DID not specified for this platform"
+#endif
 
 #define CRC_TO_COMPUTE 0xdeadbeef
 
