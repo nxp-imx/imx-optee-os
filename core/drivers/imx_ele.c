@@ -526,52 +526,12 @@ static TEE_Result imx_ele_rng_get_trng_state(void)
 		return TEE_SUCCESS;
 }
 
-/*
- * Get various SoC info for the ELE
- *
- * @rsp	[out] Output data
- */
-static TEE_Result imx_ele_get_info(struct get_info_msg_rsp *rsp)
-{
-	TEE_Result res = TEE_ERROR_GENERIC;
-
-	struct get_info_cmd {
-		uint32_t msb;
-		uint32_t lsb;
-		uint32_t size;
-	} cmd = {
-		.msb = (uint64_t)rsp >> 32,
-		.lsb = (uint64_t)rsp,
-		.size = (uint32_t)sizeof(struct get_info_msg_rsp),
-	};
-
-	struct imx_mu_msg msg = {
-		.header.version = ELE_VERSION_BASELINE,
-		.header.size = SIZE_MSG(cmd),
-		.header.tag = ELE_REQUEST_TAG,
-		.header.command = ELE_CMD_GET_INFO,
-	};
-
-	memcpy(msg.data.u8, &cmd, sizeof(cmd));
-
-	res = imx_ele_call(&msg);
-	if (res)
-		EMSG("Failed to get info");
-
-	return res;
-}
-
-#define SOC_MX8ULP_A0 0xa000
-#define SOC_MX8ULP_A1 0xa100
-
 unsigned long plat_get_aslr_seed(void)
 {
 	uint32_t session_handle = 0;
 	uint32_t rng_handle = 0;
 	unsigned long aslr = 0;
 	uint64_t timeout = timeout_init_us(10 * 1000);
-	struct get_info_msg_rsp info = { };
-	uint16_t rev = 0;
 
 	/*
 	 * In this function, we assume that virtual address is also a physical
@@ -582,23 +542,15 @@ unsigned long plat_get_aslr_seed(void)
 	if (imx_ele_init())
 		goto err;
 
-	if (imx_ele_get_info(&info))
-		rev = SOC_MX8ULP_A0;
-	else
-		rev = info.soc_rev;
-
-	/* This command is only available on A1 soc revision */
-	if (rev == SOC_MX8ULP_A1) {
-		/*
-		 * Check the current TRNG state of the ELE. The TRNG must be
-		 * started with a command earlier in the boot to allow the TRNG
-		 * to generate enough entropy.
-		 * This command is only available starting imx8ulp A1.
-		 */
-		while (imx_ele_rng_get_trng_state() == TEE_ERROR_BUSY)
-			if (timeout_elapsed(timeout))
-				return TEE_ERROR_BAD_STATE;
-	}
+	/*
+	 * Check the current TRNG state of the ELE. The TRNG must be
+	 * started with a command earlier in the boot to allow the TRNG
+	 * to generate enough entropy.
+	 * This command is only available starting imx8ulp A1.
+	 */
+	while (imx_ele_rng_get_trng_state() == TEE_ERROR_BUSY)
+		if (timeout_elapsed(timeout))
+			return TEE_ERROR_BAD_STATE;
 
 	if (imx_ele_session_open(&session_handle))
 		goto err;
