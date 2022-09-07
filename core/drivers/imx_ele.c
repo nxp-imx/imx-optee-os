@@ -59,6 +59,19 @@ struct get_info_msg_rsp {
 	uint32_t sha256_fw[8];
 } __packed;
 
+struct session_get_device_info_rsp {
+	uint32_t rsp_code;
+	uint32_t user_sab_id;
+	uint32_t chip_uid[4];
+	uint16_t chip_life_cycle;
+	uint16_t chip_monotonic_counter;
+	uint32_t ele_version;
+	uint32_t ele_version_ext;
+	uint8_t fips_mode;
+	uint8_t reserved[3];
+	uint32_t crc;
+} __packed;
+
 struct response_code {
 	uint8_t status;
 	uint8_t rating;
@@ -218,22 +231,11 @@ static TEE_Result imx_ele_call(struct imx_mu_msg *msg)
  * Get device information from EdgeLock Enclave
  *
  * @session_handle: EdgeLock Enclave session handler
- * @user_sab_id: user SAB
- * @uid_w0: Chip UUID word 0
- * @uid_w1: Chip UUID word 1
- * @uid_w2: Chip UUID word 2
- * @uid_w3: Chip UUID word 3
- * @life_cycle: Chip current lifecycle state
- * @monotonic_counter: Chip monotonic counter
- * @ele_version: EdgeLock enclave version
- * @ele_version_ext: EdgeLock enclave version ext
- * @fips_mode: EdgeLock enclave FIPS mode
+ * @rsp: Device info
  */
-static TEE_Result imx_ele_session_get_device_info(
-	uint32_t session_handle, uint32_t *user_sab_id, uint32_t *uid_w0,
-	uint32_t *uid_w1, uint32_t *uid_w2, uint32_t *uid_w3,
-	uint16_t *life_cycle, uint16_t *monotonic_counter,
-	uint32_t *ele_version, uint32_t *ele_version_ext, uint8_t *fips_mode)
+static TEE_Result
+imx_ele_session_get_device_info(int32_t session_handle,
+				struct session_get_device_info_rsp *rsp)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 
@@ -242,22 +244,6 @@ static TEE_Result imx_ele_session_get_device_info(
 	} cmd = {
 		.session_handle = session_handle,
 	};
-
-	struct session_get_device_info_rsp {
-		uint32_t rsp_code;
-		uint32_t user_sab_id;
-		uint32_t chip_uid_w0;
-		uint32_t chip_uid_w1;
-		uint32_t chip_uid_w2;
-		uint32_t chip_uid_w3;
-		uint16_t chip_life_cycle;
-		uint16_t chip_monotonic_counter;
-		uint32_t ele_version;
-		uint32_t ele_version_ext;
-		uint8_t fips_mode;
-		uint8_t reserved[3];
-		uint32_t crc;
-	} __packed *rsp = NULL;
 
 	struct imx_mu_msg msg = {
 		.header.version = ELE_VERSION_HSM,
@@ -272,31 +258,10 @@ static TEE_Result imx_ele_session_get_device_info(
 	if (res)
 		return res;
 
-	rsp = (void *)msg.data.u32;
+	memcpy(rsp, msg.data.u32, sizeof(*rsp));
 
 	if (compute_crc(&msg) != rsp->crc)
 		return TEE_ERROR_CORRUPT_OBJECT;
-
-	if (user_sab_id)
-		*user_sab_id = rsp->user_sab_id;
-	if (uid_w0)
-		*uid_w0 = rsp->chip_uid_w0;
-	if (uid_w1)
-		*uid_w1 = rsp->chip_uid_w1;
-	if (uid_w2)
-		*uid_w2 = rsp->chip_uid_w2;
-	if (uid_w3)
-		*uid_w3 = rsp->chip_uid_w3;
-	if (life_cycle)
-		*life_cycle = rsp->chip_life_cycle;
-	if (monotonic_counter)
-		*monotonic_counter = rsp->chip_monotonic_counter;
-	if (ele_version)
-		*ele_version = rsp->ele_version;
-	if (ele_version_ext)
-		*ele_version_ext = rsp->ele_version_ext;
-	if (fips_mode)
-		*fips_mode = rsp->fips_mode;
 
 	return TEE_SUCCESS;
 }
@@ -581,19 +546,16 @@ int tee_otp_get_die_id(uint8_t *buffer, size_t len)
 	 * The die ID must be cached because some board configuration prevents
 	 * the MU to be used by OPTEE at runtime.
 	 */
-	static uint32_t uid[UID_SIZE];
-	static bool is_fetched;
+	static struct session_get_device_info_rsp rsp = {};
 
-	if (is_fetched)
+	if (rsp.rsp_code)
 		goto out;
 
 	res = imx_ele_session_open(&session_handle);
 	if (res)
 		goto err;
 
-	res = imx_ele_session_get_device_info(session_handle, NULL, &uid[0],
-					      &uid[1], &uid[2], &uid[3], NULL,
-					      NULL, NULL, NULL, NULL);
+	res = imx_ele_session_get_device_info(session_handle, &rsp);
 	if (res)
 		goto err;
 
@@ -606,10 +568,9 @@ out:
 	 * In the device info array return by the ELE, the words 2, 3, 4 and 5
 	 * are the device UID.
 	 */
-	memcpy(buffer, uid, MIN(UID_SIZE, len));
-	is_fetched = true;
+	memcpy(buffer, rsp.chip_uid, MIN(UID_SIZE, len));
 
-	DHEXDUMP(uid, UID_SIZE);
+	DHEXDUMP(rsp.chip_uid, UID_SIZE);
 
 	return 0;
 err:
