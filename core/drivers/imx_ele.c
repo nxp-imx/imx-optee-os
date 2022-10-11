@@ -6,6 +6,7 @@
 #include <initcall.h>
 #include <io.h>
 #include <kernel/boot.h>
+#include <kernel/cache_helpers.h>
 #include <kernel/delay.h>
 #include <kernel/panic.h>
 #include <kernel/tee_common_otp.h>
@@ -30,6 +31,7 @@
 #define ELE_CMD_RNG_GET	  0x22
 #define ELE_CMD_TRNG_STATE	    0xA4
 #define ELE_CMD_GET_INFO	    0xDA
+#define ELE_CMD_DERIVE_KEY	    0xA9
 
 #define ELE_MU_ID  0x2
 #define ELE_MU_IRQ 0x0
@@ -577,3 +579,49 @@ err:
 	panic("Fail to get the device UID");
 	return -1;
 }
+
+#if defined(CFG_MX93)
+TEE_Result tee_otp_get_hw_unique_key(struct tee_hw_unique_key *hwkey)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	static uint8_t key[HW_UNIQUE_KEY_LENGTH];
+	static bool is_fetched;
+
+	struct key_derive_cmd {
+		uint32_t key_addr_msb;
+		uint32_t key_addr_lsb;
+		uint16_t key_size;
+		uint8_t res;
+	} __packed cmd = {
+		.key_addr_msb = 0,
+		.key_addr_lsb = virt_to_phys(key),
+		.key_size = sizeof(key),
+	};
+
+	struct imx_mu_msg msg = {
+		.header.version = ELE_VERSION_BASELINE,
+		.header.size = SIZE_MSG(cmd),
+		.header.tag = ELE_REQUEST_TAG,
+		.header.command = ELE_CMD_DERIVE_KEY,
+	};
+
+	if (is_fetched)
+		goto out;
+
+	memcpy(msg.data.u8, &cmd, sizeof(cmd));
+
+	res = imx_ele_call(&msg);
+	if (res) {
+		EMSG("Failed to get the HUK");
+		panic();
+	}
+
+	dcache_inv_range(key, sizeof(key));
+
+out:
+	memcpy(hwkey->data, key, HW_UNIQUE_KEY_LENGTH);
+	is_fetched = true;
+
+	return TEE_SUCCESS;
+}
+#endif /* CFG_MX93 */
