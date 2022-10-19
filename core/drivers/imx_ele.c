@@ -584,7 +584,7 @@ err:
 TEE_Result tee_otp_get_hw_unique_key(struct tee_hw_unique_key *hwkey)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	static uint8_t key[HW_UNIQUE_KEY_LENGTH];
+	static uint8_t key[HW_UNIQUE_KEY_LENGTH] __aligned(4);
 	static bool is_fetched;
 
 	struct key_derive_cmd {
