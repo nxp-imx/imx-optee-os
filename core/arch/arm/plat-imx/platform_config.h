@@ -3,7 +3,7 @@
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * Copyright (c) 2016, Wind River Systems.
  * All rights reserved.
- * Copyright 2019, 2021 NXP
+ * Copyright 2019, 2021-2022 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -68,21 +68,4 @@
 #include <config/imx6sll.h>
 #endif
 
-/*
- * Calculate Non Secure memory region, after Secure memory carved out.
- * Assumption is memory for TEE is 32M
- * Those defines are used to register dynamic shared memory
- */
-#if defined(CFG_MX8MQ) || defined(CFG_MX8MM) || defined(CFG_MX8MN) || \
-	defined(CFG_MX8MP) || defined(CFG_MX93)
-#define DRAM0_NSEC_BASE CFG_DRAM_BASE
-#define DRAM0_NSEC_SIZE (CFG_TZDRAM_START - CFG_DRAM_BASE)
-#define DRAM1_NSEC_BASE (CFG_TZDRAM_START + 0x2000000)
-#define DRAM1_NSEC_SIZE (CFG_DDR_SIZE - DRAM1_NSEC_BASE + CFG_DRAM_BASE)
-#endif
-
-#if defined(CFG_IMX_DEK_HAB) && !defined(DRAM0_NSEC_SIZE)
-#warning HAB DEK Blob is enabled but it requires dynamic shared memory \
-and this feature is not enabled !!
-#endif
 #endif /*PLATFORM_CONFIG_H*/

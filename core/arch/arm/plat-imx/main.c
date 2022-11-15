@@ -3,7 +3,7 @@
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * Copyright (c) 2016, Wind River Systems.
  * All rights reserved.
- * Copyright 2019 NXP
+ * Copyright 2019, 2022 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -98,11 +98,11 @@ register_phys_mem_pgdir(MEM_AREA_IO_SEC,
 			CORE_MMU_PGDIR_SIZE);
 #endif
 
-#ifdef DRAM0_NSEC_SIZE
-register_dynamic_shm(DRAM0_NSEC_BASE, DRAM0_NSEC_SIZE);
+#ifdef CFG_DRAM_BASE
+register_ddr(CFG_DRAM_BASE, CFG_DDR_SIZE);
 #endif
-#if defined DRAM1_NSEC_SIZE && ( DRAM1_NSEC_SIZE > 0 )
-register_dynamic_shm(DRAM1_NSEC_BASE, DRAM1_NSEC_SIZE);
+#ifdef CFG_NSEC_DDR_1_BASE
+register_ddr(CFG_NSEC_DDR_1_BASE, CFG_NSEC_DDR_1_SIZE);
 #endif
 
 void itr_core_handler(void)
