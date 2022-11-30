@@ -590,10 +590,10 @@ err:
 bool tee_entry_is_sdp_cached(void)
 {
 #ifdef CFG_SECURE_DATA_PATH
-	uint32_t cattr;
+	uint32_t mem_type = 0;
 
-	if (!mobj_get_cattr(*sdp_mem_mobjs, &cattr))
-		return cattr & TEE_MATTR_CACHE_CACHED;
+	if (!mobj_get_mem_type(*sdp_mem_mobjs, &mem_type))
+		return mem_type & TEE_MATTR_MEM_TYPE_CACHED;
 #endif
 
 	return false;
