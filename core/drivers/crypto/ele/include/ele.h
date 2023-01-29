@@ -40,5 +40,6 @@ void update_crc(struct imx_mu_msg *msg);
  * @msg MU message
  */
 TEE_Result imx_ele_call(struct imx_mu_msg *msg);
+TEE_Result imx_ele_get_global_session_handle(uint32_t *session_handle);
 
 #endif /* __ELE_H_ */
