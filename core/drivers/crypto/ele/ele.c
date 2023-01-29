@@ -469,6 +469,43 @@ err:
 	panic("Fail to get the device UID");
 }
 
+TEE_Result imx_ele_get_global_session_handle(uint32_t *session_handle)
+{
+	static uint32_t imx_ele_session_handle;
+	TEE_Result res = TEE_ERROR_GENERIC;
+
+	if (!session_handle)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	if (imx_ele_session_handle) {
+		res = TEE_SUCCESS;
+		goto out;
+	}
+
+	res = imx_ele_session_open(&imx_ele_session_handle);
+	if (res) {
+		EMSG("Failed to open global session");
+		return res;
+	}
+
+out:
+	*session_handle = imx_ele_session_handle;
+	return res;
+}
+
+static TEE_Result imx_ele_global_data_init(void)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t session_handle = 0;
+
+	res = imx_ele_get_global_session_handle(&session_handle);
+	if (res)
+		EMSG("Failed to open global session");
+
+	return res;
+}
+driver_init(imx_ele_global_data_init);
+
 #if defined(CFG_MX93)
 TEE_Result tee_otp_get_hw_unique_key(struct tee_hw_unique_key *hwkey)
 {
