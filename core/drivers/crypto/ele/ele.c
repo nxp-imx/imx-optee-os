@@ -2,6 +2,7 @@
 /*
  * Copyright 2022-2023, 2025 NXP
  */
+#include <acipher.h>
 #include <drivers/imx_mu.h>
 #include <ele.h>
 #include <initcall.h>
@@ -408,7 +409,7 @@ out:
 	return res;
 }
 
-static TEE_Result imx_ele_global_data_init(void)
+static TEE_Result imx_ele_global_init(void)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t session_handle = 0;
@@ -421,14 +422,20 @@ static TEE_Result imx_ele_global_data_init(void)
 	}
 
 	res = imx_ele_get_global_key_store_handle(&key_store_handle);
-	if (res)
+	if (res) {
 		EMSG("Failed to open global key store");
+		goto err;
+	}
+
+	res = imx_ele_ecc_init();
+	if (res)
+		EMSG("ELE ECC driver registration failed");
 
 err:
 	return res;
 }
 
-driver_init(imx_ele_global_data_init);
+driver_init(imx_ele_global_init);
 
 #if defined(CFG_MX93) || defined(CFG_MX91)
 static TEE_Result imx_ele_derive_key(const uint8_t *ctx, size_t ctx_size,
