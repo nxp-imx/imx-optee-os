@@ -372,6 +372,61 @@ int tee_otp_get_die_id(uint8_t *buffer, size_t len)
 	return 0;
 }
 
+/*
+ * Initialize EdgeLock Enclave services
+ */
+static TEE_Result imx_ele_sab_init(void)
+{
+	struct imx_mu_msg msg = {
+		.header.version = ELE_VERSION_HSM,
+		.header.size = 1,
+		.header.tag = ELE_REQUEST_TAG,
+		.header.command = ELE_CMD_SAB_INIT,
+	};
+
+	return imx_ele_call(&msg);
+}
+
+driver_init(imx_ele_sab_init);
+
+TEE_Result imx_ele_get_global_session_handle(uint32_t *session_handle)
+{
+	static uint32_t imx_ele_session_handle;
+	TEE_Result res = TEE_ERROR_GENERIC;
+
+	if (!session_handle)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	if (imx_ele_session_handle) {
+		res = TEE_SUCCESS;
+		goto out;
+	}
+
+	res = imx_ele_session_open(&imx_ele_session_handle);
+	if (res) {
+		EMSG("Failed to open global session");
+		return res;
+	}
+
+out:
+	*session_handle = imx_ele_session_handle;
+	return res;
+}
+
+static TEE_Result imx_ele_global_data_init(void)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t session_handle = 0;
+
+	res = imx_ele_get_global_session_handle(&session_handle);
+	if (res)
+		EMSG("Failed to open global session");
+
+	return res;
+}
+
+driver_init(imx_ele_global_data_init);
+
 #if defined(CFG_MX93) || defined(CFG_MX91) || defined(CFG_MX95) || \
 	defined(CFG_MX943)
 static TEE_Result imx_ele_derive_key(const uint8_t *ctx, size_t ctx_size,
@@ -570,4 +625,4 @@ TEE_Result hw_get_random_bytes(void *buf, size_t len)
 	return imx_ele_rng_get_random((uint8_t *)buf, len);
 }
 #endif /* CFG_WITH_SOFTWARE_PRNG */
-#endif /* CFG_MX93 || CFG_MX91 */
+#endif /* CFG_MX93 || CFG_MX91 || CFG_MX95 || CFG_MX943 */
