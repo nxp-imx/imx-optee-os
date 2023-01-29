@@ -42,4 +42,20 @@ void update_crc(struct imx_mu_msg *msg);
 TEE_Result imx_ele_call(struct imx_mu_msg *msg);
 TEE_Result imx_ele_get_global_session_handle(uint32_t *session_handle);
 
+/*
+ * Open a Key Management session with EdgeLock Enclave.
+ *
+ * @key_store_handle: EdgeLock Enclave key store handle
+ * @key_mgmt_handle: EdgeLock Enclave Key management handle
+ */
+TEE_Result imx_ele_key_mgmt_open(uint32_t key_store_handle,
+				 uint32_t *key_mgmt_handle);
+
+/*
+ * Close Key management with EdgeLock Enclave.
+ *
+ * @key_mgmt_handle: EdgeLock Enclave key management handle
+ */
+TEE_Result imx_ele_key_mgmt_close(uint32_t key_mgmt_handle);
+
 #endif /* __ELE_H_ */
