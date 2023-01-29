@@ -15,6 +15,23 @@
 #define ELE_VERSION_HSM 0x07
 #define ELE_REQUEST_TAG 0x17
 
+/* Definitions for Key Lifetime attribute */
+#define ELE_KEY_LIFETIME_VOLATILE	      0x00000000
+#define ELE_KEY_LIFETIME_PERSISTENT	      0x00000001
+#define ELE_KEY_LIFETIME_VOLATILE_PERMANENT   0x00000080
+#define ELE_KEY_LIFETIME_PERSISTENT_PERMANENT 0x00000081
+
+/* Definitions for Key Usage attribute */
+#define ELE_KEY_USAGE_EXPORT 0x00000001
+
+/* Key store information */
+#define ELE_KEY_STORE_AUTH_NONCE  0x1234
+#define ELE_KEY_STORE_MAX_UPDATES 100
+
+/* Key groups for grouping keys */
+#define ELE_KEY_GROUP_VOLATILE	 0
+#define ELE_KEY_GROUP_PERSISTENT 1
+
 static inline size_t size_msg(size_t cmd)
 {
 	size_t words = ROUNDUP(cmd, sizeof(uint32_t)) / sizeof(uint32_t);
