@@ -84,12 +84,18 @@ struct response_code {
 	uint16_t rating_extension;
 } __packed;
 
+/* Global MU address for ELE calls */
+static vaddr_t imx_ele_va;
+
+/* True if the ELE initialization is done */
+static bool optee_init_finish;
+
 /*
  * Print ELE response status and rating
  *
  * @rsp response code structure
  */
-static void print_rsp_code(struct response_code rsp __maybe_unused)
+static void print_rsp_code(const struct response_code rsp __maybe_unused)
 {
 	DMSG("Response status %#"PRIx8", rating %#"PRIx8" (ext %#"PRIx16")",
 	     rsp.status, rsp.rating, rsp.rating_extension);
@@ -179,6 +185,52 @@ static vaddr_t imx_ele_init(paddr_t pa, size_t sz)
 }
 
 /*
+ * During OPTEE boot, the MU registers are marked as secure by the RDC. After
+ * the secure world initialization at boot, the TF-A marks the MU registers
+ * as non-secure.
+ * ELE driver must re-map the MU registers from secure to non-secure.
+ */
+static TEE_Result imx_ele_set_non_secure_mapping(void)
+{
+	vaddr_t va = 0;
+	TEE_Result res = TEE_ERROR_GENERIC;
+
+	if (core_mmu_remove_mapping(MEM_AREA_IO_SEC, (void *)imx_ele_va,
+				    MU_SIZE)) {
+		EMSG("Unable to remove ELE mapping res = %" PRIx32, res);
+		return res;
+	}
+
+	va = (vaddr_t)core_mmu_add_mapping(MEM_AREA_IO_NSEC, MU_BASE, MU_SIZE);
+	if (!va) {
+		EMSG("Unable to map ele MU address");
+		return TEE_ERROR_GENERIC;
+	}
+
+	imx_mu_init(va);
+
+	imx_ele_va = va;
+
+	return TEE_SUCCESS;
+}
+
+/*
+ * This function is used to set the optee_init_finish which will signal that
+ * OP-TEE initialization is done.
+ * During initialization we need the MU memory mapping in MMU as Secure and
+ * after initialization we need MU memory mapping in MMU as Non-Secure.
+ * So will check optee_init_finish flag in the first MU call after
+ * initialization, and based on its value, will change the memory mapping.
+ */
+static TEE_Result imx_ele_set_init_flag(void)
+{
+	optee_init_finish = true;
+
+	return TEE_SUCCESS;
+}
+boot_final(imx_ele_set_init_flag);
+
+/*
  * Extract response codes from the given word
  *
  * @word 32 bits word MU response
@@ -201,6 +253,15 @@ TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 	vaddr_t va = 0;
 
 	assert(msg);
+
+	if (optee_init_finish) {
+		res = imx_ele_set_non_secure_mapping();
+		if (res) {
+			EMSG("Failure to change memory mapping");
+			return res;
+		}
+		optee_init_finish = false;
+	}
 
 	if (msg->header.tag != ELE_REQUEST_TAG) {
 		EMSG("Request has invalid tag: %#"PRIx8" instead of %#"PRIx8,
