@@ -9,6 +9,7 @@
 #include <kernel/delay.h>
 #include <kernel/panic.h>
 #include <kernel/tee_common_otp.h>
+#include <key_store.h>
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
 #include <stdint.h>
@@ -497,11 +498,19 @@ static TEE_Result imx_ele_global_data_init(void)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t session_handle = 0;
+	uint32_t key_store_handle = 0;
 
 	res = imx_ele_get_global_session_handle(&session_handle);
-	if (res)
+	if (res) {
 		EMSG("Failed to open global session");
+		goto err;
+	}
 
+	res = imx_ele_get_global_key_store_handle(&key_store_handle);
+	if (res)
+		EMSG("Failed to open global key store");
+
+err:
 	return res;
 }
 driver_init(imx_ele_global_data_init);
