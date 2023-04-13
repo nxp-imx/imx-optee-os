@@ -527,7 +527,6 @@ ifneq (,$(filter y, $(CFG_MX6) $(CFG_MX7) $(CFG_MX7ULP)))
 CFG_IMX_CAAM ?= y
 endif
 
-CFG_WITH_SOFTWARE_PRNG ?= y
 endif
 
 ifeq ($(CFG_BUSFREQ),y)
