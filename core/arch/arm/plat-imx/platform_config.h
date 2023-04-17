@@ -3,7 +3,7 @@
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  * Copyright (c) 2016, Wind River Systems.
  * All rights reserved.
- * Copyright 2019 NXP
+ * Copyright 2019, 2021 NXP
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -41,6 +41,8 @@
 
 #define STACK_ALIGNMENT			64
 #define CONSOLE_UART_BASE		(CFG_UART_BASE)
+
+#define SC_IPC_BASE_SECURE (CFG_SC_IPC_BASE)
 
 /* For i.MX6 Quad SABRE Lite and Smart Device board */
 #if defined(CFG_MX6QP) || defined(CFG_MX6Q) || defined(CFG_MX6D) || \
