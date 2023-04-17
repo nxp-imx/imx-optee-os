@@ -76,7 +76,7 @@ $(call force, CFG_JR_INDEX,2)
 $(call force, CFG_JR_INT,146)
 $(call force, CFG_NXP_CAAM_SGT_V1,y)
 $(call force, CFG_JR_HAB_INDEX,0)
-caam-drivers += MP
+caam-drivers += MP SM
 caam-crypto-drivers += RSA DSA ECC DH MATH
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx8ulp-flavorlist)))
 $(call force, CFG_JR_BLOCK_SIZE,0x1000)

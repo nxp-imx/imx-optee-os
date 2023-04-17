@@ -7,3 +7,8 @@ srcs-y += hal_cfg.c
 srcs-y += hal_rng.c
 srcs-y += hal_jr.c
 srcs-y += hal_ctrl.c
+
+ifeq ($(CFG_NXP_CAAM_SM_DRV),y)
+srcs-y += hal_sm.c
+srcs-$(CFG_DT) += hal_sm_dt.c
+endif
