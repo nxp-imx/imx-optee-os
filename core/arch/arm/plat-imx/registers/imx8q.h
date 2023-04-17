@@ -16,6 +16,8 @@
 #define CAAM_BASE	0x31400000
 #define CAAM_SIZE       0x40000
 #define SC_IPC_BASE_SECURE 0x5d1b0000
+#define SC_IPC0_BASE	0x5d1b0000
+#define SC_IPC3_BASE	0x5d1e0000
 #define SC_IPC_SIZE	   0x10000
 
 #endif /* __IMX8Q_H__ */
