@@ -6,6 +6,8 @@
 #define __IMX7_H__
 
 #include <registers/imx7-crm.h>
+#include <registers/imx7-ddrc.h>
+#include <registers/imx7-iomux.h>
 
 #define GIC_BASE		0x31000000
 #define GIC_SIZE		0x8000
@@ -30,6 +32,7 @@
 #define WDOG_BASE		0x30280000
 #define LPSR_BASE		0x30270000
 #define IOMUXC_BASE		0x30330000
+#define IOMUXC_SIZE		0x4000
 #define IOMUXC_GPR_BASE		0x30340000
 #define OCOTP_BASE		0x30350000
 #define OCOTP_SIZE		0x10000
@@ -44,7 +47,9 @@
 #define TZASC_BASE		0x30780000
 #define TZASC_SIZE		0x10000
 #define DDRC_PHY_BASE		0x30790000
+#define DDRC_PHY_SIZE		0x10000
 #define MMDC_P0_BASE		0x307A0000
+#define MMDC_P0_SIZE		0x10000
 #define DDRC_BASE		0x307A0000
 #define IRAM_BASE		0x00900000
 #define IRAM_S_BASE		0x00180000
@@ -54,8 +59,6 @@
 #define	CSU_ACCESS_ALL		0x00FF00FF
 #define CSU_SETTING_LOCK	0x01000100
 #define CSU_SA			0x218
-
-#define TRUSTZONE_OCRAM_START	0x180000
 
 #define IOMUXC_GPR9_OFFSET				0x24
 #define IOMUXC_GPR9_TZASC1_MUX_CONTROL_OFFSET		0
