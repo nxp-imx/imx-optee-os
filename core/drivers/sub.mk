@@ -12,6 +12,7 @@ srcs-$(CFG_SP805_WDT) += sp805_wdt.c
 srcs-$(CFG_8250_UART) += serial8250_uart.c
 srcs-$(CFG_16550_UART) += ns16550.c
 srcs-$(CFG_IMX_CAAM) += imx_caam.c
+srcs-$(CFG_IMX_CSU) += imx_csu.c
 srcs-$(CFG_IMX_SNVS) += imx_snvs.c
 srcs-$(CFG_IMX_UART) += imx_uart.c
 srcs-$(CFG_IMX_I2C) += imx_i2c.c
