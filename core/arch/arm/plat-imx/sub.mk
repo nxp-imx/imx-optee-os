@@ -2,10 +2,6 @@ global-incdirs-y += .
 srcs-y += main.c imx-common.c
 
 srcs-$(CFG_PL310) += imx_pl310.c
-ifeq ($(CFG_PSCI_ARM32),y)
-$(call force,CFG_PM_ARM32,y)
-CFG_IMX_PM ?= y
-endif
 
 ifneq (,$(filter y, $(CFG_MX6Q) $(CFG_MX6QP) $(CFG_MX6D) $(CFG_MX6DL) \
 	$(CFG_MX6S) $(CFG_MX6SL) $(CFG_MX6SLL) $(CFG_MX6SX)))

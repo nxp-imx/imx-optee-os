@@ -473,7 +473,10 @@ endif
 ifeq ($(filter y, $(CFG_PSCI_ARM32)), y)
 CFG_HWSUPP_MEM_PERM_WXN = n
 CFG_IMX_WDOG ?= y
+CFG_PM_ARM32 ?= y
 endif
+
+CFG_IMX_PM ?= y
 
 ifeq ($(CFG_ARM64_core),y)
 # arm-v8 platforms
