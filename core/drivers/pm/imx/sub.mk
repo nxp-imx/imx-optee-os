@@ -1,6 +1,6 @@
 incdirs-y += .
 
-subdirs-$(CFG_MX6)$(CFG_MX7) += busfreq
+subdirs-$(CFG_BUSFREQ) += busfreq
 subdirs-y += cpuidle
 subdirs-y += suspend
 
