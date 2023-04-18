@@ -10,6 +10,6 @@ ifneq (,$(filter y, $(CFG_MX7) $(CFG_MX7ULP) $(CFG_MX6UL) $(CFG_MX6ULL)))
 srcs-y += a7_plat_init.S
 endif
 
-subdirs-y += drivers
 srcs-$(CFG_PL310) += imx_pl310.c
 srcs-$(CFG_SM_PLATFORM_HANDLER) += sm_platform_handler.c
+srcs-$(CFG_TZC380) += tzc380.c
