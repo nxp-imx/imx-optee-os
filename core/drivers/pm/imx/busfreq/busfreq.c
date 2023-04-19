@@ -22,7 +22,8 @@
 /* Local include */
 #include "busfreq_imx6.h"
 #include "busfreq_imx7.h"
-#include "imx_busfreq.h"
+
+#include <drivers/pm/imx/busfreq.h>
 
 #ifndef CFG_IMX6
 __weak TEE_Result imx6_busfreq_change(uint32_t freq __unused,
