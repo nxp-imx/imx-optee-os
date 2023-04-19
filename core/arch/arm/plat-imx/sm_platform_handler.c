@@ -8,12 +8,15 @@
 #include <sm/sm.h>
 #include <trace.h>
 #include <imx_pl310.h>
+#include <drivers/pm/imx/busfreq.h>
 
 #define IMX_SIP_PL310_ENABLE			1
 #define IMX_SIP_PL310_DISABLE			2
 #define IMX_SIP_PL310_ENABLE_WRITEBACK		3
 #define IMX_SIP_PL310_DISABLE_WRITEBACK		4
 #define IMX_SIP_PL310_ENABLE_WFLZ		5
+
+#define IMX_SIP_BUSFREQ_CHANGE 6
 
 static enum sm_handler_ret imx_sip_handler(struct thread_smc_args *smc_args)
 {
@@ -35,6 +38,11 @@ static enum sm_handler_ret imx_sip_handler(struct thread_smc_args *smc_args)
 		break;
 	case IMX_SIP_PL310_ENABLE_WFLZ:
 		smc_args->a0 = pl310_enable_wflz();
+		break;
+#endif
+#ifdef CFG_BUSFREQ
+	case IMX_SIP_BUSFREQ_CHANGE:
+		smc_args->a0 = busfreq_change(smc_args->a1, smc_args->a2);
 		break;
 #endif
 	default:
