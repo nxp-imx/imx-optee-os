@@ -9,6 +9,8 @@
 #ifndef __BUSFREQ_H__
 #define __BUSFREQ_H__
 
+#include <tee_api_types.h>
+
 TEE_Result busfreq_change(uint32_t freq, uint32_t dll_off);
 
 #endif /* __BUSFREQ_H__ */
