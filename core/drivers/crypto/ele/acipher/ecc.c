@@ -169,20 +169,17 @@ static TEE_Result do_gen_keypair(struct ecc_keypair *key,
 				   ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1,
 				   key_size_bits, permitted_algo,
 				   public_key, &key_id);
+
+	res |= imx_ele_key_mgmt_close(key_mgmt_handle);
 	if (res != TEE_SUCCESS) {
-		EMSG("Generate key failed");
-		goto key_mgmt_close;
+		EMSG("Key generation/Key management close failed");
+		goto out;
 	}
 
 	crypto_bignum_bin2bn(public_key, key_size, key->x);
 	crypto_bignum_bin2bn(public_key + key_size, key_size, key->y);
 
 	crypto_bignum_bin2bn((uint8_t *)&key_id, sizeof(key_id), key->d);
-
-key_mgmt_close:
-	res = imx_ele_key_mgmt_close(key_mgmt_handle);
-	if (res != TEE_SUCCESS)
-		EMSG("Key management close failed");
 
 out:
 	free(public_key);
@@ -218,8 +215,7 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 	sig_scheme = algo_tee2ele(sdata->algo);
 	if (sig_scheme == ELE_ALGO_ECDSA_NOT_SUPPORTED) {
 		EMSG("Signature scheme not supported");
-		res = TEE_ERROR_NOT_SUPPORTED;
-		goto out;
+		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
 	crypto_bignum_bn2bin(key->d, (uint8_t *)&key_id);
@@ -227,13 +223,13 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 	res = imx_ele_get_global_key_store_handle(&key_store_handle);
 	if (res != TEE_SUCCESS) {
 		EMSG("Getting key store handle failed");
-		goto out;
+		return res;
 	}
 
 	res = imx_ele_sig_gen_open(key_store_handle, &sig_gen_handle);
 	if (res != TEE_SUCCESS) {
 		EMSG("Signature generation service flow open failed");
-		goto out;
+		return res;
 	}
 
 	res = imx_ele_signature_generate(sig_gen_handle, key_id,
@@ -243,19 +239,17 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 					 signature_len,
 					 sig_scheme,
 					 ELE_SIG_GEN_MSG_TYPE_MESSAGE);
-	if (res != TEE_SUCCESS)
-		EMSG("Signature generation failed");
 
-	res = imx_ele_sig_gen_close(sig_gen_handle);
+	res |= imx_ele_sig_gen_close(sig_gen_handle);
 	if (res != TEE_SUCCESS) {
-		EMSG("Signature flow close failed");
+		EMSG("Signature generation/Signature flow close failed");
 		goto out;
 	}
 
 	sdata->signature.length = signature_len;
 
 out:
-	return TEE_SUCCESS;
+	return res;
 }
 
 static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
@@ -329,12 +323,10 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 					     ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1,
 					     sig_scheme,
 					     ELE_SIG_GEN_MSG_TYPE_MESSAGE);
-	if (res != TEE_SUCCESS)
-		EMSG("Signature verification failed");
 
-	res = imx_ele_sig_verify_close(sig_verify_handle);
+	res |= imx_ele_sig_verify_close(sig_verify_handle);
 	if (res != TEE_SUCCESS)
-		EMSG("Signature verification flow close failed");
+		EMSG("Signature verif/Signature verif flow close failed");
 
 out:
 	free(public_key);
