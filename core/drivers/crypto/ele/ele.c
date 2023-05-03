@@ -53,6 +53,7 @@
 #endif
 
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, MU_BASE, MU_SIZE);
+register_phys_mem_pgdir(MEM_AREA_IO_NSEC, MU_BASE, MU_SIZE);
 
 struct get_info_msg_rsp {
 	uint32_t rsp_code;
@@ -83,9 +84,6 @@ struct response_code {
 	uint8_t rating;
 	uint16_t rating_extension;
 } __packed;
-
-/* Global MU address for ELE calls */
-static vaddr_t imx_ele_va;
 
 /* True if the ELE initialization is done */
 static bool optee_init_finish;
@@ -167,14 +165,19 @@ void update_crc(struct imx_mu_msg *msg)
 static vaddr_t imx_ele_init(paddr_t pa, size_t sz)
 {
 	static bool is_initialized;
+	enum teecore_memtypes mtype = MEM_AREA_IO_SEC;
 	vaddr_t va = 0;
 
 	assert(pa && sz);
 
-	if (cpu_mmu_enabled())
-		va = core_mmu_get_va(pa, MEM_AREA_IO_SEC, sz);
-	else
+	if (cpu_mmu_enabled()) {
+		if (optee_init_finish)
+			mtype = MEM_AREA_IO_NSEC;
+
+		va = core_mmu_get_va(pa, mtype, sz);
+	} else {
 		va = (vaddr_t)pa;
+	}
 
 	if (!is_initialized) {
 		imx_mu_init(va);
@@ -182,36 +185,6 @@ static vaddr_t imx_ele_init(paddr_t pa, size_t sz)
 	}
 
 	return va;
-}
-
-/*
- * During OPTEE boot, the MU registers are marked as secure by the RDC. After
- * the secure world initialization at boot, the TF-A marks the MU registers
- * as non-secure.
- * ELE driver must re-map the MU registers from secure to non-secure.
- */
-static TEE_Result imx_ele_set_non_secure_mapping(void)
-{
-	vaddr_t va = 0;
-	TEE_Result res = TEE_ERROR_GENERIC;
-
-	if (core_mmu_remove_mapping(MEM_AREA_IO_SEC, (void *)imx_ele_va,
-				    MU_SIZE)) {
-		EMSG("Unable to remove ELE mapping res = %" PRIx32, res);
-		return res;
-	}
-
-	va = (vaddr_t)core_mmu_add_mapping(MEM_AREA_IO_NSEC, MU_BASE, MU_SIZE);
-	if (!va) {
-		EMSG("Unable to map ele MU address");
-		return TEE_ERROR_GENERIC;
-	}
-
-	imx_mu_init(va);
-
-	imx_ele_va = va;
-
-	return TEE_SUCCESS;
 }
 
 /*
@@ -253,15 +226,6 @@ TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 	vaddr_t va = 0;
 
 	assert(msg);
-
-	if (optee_init_finish) {
-		res = imx_ele_set_non_secure_mapping();
-		if (res) {
-			EMSG("Failure to change memory mapping");
-			return res;
-		}
-		optee_init_finish = false;
-	}
 
 	if (msg->header.tag != ELE_REQUEST_TAG) {
 		EMSG("Request has invalid tag: %#"PRIx8" instead of %#"PRIx8,
