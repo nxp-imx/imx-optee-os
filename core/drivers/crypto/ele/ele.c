@@ -20,14 +20,10 @@
 #include <types_ext.h>
 #include <utee_types.h>
 #include <util.h>
+#include <utils_trace.h>
 
 #define ELE_BASE_ADDR MU_BASE
 #define ELE_BASE_SIZE MU_SIZE
-
-#define ELE_VERSION_BASELINE 0x06
-#define ELE_COMMAND_SUCCEED 0xd6
-#define ELE_COMMAND_FAILED  0x29
-#define ELE_RESPONSE_TAG    0xe1
 
 #define ELE_CMD_SESSION_OPEN	    0x10
 #define ELE_CMD_SESSION_CLOSE	    0x11
@@ -71,52 +67,8 @@ struct get_info_rsp {
 	uint8_t unused_2;
 } __packed;
 
-struct response_code {
-	uint8_t status;
-	uint8_t rating;
-	uint16_t rating_extension;
-} __packed;
-
 /* True if the ELE initialization is done */
 static bool optee_init_finish;
-
-/*
- * Print ELE response status and rating
- *
- * @rsp response code structure
- */
-static void print_rsp_code(const struct response_code rsp __maybe_unused)
-{
-	DMSG("Response status %#"PRIx8", rating %#"PRIx8" (ext %#"PRIx16")",
-	     rsp.status, rsp.rating, rsp.rating_extension);
-}
-
-/*
- * Print ELE message header
- *
- * @hdr message header
- */
-static void print_msg_header(struct imx_mu_msg_header hdr __maybe_unused)
-{
-	DMSG("Header ver %#"PRIx8", size %"PRId8", tag %#"PRIx8", cmd %#"PRIx8,
-	     hdr.version, hdr.size, hdr.tag, hdr.command);
-}
-
-/*
- * Print full ELE message content
- *
- * @msg message
- */
-static void dump_message(const struct imx_mu_msg *msg __maybe_unused)
-{
-	size_t i = 0;
-	size_t size __maybe_unused = msg->header.size;
-	uint32_t *data __maybe_unused = (uint32_t *)msg;
-
-	DMSG("Dump of message %p(%zu)", data, size);
-	for (i = 0; i < size; i++)
-		DMSG("word %zu: %#"PRIx32, i, data[i]);
-}
 
 /*
  * The CRC for the message is computed xor-ing all the words of the message:
@@ -195,26 +147,9 @@ static TEE_Result imx_ele_set_init_flag(void)
 }
 boot_final(imx_ele_set_init_flag);
 
-/*
- * Extract response codes from the given word
- *
- * @word 32 bits word MU response
- */
-static struct response_code get_response_code(uint32_t word)
-{
-	struct response_code rsp = {
-		.rating_extension = (word & GENMASK_32(31, 16)) >> 16,
-		.rating = (word & GENMASK_32(15, 8)) >> 8,
-		.status = (word & GENMASK_32(7, 0)) >> 0,
-	};
-
-	return rsp;
-}
-
 TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	struct response_code rsp = { };
 	vaddr_t va = 0;
 
 	assert(msg);
@@ -231,35 +166,22 @@ TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 		return TEE_ERROR_GENERIC;
 	}
 
+	ele_trace_print_msg(*msg);
+
 	res = imx_mu_call(va, msg, true);
 	if (res) {
-		EMSG("Failed to transmit message: %#"PRIx32, res);
-		print_msg_header(msg->header);
-		dump_message(msg);
+		EMSG("Failed to transmit message: %#" PRIx32, res);
 		return res;
 	}
 
-	rsp = get_response_code(msg->data.u32[0]);
-
 	if (msg->header.tag != ELE_RESPONSE_TAG) {
-		EMSG("Response has invalid tag: %#"PRIx8" instead of %#"PRIx8,
+		EMSG("Response has invalid tag: %#" PRIx8
+		     " instead of %#" PRIx8,
 		     msg->header.tag, ELE_RESPONSE_TAG);
-		print_msg_header(msg->header);
 		return TEE_ERROR_GENERIC;
 	}
 
-	if (rsp.status != ELE_COMMAND_SUCCEED) {
-		EMSG("Command has failed");
-		print_rsp_code(rsp);
-		return TEE_ERROR_GENERIC;
-	}
-
-	/* The rating can be different in success and failing cases */
-	if (rsp.rating != 0) {
-		EMSG("Command has invalid rating: %#"PRIx8, rsp.rating);
-		print_rsp_code(rsp);
-		return TEE_ERROR_GENERIC;
-	}
+	ele_trace_print_msg(*msg);
 
 	return TEE_SUCCESS;
 }

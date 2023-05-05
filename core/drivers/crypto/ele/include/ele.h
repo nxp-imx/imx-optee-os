@@ -14,6 +14,8 @@
 /* Definitions for communication protocol */
 #define ELE_VERSION_HSM 0x07
 #define ELE_REQUEST_TAG 0x17
+#define ELE_RESPONSE_TAG 0xe1
+#define ELE_VERSION_BASELINE 0x06
 
 /* Definitions for Key Lifetime attribute */
 #define ELE_KEY_LIFETIME_VOLATILE	      0x00000000
