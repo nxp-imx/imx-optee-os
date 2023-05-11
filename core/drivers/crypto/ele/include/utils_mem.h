@@ -21,6 +21,8 @@ struct imx_ele_buf {
 	uint8_t *data; /* Data buffer */
 	size_t size;   /* Number of bytes in the data buffer */
 	paddr_t paddr; /* Physical address of the buffer */
+	uint32_t paddr_msb; /* MSB of the physical address */
+	uint32_t paddr_lsb; /* LSB of the physical address */
 };
 
 /*
