@@ -69,6 +69,9 @@ TEE_Result imx_ele_buf_alloc(struct imx_ele_buf *ele_buf, const uint8_t *buf,
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
 
+	reg_pair_from_64((uint64_t)ele_buf->paddr, &ele_buf->paddr_msb,
+			 &ele_buf->paddr_lsb);
+
 	ele_buf->size = size;
 
 	if (buf)
