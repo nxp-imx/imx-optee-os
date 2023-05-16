@@ -440,6 +440,7 @@ out:
 	return res;
 }
 
+#ifdef CFG_IMX_ELE_ECC_DRV
 static TEE_Result imx_ele_global_init(void)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
@@ -467,6 +468,7 @@ err:
 }
 
 driver_init(imx_ele_global_init);
+#endif
 
 #if defined(CFG_MX93) || defined(CFG_MX91) || defined(CFG_MX95) || \
 	defined(CFG_MX943)
