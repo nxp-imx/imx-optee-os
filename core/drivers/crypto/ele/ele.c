@@ -48,7 +48,6 @@
 #endif
 
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, MU_BASE, MU_SIZE);
-register_phys_mem_pgdir(MEM_AREA_IO_NSEC, MU_BASE, MU_SIZE);
 
 struct get_info_rsp {
 	uint32_t rsp_code;
@@ -66,9 +65,6 @@ struct get_info_rsp {
 	uint8_t imem_state;
 	uint8_t unused_2;
 } __packed;
-
-/* True if the ELE initialization is done */
-static bool optee_init_finish;
 
 /*
  * The CRC for the message is computed xor-ing all the words of the message:
@@ -109,19 +105,14 @@ void update_crc(struct imx_mu_msg *msg)
 static vaddr_t imx_ele_init(paddr_t pa, size_t sz)
 {
 	static bool is_initialized;
-	enum teecore_memtypes mtype = MEM_AREA_IO_SEC;
 	vaddr_t va = 0;
 
 	assert(pa && sz);
 
-	if (cpu_mmu_enabled()) {
-		if (optee_init_finish)
-			mtype = MEM_AREA_IO_NSEC;
-
-		va = core_mmu_get_va(pa, mtype, sz);
-	} else {
+	if (cpu_mmu_enabled())
+		va = core_mmu_get_va(pa, MEM_AREA_IO_SEC, sz);
+	else
 		va = (vaddr_t)pa;
-	}
 
 	if (!is_initialized) {
 		imx_mu_init(va);
@@ -130,22 +121,6 @@ static vaddr_t imx_ele_init(paddr_t pa, size_t sz)
 
 	return va;
 }
-
-/*
- * This function is used to set the optee_init_finish which will signal that
- * OP-TEE initialization is done.
- * During initialization we need the MU memory mapping in MMU as Secure and
- * after initialization we need MU memory mapping in MMU as Non-Secure.
- * So will check optee_init_finish flag in the first MU call after
- * initialization, and based on its value, will change the memory mapping.
- */
-static TEE_Result imx_ele_set_init_flag(void)
-{
-	optee_init_finish = true;
-
-	return TEE_SUCCESS;
-}
-boot_final(imx_ele_set_init_flag);
 
 TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 {
