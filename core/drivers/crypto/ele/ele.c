@@ -3,6 +3,7 @@
  * Copyright 2022-2023 NXP
  */
 #include <acipher.h>
+#include <drivers/ele_extension.h>
 #include <drivers/imx_mu.h>
 #include <ele.h>
 #include <initcall.h>
@@ -412,10 +413,21 @@ driver_init(imx_ele_global_init);
 #endif
 
 #if defined(CFG_MX93)
-static TEE_Result imx_ele_derive_key(const uint8_t *ctx, size_t ctx_size,
-				     uint8_t *key, size_t key_size)
+/*
+ * Key buffer pointer must be align on a cache line
+ * as cache invalidate is done after key derivation.
+ * As key derivation can be done in secure OnChip RAM buffer,
+ * to prevent secret key leak in DDR, we could not used
+ * a temporary allocated aligned imx_ele_buffer to derive a key.
+ * Cause it would expose the derived key in DDR.
+ */
+TEE_Result imx_ele_derive_key(const uint8_t *ctx, size_t ctx_size, uint8_t *key,
+			      size_t key_size)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t msb = 0;
+	uint32_t lsb = 0;
+	paddr_t pa = 0;
 	struct key_derive_cmd {
 		uint32_t key_addr_msb;
 		uint32_t key_addr_lsb;
@@ -432,23 +444,42 @@ static TEE_Result imx_ele_derive_key(const uint8_t *ctx, size_t ctx_size,
 		.header.command = ELE_CMD_DERIVE_KEY,
 	};
 	struct imx_ele_buf ele_ctx = {};
-	struct imx_ele_buf ele_key = {};
 
 	assert(ctx && key);
 
-	if (key_size != 16 && key_size != 32)
+	/*
+	 * As we do a cache invalidate on key we must ensure that the buffer
+	 * is aligned on a cache line
+	 */
+	if (!IS_ALIGNED((uintptr_t)key, CACHELINE_SIZE))
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	res = imx_ele_buf_alloc(&ele_ctx, ctx, ctx_size);
 	if (res)
-		goto out;
+		return res;
 
-	res = imx_ele_buf_alloc(&ele_key, key, key_size);
-	if (res)
+	pa = virt_to_phys((void *)key);
+	/*
+	 * ELE need address align on 4 bytes.
+	 * Check is needed as no copy could be done.
+	 * Key buffer is potentially allocated in
+	 * OCRAM and must not be exposed to DDR.
+	 */
+	if (!IS_ALIGNED_WITH_TYPE(pa, uint32_t)) {
+		EMSG("Key address is not aligned");
+		res = TEE_ERROR_BAD_PARAMETERS;
 		goto out;
+	}
 
-	cmd.key_addr_lsb = ele_key.paddr_lsb;
-	cmd.key_addr_msb = ele_key.paddr_msb;
+	/*
+	 * Intermediate msb and lsb values are needed. Directly using
+	 * key_addr_msb and key_addr_lsb might be unaligned because of the
+	 * __packed attribute of key_derive_cmd {}
+	 */
+	reg_pair_from_64((uint64_t)pa, &msb, &lsb);
+
+	cmd.key_addr_lsb = lsb;
+	cmd.key_addr_msb = msb;
 	cmd.key_size = key_size;
 
 	cmd.ctx_addr_lsb = ele_ctx.paddr_lsb;
@@ -458,13 +489,15 @@ static TEE_Result imx_ele_derive_key(const uint8_t *ctx, size_t ctx_size,
 	memcpy(msg.data.u8, &cmd, sizeof(cmd));
 	update_crc(&msg);
 
+	memzero_explicit(key, key_size);
+	cache_operation(TEE_CACHEFLUSH, (void *)key, key_size);
+
 	res = imx_ele_call(&msg);
 	if (res)
 		goto out;
 
-	res = imx_ele_buf_copy(&ele_key, key, key_size);
+	cache_operation(TEE_CACHEINVALIDATE, (void *)key, key_size);
 out:
-	imx_ele_buf_free(&ele_key);
 	imx_ele_buf_free(&ele_ctx);
 
 	return res;
@@ -473,7 +506,7 @@ out:
 TEE_Result tee_otp_get_hw_unique_key(struct tee_hw_unique_key *hwkey)
 {
 	static const char pattern[] = "TEE_for_HUK_ELE";
-	static uint8_t key[HW_UNIQUE_KEY_LENGTH];
+	static uint8_t key[HW_UNIQUE_KEY_LENGTH] __aligned(CACHELINE_SIZE);
 	static bool is_fetched;
 
 	if (is_fetched)
@@ -613,5 +646,12 @@ unsigned long plat_get_aslr_seed(void)
 TEE_Result hw_get_random_bytes(void *buf, size_t len)
 {
 	return imx_ele_rng_get_random((uint8_t *)buf, len);
+}
+#else
+TEE_Result imx_ele_derive_key(const uint8_t *ctx __unused,
+			      size_t ctx_size __unused, uint8_t *key __unused,
+			      size_t key_size __unused)
+{
+	return TEE_ERROR_NOT_IMPLEMENTED;
 }
 #endif /* CFG_MX93 */
