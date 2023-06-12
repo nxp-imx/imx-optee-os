@@ -25,6 +25,8 @@
 #define ELE_BASE_ADDR MU_BASE
 #define ELE_BASE_SIZE MU_SIZE
 
+#define ELE_COMMAND_SUCCEED 0xd6
+
 #define ELE_CMD_SESSION_OPEN	    0x10
 #define ELE_CMD_SESSION_CLOSE	    0x11
 #define ELE_CMD_RNG_GET		    0xCD
@@ -122,6 +124,17 @@ static vaddr_t imx_ele_init(paddr_t pa, size_t sz)
 	return va;
 }
 
+struct response_code get_response_code(uint32_t word)
+{
+	struct response_code rsp = {
+		.rating_extension = (word & GENMASK_32(31, 16)) >> 16,
+		.rating = (word & GENMASK_32(15, 8)) >> 8,
+		.status = (word & GENMASK_32(7, 0)) >> 0,
+	};
+
+	return rsp;
+}
+
 TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
@@ -157,6 +170,9 @@ TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 	}
 
 	ele_trace_print_msg(*msg);
+
+	if (get_response_code(msg->data.u32[0]).status != ELE_COMMAND_SUCCEED)
+		return TEE_ERROR_GENERIC;
 
 	return TEE_SUCCESS;
 }
