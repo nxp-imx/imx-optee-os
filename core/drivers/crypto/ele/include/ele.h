@@ -34,6 +34,15 @@
 #define ELE_KEY_GROUP_VOLATILE	 0
 #define ELE_KEY_GROUP_PERSISTENT 1
 
+/*
+ * ELE response code
+ */
+struct response_code {
+	uint8_t status;
+	uint8_t rating;
+	uint16_t rating_extension;
+} __packed;
+
 static inline size_t size_msg(size_t cmd)
 {
 	size_t words = ROUNDUP(cmd, sizeof(uint32_t)) / sizeof(uint32_t);
@@ -45,6 +54,13 @@ static inline size_t size_msg(size_t cmd)
 }
 
 #define SIZE_MSG_32(_msg) size_msg(sizeof(_msg))
+
+/*
+ * Extract response codes from the given word
+ *
+ * @word 32 bits word MU response
+ */
+struct response_code get_response_code(uint32_t word);
 
 /*
  * The CRC is the last word of the message
