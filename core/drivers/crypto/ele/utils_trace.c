@@ -8,28 +8,6 @@
 #include <stdint.h>
 #include <utils_trace.h>
 
-struct response_code {
-	uint8_t status;
-	uint8_t rating;
-	uint16_t rating_extension;
-} __packed;
-
-/*
- * Extract response codes from the given word
- *
- * @word 32 bits word MU response
- */
-static struct response_code get_response_code(uint32_t word)
-{
-	struct response_code rsp = {
-		.rating_extension = (word & GENMASK_32(31, 16)) >> 16,
-		.rating = (word & GENMASK_32(15, 8)) >> 8,
-		.status = (word & GENMASK_32(7, 0)) >> 0,
-	};
-
-	return rsp;
-}
-
 void ele_trace_print_msg(struct imx_mu_msg msg)
 {
 	unsigned int i = 0;
