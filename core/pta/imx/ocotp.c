@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2021 NXP
+ * Copyright 2021, 2023 NXP
  */
+
+#ifdef CFG_IMX_ELE
+#include <drivers/ele_extension.h>
+#endif
+#ifdef CFG_IMX_OCOTP
 #include <drivers/imx_ocotp.h>
+#endif
 #include <kernel/pseudo_ta.h>
 #include <kernel/tee_common_otp.h>
 #include <pta_imx_ocotp.h>
