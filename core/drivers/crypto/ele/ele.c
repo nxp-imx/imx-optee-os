@@ -33,6 +33,7 @@
 #define ELE_CMD_TRNG_STATE	    0xA4
 #define ELE_CMD_GET_INFO	    0xDA
 #define ELE_CMD_DERIVE_KEY	    0xA9
+#define ELE_CMD_SAB_INIT 0x17
 
 #define IMX_ELE_TRNG_STATUS_READY 0x3
 
@@ -166,6 +167,21 @@ TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 		return TEE_ERROR_GENERIC;
 
 	return TEE_SUCCESS;
+}
+
+/*
+ * Initialize EdgeLock Enclave services
+ */
+static TEE_Result __maybe_unused imx_ele_sab_init(void)
+{
+	struct imx_mu_msg msg = {
+		.header.version = ELE_VERSION_HSM,
+		.header.size = 1,
+		.header.tag = ELE_REQUEST_TAG,
+		.header.command = ELE_CMD_SAB_INIT,
+	};
+
+	return imx_ele_call(&msg);
 }
 
 /*
@@ -336,6 +352,12 @@ static TEE_Result imx_ele_global_init(void)
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t session_handle = 0;
 	uint32_t key_store_handle = 0;
+
+	res = imx_ele_sab_init();
+	if (res) {
+		EMSG("Failed to initialize Edgelock Enclave services");
+		goto err;
+	}
 
 	res = imx_ele_get_global_session_handle(&session_handle);
 	if (res) {
