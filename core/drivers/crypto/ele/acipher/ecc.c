@@ -160,7 +160,7 @@ static TEE_Result do_gen_keypair(struct ecc_keypair *key,
 	}
 
 	res = imx_ele_generate_key(key_mgmt_handle, public_key_size,
-				   ELE_KEY_GROUP_VOLATILE, 0,
+				   ELE_KEY_GROUP_VOLATILE, false, false,
 				   ELE_KEY_LIFETIME_VOLATILE,
 				   ELE_KEY_USAGE_SIGN_HASH |
 				   ELE_KEY_USAGE_VERIFY_HASH |
@@ -168,6 +168,7 @@ static TEE_Result do_gen_keypair(struct ecc_keypair *key,
 				   ELE_KEY_USAGE_VERIFY_MSG,
 				   ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1,
 				   key_size_bits, permitted_algo,
+				   ELE_KEY_LIFECYCLE_DEVICE,
 				   public_key, &key_id);
 
 	res |= imx_ele_key_mgmt_close(key_mgmt_handle);
