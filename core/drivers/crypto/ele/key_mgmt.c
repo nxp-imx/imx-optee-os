@@ -91,9 +91,10 @@ TEE_Result imx_ele_key_mgmt_close(uint32_t key_mgmt_handle)
 
 TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 				size_t public_key_size, uint16_t key_group,
-				uint8_t flags, uint32_t key_lifetime,
+				bool sync, bool mon_inc, uint32_t key_lifetime,
 				uint32_t key_usage, uint16_t key_type,
 				size_t key_size, uint32_t permitted_algo,
+				uint32_t key_lifecycle,
 				uint8_t *public_key_addr,
 				uint32_t *key_identifier)
 {
@@ -111,6 +112,7 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 		uint32_t key_lifetime;
 		uint32_t key_usage;
 		uint32_t permitted_algo;
+		uint32_t key_lifecycle;
 		uint8_t flags;
 		uint8_t reserved[3];
 		uint32_t public_key_addr;
@@ -125,6 +127,10 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 	} rsp = {};
 
 	if (!key_identifier || !public_key_addr)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	/* MONOTONIC counter increment flag can only be set with SYNC flag */
+	if (mon_inc && !sync)
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	res = imx_ele_buf_alloc(&public_key, NULL, public_key_size);
@@ -142,7 +148,9 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 	cmd.key_lifetime = key_lifetime;
 	cmd.key_usage = key_usage;
 	cmd.permitted_algo = permitted_algo;
-	cmd.flags = flags;
+	cmd.key_lifecycle = key_lifecycle;
+	cmd.flags = (mon_inc ? IMX_ELE_FLAG_MON_INC : 0) |
+		    (sync ? IMX_ELE_FLAG_SYNC : 0),
 	cmd.public_key_addr = public_key.paddr;
 	cmd.crc = 0;
 
