@@ -38,6 +38,12 @@
 #define IMX_ELE_FLAG_SYNC 0x80
 #define IMX_ELE_FLAG_MON_INC 0x20
 
+/* Key Lifecycle */
+#define ELE_KEY_LIFECYCLE_DEVICE 0x00
+#define ELE_KEY_LIFECYCLE_OPEN 0x01
+#define ELE_KEY_LIFECYCLE_CLOSED 0x02
+#define ELE_KEY_LIFECYCLE_CLOSED_LOCKED 0x04
+
 /*
  * ELE response code
  */
@@ -107,21 +113,28 @@ TEE_Result imx_ele_key_mgmt_close(uint32_t key_mgmt_handle);
  *		     If the size is different than 0, EdgeLock Enclave will
  *		     attempt to copy the public key for asymmetric algorithm.
  * @key_group: Indicates the generated key group.
- * @flags: Flags for operation on key.(Strict operation)
+ * @sync: Whether to push persistent keys in the NVM(Non Volatile Memory).
+ *        Without it, even if the key attribute is set as persistent
+ *        at the key creation (generation, importation), the key will
+ *        not be stored in the NVM.
+ * @mon_inc: Whether to increment the monotonic counter or not.
  * @key_lifetime: Lifetime of the key (Volatile or Persistent)
  * @key_usage: Defines cryptographic operations that key can execute.
  * @key_type: Defines Key type
  * @key_size: Key Size in bits
  * @permitted_algo: Defines algorithms in which key can be used.
+ * @key_lifecycle: Defines in which device lifecycle the key is usable
+ *		   OPEN, CLOSED, CLOSED and LOCKED
  * @public_key_addr: In case of Asymmetric Key, address to where Edgelock
  *		Enclave will copy the Public Key.
  * @key_identifier: Identifier of the generated key
  */
 TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 				size_t public_key_size, uint16_t key_group,
-				uint8_t flags, uint32_t key_lifetime,
+				bool sync, bool mon_inc, uint32_t key_lifetime,
 				uint32_t key_usage, uint16_t key_type,
 				size_t key_size, uint32_t permitted_algo,
+				uint32_t key_lifecycle,
 				uint8_t *public_key_addr,
 				uint32_t *key_identifier);
 
