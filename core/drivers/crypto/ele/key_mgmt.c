@@ -168,8 +168,6 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 		goto out;
 	}
 
-	imx_ele_buf_cache_op(TEE_CACHEINVALIDATE, &public_key);
-
 	res = imx_ele_buf_copy(&public_key, public_key_addr, public_key_size);
 	if (res != TEE_SUCCESS) {
 		EMSG("Public key copy failed");
