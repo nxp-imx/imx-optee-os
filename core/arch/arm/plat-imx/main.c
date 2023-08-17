@@ -31,6 +31,9 @@
 #include <arm.h>
 #include <console.h>
 #include <drivers/gic.h>
+#ifdef CFG_IMX_TRUSTED_ARM_CE
+#include <drivers/imx_trusted_arm_ce.h>
+#endif
 #include <drivers/imx_uart.h>
 #include <imx.h>
 #include <kernel/boot.h>
@@ -38,6 +41,7 @@
 #include <mm/core_mmu.h>
 #include <platform_config.h>
 #include <stdint.h>
+#include <tee/entry_fast.h>
 
 static struct imx_uart_data console_data __nex_bss;
 
@@ -120,3 +124,27 @@ void boot_secondary_init_intc(void)
 	gic_init_per_cpu();
 }
 #endif
+
+/* Overriding the default __weak tee_entry_fast() */
+void tee_entry_fast(struct thread_smc_args *args)
+{
+	switch (args->a0) {
+#ifdef CFG_IMX_TRUSTED_ARM_CE
+	case IMX_SMC_ENCRYPT_CBC:
+		imx_smc_cipher_cbc(args, true);
+		break;
+	case IMX_SMC_DECRYPT_CBC:
+		imx_smc_cipher_cbc(args, false);
+		break;
+	case IMX_SMC_ENCRYPT_XTS:
+		imx_smc_cipher_xts(args, true);
+		break;
+	case IMX_SMC_DECRYPT_XTS:
+		imx_smc_cipher_xts(args, false);
+		break;
+#endif
+	default:
+		__tee_entry_fast(args);
+		break;
+	}
+}
