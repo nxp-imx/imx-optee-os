@@ -3,6 +3,7 @@
  * Copyright 2023 NXP
  */
 #include <ele.h>
+#include <key_mgmt.h>
 #include <mm/core_memprot.h>
 #include <string.h>
 #include <utils_mem.h>
