@@ -7,6 +7,7 @@
 #include <drvcrypt.h>
 #include <drvcrypt_acipher.h>
 #include <ele.h>
+#include <key_mgmt.h>
 #include <key_store.h>
 #include <string.h>
 #include <tee/cache.h>
