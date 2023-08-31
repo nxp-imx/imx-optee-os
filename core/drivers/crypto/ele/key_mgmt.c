@@ -2,11 +2,11 @@
 /*
  * Copyright 2023 NXP
  */
-#include <ele.h>
-#include <key_mgmt.h>
+#include <drivers/ele/ele.h>
+#include <drivers/ele/key_mgmt.h>
+#include <drivers/ele/memutils.h>
 #include <mm/core_memprot.h>
 #include <string.h>
-#include <utils_mem.h>
 
 #define ELE_CMD_KEY_MGMT_OPEN  0x40
 #define ELE_CMD_KEY_MGMT_CLOSE 0x41

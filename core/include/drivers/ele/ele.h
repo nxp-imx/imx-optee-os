@@ -6,8 +6,8 @@
 #ifndef __ELE_H_
 #define __ELE_H_
 
+#include <drivers/ele/memutils.h>
 #include <drivers/imx_mu.h>
-#include <utils_mem.h>
 #include <tee_api_types.h>
 #include <trace.h>
 

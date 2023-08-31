@@ -3,12 +3,12 @@
  * Copyright 2023 NXP
  */
 #include <drivers/ele_extension.h>
-#include <ele.h>
+#include <drivers/ele/ele.h>
+#include <drivers/ele/memutils.h>
 #include <initcall.h>
 #include <mm/core_memprot.h>
 #include <stdint.h>
 #include <string.h>
-#include <utils_mem.h>
 
 #ifdef CFG_IMX_OCOTP
 #error "CFG_IMX_OCOTP and CFG_IMX_ELE are exclusive"
