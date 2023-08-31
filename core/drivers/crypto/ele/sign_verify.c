@@ -2,10 +2,10 @@
 /*
  * Copyright 2023 NXP
  */
-#include <ele.h>
-#include <sign_verify.h>
+#include <drivers/ele/ele.h>
+#include <drivers/ele/memutils.h>
+#include <drivers/ele/sign_verify.h>
 #include <string.h>
-#include <utils_mem.h>
 
 #define ELE_CMD_SIG_GEN_OPEN	 0x70
 #define ELE_CMD_SIG_GEN_CLOSE	 0x71

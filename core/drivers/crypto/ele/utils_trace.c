@@ -3,8 +3,8 @@
  * Copyright 2023 NXP
  */
 #include <assert.h>
+#include <drivers/ele/ele.h>
 #include <drivers/imx_mu.h>
-#include <ele.h>
 #include <stdint.h>
 #include <utils_trace.h>
 

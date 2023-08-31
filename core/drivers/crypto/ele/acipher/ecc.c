@@ -3,20 +3,20 @@
  * Copyright NXP 2023
  */
 
+#include <drivers/ele/ele.h>
+#include <drivers/ele/key_mgmt.h>
+#include <drivers/ele/key_store.h>
+#include <drivers/ele/memutils.h>
+#include <drivers/ele/sign_verify.h>
 #include <drvcrypt.h>
 #include <drvcrypt_acipher.h>
 #include <ecc.h>
-#include <ele.h>
-#include <key_mgmt.h>
-#include <key_store.h>
-#include <sign_verify.h>
 #include <string.h>
 #include <tee/cache.h>
 #include <tee/tee_cryp_utl.h>
 #include <tee_api_defines_extensions.h>
 #include <utee_defines.h>
 #include <util.h>
-#include <utils_mem.h>
 
 /* ECC Key types */
 #define ELE_KEY_TYPE_ECC_KEY_PAIR_BRAINPOOL_R1	 0x7130

@@ -3,20 +3,21 @@
  * Copyright 2022-2023, 2025 NXP
  */
 #include <drivers/ele_extension.h>
+#include <drivers/ele/ele.h>
+#include <drivers/ele/key_store.h>
+#include <drivers/ele/memutils.h>
+#include <drivers/ele/sign_verify.h>
 #include <drivers/imx_mu.h>
 #include <ecc.h>
-#include <ele.h>
 #include <initcall.h>
 #include <kernel/boot.h>
 #include <kernel/delay.h>
 #include <kernel/panic.h>
 #include <kernel/tee_common_otp.h>
-#include <key_store.h>
-#include <memutils.h>
+#include <kernel/tee_misc.h>
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
 #include <rng_support.h>
-#include <sign_verify.h>
 #include <stdint.h>
 #include <string_ext.h>
 #include <tee/cache.h>
