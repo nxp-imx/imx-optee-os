@@ -2,11 +2,11 @@
 /*
  * Copyright 2025 NXP
  */
+#include <drivers/ele/memutils.h>
 #include <io.h>
 #include <kernel/tee_misc.h>
 #include <mm/core_memprot.h>
 #include <string.h>
-#include <memutils.h>
 
 static void imx_ele_buf_cache_op(enum utee_cache_operation op,
 				 struct imx_ele_buf *ele_buf)

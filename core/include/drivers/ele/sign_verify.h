@@ -5,10 +5,10 @@
 #ifndef __ACIPHER_H__
 #define __ACIPHER_H__
 
+#include <drivers/ele/memutils.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <tee_api_types.h>
-#include <utils_mem.h>
 
 #define ELE_KEY_USAGE_SIGN_MSG	  0x00000400
 #define ELE_KEY_USAGE_VERIFY_MSG  0x00000800

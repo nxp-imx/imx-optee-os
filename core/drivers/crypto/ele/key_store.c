@@ -2,8 +2,9 @@
 /*
  * Copyright 2022-2023 NXP
  */
-#include <ele.h>
-#include <key_store.h>
+#include <drivers/ele/ele.h>
+#include <drivers/ele/key_store.h>
+#include <stdbool.h>
 #include <string.h>
 
 #define ELE_CMD_KEY_STORE_OPEN	    0x30
