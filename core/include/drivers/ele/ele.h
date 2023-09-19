@@ -80,6 +80,19 @@ struct response_code get_response_code(uint32_t word);
 void update_crc(struct imx_mu_msg *msg);
 
 /*
+ * Open a session with EdgeLock Enclave. It returns a session handle.
+ *
+ * @session_handle EdgeLock Enclave session handle
+ */
+TEE_Result imx_ele_session_open(uint32_t *session_handle);
+
+/*
+ * Close a session with EdgeLock Enclave.
+ *
+ * @session_handle EdgeLock Enclave session handle
+ */
+TEE_Result imx_ele_session_close(uint32_t session_handle);
+/*
  * Initiate a communication with the EdgeLock Enclave. It sends a message
  * and expects an answer.
  *
