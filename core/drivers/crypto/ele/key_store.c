@@ -16,26 +16,10 @@
 
 #define IMX_ELE_KEY_STORE_FLAG_CREATE 0x01
 
-/*
- * Open a Keystore session with EdgeLock Enclave.
- *
- * @session_handle: EdgeLock Enclave session handle
- * @key_store_id: User defined word identifying the key store
- * @auth_nonce: Nonce used as authentication proof for accessing
- *		the key store.
- * @create: Whether to create the key store or load it.
- * @mon_inc: Whether to increment the monotonic counter or not.
- * @sync: Whether to push persistent keys in the NVM(Non Volatile Memory).
- *        Without it, even if the key attribute is set as persistent
- *        at the key creation (generation, importation), the key will
- *        not be stored in the NVM.
- * @key_store_handle: EdgeLock Enclave Key store handle.
- */
-static TEE_Result imx_ele_key_store_open(uint32_t session_handle,
-					 uint32_t key_store_id,
-					 uint32_t auth_nonce, bool create,
-					 bool mon_inc, bool sync,
-					 uint32_t *key_store_handle)
+TEE_Result imx_ele_key_store_open(uint32_t session_handle,
+				  uint32_t key_store_id, uint32_t auth_nonce,
+				  bool create, bool mon_inc, bool sync,
+				  uint32_t *key_store_handle)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	struct key_store_open_cmd {
@@ -94,14 +78,7 @@ static TEE_Result imx_ele_key_store_open(uint32_t session_handle,
 	return TEE_SUCCESS;
 }
 
-/*
- * Close Key store with EdgeLock Enclave.
- *
- * @key_store_handle: EdgeLock Enclave key store handle
- * @strict: Whether to push persistent keys in the NVM.
- */
-static TEE_Result __maybe_unused
-imx_ele_key_store_close(uint32_t key_store_handle)
+TEE_Result imx_ele_key_store_close(uint32_t key_store_handle)
 {
 	struct key_store_close_cmd {
 		uint32_t key_store_handle;
