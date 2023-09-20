@@ -18,22 +18,6 @@
 #include <utee_defines.h>
 #include <util.h>
 
-/* ECC Key types */
-#define ELE_KEY_TYPE_ECC_KEY_PAIR_BRAINPOOL_R1	 0x7130
-#define ELE_KEY_TYPE_ECC_PUB_KEY_BRAINPOOL_R1 0x4130
-#define ELE_KEY_TYPE_ECC_KEY_PAIR_BRAINPOOL_T1	 0x7180
-#define ELE_KEY_TYPE_ECC_PUB_KEY_BRAINPOOL_T1 0x4180
-#define ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1	 0x7112
-#define ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1	 0x4112
-
-/* Key permitted algorithms */
-#define ELE_ALGO_ECDSA_SHA224	     0x06000608
-#define ELE_ALGO_ECDSA_SHA256	     0x06000609
-#define ELE_ALGO_ECDSA_SHA384	     0x0600060A
-#define ELE_ALGO_ECDSA_SHA512	     0x0600060B
-#define ELE_ALGO_ECDSA_ANY	     0x06000600
-#define ELE_ALGO_ECDSA_NOT_SUPPORTED 0x12345678
-
 static uint32_t algo_tee2ele(uint32_t algo)
 {
 	switch (algo) {
