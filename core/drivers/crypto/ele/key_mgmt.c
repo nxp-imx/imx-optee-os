@@ -184,7 +184,8 @@ out:
 	return res;
 }
 
-TEE_Result imx_ele_delete_key(uint32_t key_mgmt_handle, uint32_t key_identifier)
+TEE_Result imx_ele_delete_key(uint32_t key_mgmt_handle, uint32_t key_identifier,
+			      bool sync, bool mon_inc)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 
@@ -198,7 +199,8 @@ TEE_Result imx_ele_delete_key(uint32_t key_mgmt_handle, uint32_t key_identifier)
 		.key_mgmt_handle = key_mgmt_handle,
 		.key_identifier = key_identifier,
 		.rsvd1 = 0,
-		.flags = 0,
+		.flags = (mon_inc ? IMX_ELE_FLAG_MON_INC : 0) |
+			 (sync ? IMX_ELE_FLAG_SYNC : 0),
 		.rsvd2 = 0,
 	};
 
@@ -210,7 +212,6 @@ TEE_Result imx_ele_delete_key(uint32_t key_mgmt_handle, uint32_t key_identifier)
 	};
 
 	memcpy(msg.data.u8, &cmd, sizeof(cmd));
-	update_crc(&msg);
 
 	res = imx_ele_call(&msg);
 	if (res != TEE_SUCCESS) {
