@@ -63,8 +63,10 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
  *
  * @key_mgmt_handle: EdgeLock Enclave key management handle
  * @key_identifier: Identifier of key to be deleted
+ * @sync: Whether to delete persistent keys in the NVM(Non Volatile Memory).
+ * @mon_inc: Whether to increment the monotonic counter or not.
  */
-TEE_Result imx_ele_delete_key(uint32_t key_mgmt_handle,
-			      uint32_t key_identifier);
+TEE_Result imx_ele_delete_key(uint32_t key_mgmt_handle, uint32_t key_identifier,
+			      bool sync, bool mon_inc);
 
 #endif /* __KEY_MGMT_H_ */
