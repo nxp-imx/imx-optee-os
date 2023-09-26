@@ -151,7 +151,7 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 	cmd.permitted_algo = permitted_algo;
 	cmd.key_lifecycle = key_lifecycle;
 	cmd.flags = (mon_inc ? IMX_ELE_FLAG_MON_INC : 0) |
-		    (sync ? IMX_ELE_FLAG_SYNC : 0),
+		    (sync ? IMX_ELE_FLAG_SYNC : 0);
 	cmd.public_key_addr = public_key.paddr;
 	cmd.crc = 0;
 
