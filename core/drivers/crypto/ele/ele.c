@@ -127,6 +127,50 @@ struct response_code get_response_code(uint32_t word)
 	return rsp;
 }
 
+enum ele_status {
+	ELE_GENERAL_ERROR = 0x00,
+	ELE_INVALID_ADDRESS = 0x02,
+	ELE_UNKNOWN_IDENTIFIER,
+	ELE_INVALID_ARGUMENT,
+	ELE_NVM_ERROR,
+	ELE_OUT_OF_MEMORY,
+	ELE_UNKNOWN_HANDLE,
+	ELE_KEY_STORE_AUTH_FAILED = 0x09,
+	ELE_IDENTIFIER_CONFLICT = 0x0B,
+	ELE_UNSUPPORTED_COMMAND = 0x0D,
+	ELE_KEYSTORE_CONFLICT = 0x0F,
+	ELE_NO_SPACE_IN_KEY_STORE = 0x19,
+	ELE_OUTPUT_BUFFER_SHORT = 0x1D,
+	ELE_CRC_ERROR = 0xB9,
+};
+
+static TEE_Result ele_status_to_tee_result(uint32_t word)
+{
+	struct response_code rsp_code = {};
+
+	rsp_code = get_response_code(word);
+	if (rsp_code.status == ELE_COMMAND_SUCCEED)
+		return TEE_SUCCESS;
+
+	switch (rsp_code.rating) {
+	case ELE_OUT_OF_MEMORY:
+	case ELE_NO_SPACE_IN_KEY_STORE:
+		return TEE_ERROR_OUT_OF_MEMORY;
+	case ELE_INVALID_ARGUMENT:
+		return TEE_ERROR_BAD_PARAMETERS;
+	case ELE_UNKNOWN_HANDLE:
+	case ELE_UNKNOWN_IDENTIFIER:
+		return TEE_ERROR_ITEM_NOT_FOUND;
+	case ELE_OUTPUT_BUFFER_SHORT:
+		return TEE_ERROR_SHORT_BUFFER;
+	case ELE_UNSUPPORTED_COMMAND:
+		return TEE_ERROR_NOT_SUPPORTED;
+	default:
+		break;
+	}
+	return TEE_ERROR_GENERIC;
+}
+
 TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
@@ -163,10 +207,7 @@ TEE_Result imx_ele_call(struct imx_mu_msg *msg)
 
 	ele_trace_print_msg(*msg);
 
-	if (get_response_code(msg->data.u32[0]).status != ELE_COMMAND_SUCCEED)
-		return TEE_ERROR_GENERIC;
-
-	return TEE_SUCCESS;
+	return ele_status_to_tee_result(msg->data.u32[0]);
 }
 
 /*
