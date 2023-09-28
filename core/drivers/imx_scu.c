@@ -4,6 +4,7 @@
  *
  */
 
+#include <drivers/imx_scu.h>
 #include <imx.h>
 #include <initcall.h>
 #include <io.h>
@@ -17,7 +18,7 @@
 /* Both non-secure CPU access SCU, private and global timer */
 #define SCU_NSAC_CTRL_INIT	0x00000FFF
 
-static TEE_Result scu_init(void)
+TEE_Result scu_init(void)
 {
 	vaddr_t scu_base = core_mmu_get_va(SCU_BASE, MEM_AREA_IO_SEC,
 					   SCU_SIZE);
