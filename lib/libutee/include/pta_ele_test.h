@@ -18,4 +18,9 @@
  */
 #define PTA_ELE_CMD_TEST_KEY_GENERATE_DELETE 0
 
+/*
+ * Test Signing and verification operation with keys.
+ */
+#define PTA_ELE_CMD_TEST_SIGN_VERIFY 1
+
 #endif /* PTA_ELE_TEST_H */
