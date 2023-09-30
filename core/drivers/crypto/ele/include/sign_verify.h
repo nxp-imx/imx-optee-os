@@ -104,15 +104,4 @@ TEE_Result imx_ele_signature_verification(uint32_t sig_verify_handle,
 					  uint32_t signature_scheme,
 					  uint8_t message_type);
 
-#ifdef CFG_IMX_ELE_ECC_DRV
-/*
- * Initialize the ECC module
- */
-TEE_Result imx_ele_ecc_init(void);
-#else
-static inline TEE_Result imx_ele_ecc_init(void)
-{
-	return TEE_SUCCESS;
-}
-#endif /* CFG_IMX_ELE_ECC_DRV */
 #endif /* __ACIPHER_H__ */

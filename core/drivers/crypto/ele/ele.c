@@ -2,9 +2,9 @@
 /*
  * Copyright 2022-2023, 2025 NXP
  */
-#include <acipher.h>
 #include <drivers/ele_extension.h>
 #include <drivers/imx_mu.h>
+#include <ecc.h>
 #include <ele.h>
 #include <initcall.h>
 #include <kernel/boot.h>
@@ -16,6 +16,7 @@
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
 #include <rng_support.h>
+#include <sign_verify.h>
 #include <stdint.h>
 #include <string_ext.h>
 #include <tee/cache.h>
@@ -390,7 +391,6 @@ out:
 	return res;
 }
 
-#ifdef CFG_IMX_ELE_ECC_DRV
 static TEE_Result imx_ele_global_init(void)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
@@ -403,7 +403,6 @@ static TEE_Result imx_ele_global_init(void)
 }
 
 driver_init(imx_ele_global_init);
-#endif
 
 #if defined(CFG_MX93) || defined(CFG_MX91)
 /*
