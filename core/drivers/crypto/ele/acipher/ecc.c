@@ -3,12 +3,13 @@
  * Copyright NXP 2023
  */
 
-#include <acipher.h>
 #include <drvcrypt.h>
 #include <drvcrypt_acipher.h>
+#include <ecc.h>
 #include <ele.h>
 #include <key_mgmt.h>
 #include <key_store.h>
+#include <sign_verify.h>
 #include <string.h>
 #include <tee/cache.h>
 #include <tee/tee_cryp_utl.h>
