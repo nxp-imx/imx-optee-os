@@ -13,14 +13,17 @@
 #endif
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
-#include <mm/mobj.h>
 #include <mm/vm.h>
 #include <pta_imx_trusted_arm_ce.h>
 #include <stdint.h>
 #include <string.h>
+#include <string_ext.h>
 
 #ifndef CFG_CORE_RESERVED_SHM
 #error "CFG_CORE_RESERVED_SHM is required"
+#endif
+#ifndef CFG_CORE_DYN_SHM
+#error "CFG_CORE_DYN_SHM is required"
 #endif
 
 #define TRUSTED_ARM_CE_PTA_NAME "trusted_arm_ce.pta"
@@ -69,19 +72,8 @@ struct symmetric_key {
 
 /* Physical Secure OCRAM pool */
 static tee_mm_pool_t tee_mm_sec_ocram;
+static tee_mm_pool_t tee_mm_nsec_shm;
 static void *sec_ocram_base;
-static struct mobj *shm_mobj;
-struct shm_mem {
-	paddr_t pa;
-	struct mobj *m;
-
-	SLIST_ENTRY(shm_mem) link;
-};
-
-/* mem_shms stores all allocated shared memory. */
-SLIST_HEAD(shm_mem_head, shm_mem);
-static struct shm_mem_head mem_shms = SLIST_HEAD_INITIALIZER(shm_mem_head);
-static struct mutex shm_mutex = MUTEX_INITIALIZER;
 
 static struct symmetric_key *key_storage;
 static struct mutex key_storage_mutex = MUTEX_INITIALIZER;
@@ -631,15 +623,14 @@ static TEE_Result ocram_free(vaddr_t va)
 static TEE_Result pta_shm_allocate(uint32_t param_types,
 				   TEE_Param params[TEE_NUM_PARAMS])
 {
-	TEE_Result res = TEE_ERROR_GENERIC;
-	struct shm_mem *shm = NULL;
+	tee_mm_entry_t *mm = NULL;
 	size_t alloc_size = 0;
+	paddr_t pa = 0;
 
 	uint32_t exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
 						   TEE_PARAM_TYPE_VALUE_OUTPUT,
 						   TEE_PARAM_TYPE_NONE,
 						   TEE_PARAM_TYPE_NONE);
-
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
 
@@ -647,30 +638,15 @@ static TEE_Result pta_shm_allocate(uint32_t param_types,
 	if (!alloc_size)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	shm = malloc(sizeof(struct shm_mem));
-	if (!shm)
+	mm = tee_mm_alloc(&tee_mm_nsec_shm, alloc_size);
+	if (!mm)
 		return TEE_ERROR_OUT_OF_MEMORY;
 
-	shm->m = mobj_mm_alloc(shm_mobj, alloc_size, &tee_mm_shm);
-	if (!shm->m) {
-		res = TEE_ERROR_OUT_OF_MEMORY;
-		goto err;
-	}
+	pa = tee_mm_get_smem(mm);
 
-	if (mobj_get_pa(shm->m, 0, 0, &shm->pa))
-		goto err;
-
-	reg_pair_from_64(shm->pa, &params[1].value.a, &params[1].value.b);
-
-	mutex_lock(&shm_mutex);
-	SLIST_INSERT_HEAD(&mem_shms, shm, link);
-	mutex_unlock(&shm_mutex);
+	reg_pair_from_64(pa, &params[1].value.a, &params[1].value.b);
 
 	return TEE_SUCCESS;
-err:
-	mobj_put(shm->m);
-	free(shm);
-	return res;
 }
 
 /*
@@ -682,7 +658,7 @@ err:
 static TEE_Result pta_shm_free(uint32_t param_types,
 			       TEE_Param params[TEE_NUM_PARAMS])
 {
-	struct shm_mem *shm = NULL;
+	tee_mm_entry_t *mm = NULL;
 	paddr_t pa = 0;
 
 	uint32_t exp_param_types =
@@ -696,19 +672,11 @@ static TEE_Result pta_shm_free(uint32_t param_types,
 	if (!pa)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	SLIST_FOREACH(shm, &mem_shms, link)
-	{
-		if (shm && shm->pa == pa)
-			break;
-	}
-	if (!shm)
+	mm = tee_mm_find(&tee_mm_nsec_shm, pa);
+	if (!mm)
 		return TEE_ERROR_ITEM_NOT_FOUND;
 
-	mobj_put(shm->m);
-	mutex_lock(&shm_mutex);
-	SLIST_REMOVE(&mem_shms, shm, shm_mem, link);
-	mutex_unlock(&shm_mutex);
-	free(shm);
+	tee_mm_free(mm);
 
 	return TEE_SUCCESS;
 }
@@ -730,15 +698,9 @@ static TEE_Result trusted_arm_ce_create(void)
 	memzero_explicit(sec_ocram_base, size);
 
 	if (!tee_mm_init(&tee_mm_sec_ocram, ps, size, CORE_MMU_USER_CODE_SHIFT,
-			 TEE_MM_POOL_NO_FLAGS))
-		return TEE_ERROR_OUT_OF_MEMORY;
-
-	shm_mobj = mobj_phys_alloc(default_nsec_shm_paddr,
-				   default_nsec_shm_size, SHM_CACHE_ATTRS,
-				   CORE_MEM_NSEC_SHM);
-	if (!shm_mobj) {
-		EMSG("Failed to register shared memory");
-		return TEE_ERROR_OUT_OF_MEMORY;
+			 TEE_MM_POOL_NO_FLAGS)) {
+		res = TEE_ERROR_OUT_OF_MEMORY;
+		goto out;
 	}
 
 	res = ocram_allocate(&va, ROUNDUP(MAX_NUMBER_KEYS *
@@ -748,8 +710,24 @@ static TEE_Result trusted_arm_ce_create(void)
 
 	key_storage = (struct symmetric_key *)va;
 
+	/*
+	 * Add tee_mm_nsec_shm memory pool on the static shm area.
+	 * Doing that we reserve it for the PTA shm allocation,
+	 * as the area will not be used by Linux when Dynamic shm is enabled.
+	 */
+	if (!tee_mm_init(&tee_mm_nsec_shm, default_nsec_shm_paddr,
+			 default_nsec_shm_size, CORE_MMU_USER_CODE_SHIFT,
+			 TEE_MM_POOL_NO_FLAGS)) {
+		res = TEE_ERROR_OUT_OF_MEMORY;
+		goto out;
+	}
+
 	return TEE_SUCCESS;
 out:
+	if (key_storage)
+		ocram_free((vaddr_t)key_storage);
+	tee_mm_final(&tee_mm_sec_ocram);
+	core_mmu_remove_mapping(MEM_AREA_RAM_SEC, sec_ocram_base, size);
 	return res;
 }
 
@@ -767,9 +745,8 @@ static void trusted_arm_ce_destroy(void)
 		ocram_free((vaddr_t)key_storage);
 	}
 
-	mobj_put(shm_mobj);
-
 	tee_mm_final(&tee_mm_sec_ocram);
+	tee_mm_final(&tee_mm_nsec_shm);
 
 	size = OCRAM_SIZE;
 	memzero_explicit(sec_ocram_base, size);
