@@ -186,13 +186,13 @@ static uint8_t *deserialize_memref(uint8_t *buffer, size_t *size, paddr_t *pa,
 		goto out;
 	memcpy(pa, buffer, sizeof(paddr_t));
 	buffer += sizeof(paddr_t);
-	size -= sizeof(paddr_t);
+	*size -= sizeof(paddr_t);
 
 	if (*size < sizeof(size_t))
 		goto out;
 	memcpy(sz, buffer, sizeof(size_t));
 	buffer += sizeof(size_t);
-	size -= sizeof(size_t);
+	*size -= sizeof(size_t);
 out:
 	return buffer;
 }
