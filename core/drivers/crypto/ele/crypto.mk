@@ -12,8 +12,9 @@ CFG_CRYPTO_DRV_ECC ?= $(CFG_IMX_ELE_ECC_DRV)
 CFG_CRYPTO_DRV_ACIPHER ?= $(CFG_IMX_ELE_ACIPHER_DRV)
 endif # CFG_CRYPTO_DRIVER
 
-ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx93-flavorlist)))
-# Disable software RNG when ELE driver is enabled
-$(call force, CFG_WITH_SOFTWARE_PRNG,n,Mandated by CFG_IMX_ELE)
-endif
+# Issues in the ELE FW prevent OPTEE and Kernel from using
+# the RNG concurrently at runtime. To prevent any issue,
+# use the software RNG instead in OPTEE.
+CFG_WITH_SOFTWARE_PRNG ?= y
+
 endif # CFG_IMX_ELE

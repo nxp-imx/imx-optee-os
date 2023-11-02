@@ -643,10 +643,12 @@ unsigned long plat_get_aslr_seed(void)
 	return aslr;
 }
 
+#ifndef CFG_WITH_SOFTWARE_PRNG
 TEE_Result hw_get_random_bytes(void *buf, size_t len)
 {
 	return imx_ele_rng_get_random((uint8_t *)buf, len);
 }
+#endif /* CFG_WITH_SOFTWARE_PRNG */
 #else
 TEE_Result imx_ele_derive_key(const uint8_t *ctx __unused,
 			      size_t ctx_size __unused, uint8_t *key __unused,
