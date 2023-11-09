@@ -40,6 +40,7 @@
 #define ELE_CMD_SAB_INIT 0x17
 
 #define IMX_ELE_TRNG_STATUS_READY 0x3
+#define IMX_ELE_CSAL_STATUS_READY 0x2
 
 #define ELE_MU_IRQ 0x0
 
@@ -548,10 +549,11 @@ static TEE_Result imx_ele_rng_get_trng_state(void)
 
 	memcpy(&rsp, msg.data.u8, sizeof(rsp));
 
-	if (rsp.trng_state != IMX_ELE_TRNG_STATUS_READY)
+	if (rsp.trng_state != IMX_ELE_TRNG_STATUS_READY ||
+	    rsp.csal_state != IMX_ELE_CSAL_STATUS_READY)
 		return TEE_ERROR_BUSY;
-	else
-		return TEE_SUCCESS;
+
+	return TEE_SUCCESS;
 }
 
 /*
