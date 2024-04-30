@@ -158,6 +158,7 @@ static TEE_Result imx_ele_fuse_init(void)
 		g_ele = &ele_imx8ulp;
 		break;
 	case SOC_MX93:
+	case SOC_MX91:
 		g_ele = &ele_imx93;
 		break;
 	default:
