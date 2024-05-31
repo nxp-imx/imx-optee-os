@@ -43,8 +43,8 @@
 					       TEE_MATTR_MEM_TYPE_DEV))
 
 #if defined(CFG_MX93)
-#define OCRAM_START 0x20498000
-#define OCRAM_END 0x2049A000
+#define OCRAM_START 0x20518000
+#define OCRAM_END 0x2051C000
 #else
 #error "Platform not supported"
 #endif
