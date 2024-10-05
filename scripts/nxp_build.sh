@@ -46,8 +46,6 @@ boards_list=(
 	imx-mx93evk \
 	imx-mx91evk \
 	imx-mx95evk \
-	ls-ls1021atwr \
-	ls-ls1021aqds \
 	ls-ls1012ardb \
 	ls-ls1043ardb \
 	ls-ls1046ardb \
