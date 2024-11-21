@@ -13,7 +13,6 @@
 #endif
 #include <mm/core_memprot.h>
 #include <mm/core_mmu.h>
-#include <mm/vm.h>
 #include <pta_imx_trusted_arm_ce.h>
 #include <stdint.h>
 #include <string.h>
