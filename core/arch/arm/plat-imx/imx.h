@@ -26,7 +26,7 @@
 #define SOC_MX8M	0x82
 #define SOC_MX8ULP	0x83
 #define SOC_MX93	0xC1
-#define SOC_MX95        0x1C1
+#define SOC_MX95 0xC3
 #define SOC_MX91        0xCB
 #define SOC_MX943       0xC2
 
