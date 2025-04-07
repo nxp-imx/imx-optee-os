@@ -65,6 +65,10 @@ struct get_info_rsp {
 	uint8_t csal_state;
 	uint8_t imem_state;
 	uint8_t unused_2;
+#if defined(CFG_MX943)
+	uint32_t oem_pqc_srkh[16];
+	uint32_t rsvd[8];
+#endif
 } __packed;
 
 /*
