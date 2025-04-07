@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2023 NXP
+ * Copyright 2023, 2025 NXP
  */
 #include <drivers/ele_extension.h>
 #include <drivers/ele/ele.h>
@@ -116,6 +116,24 @@ static bool imx93_ele_common_fuse_map(unsigned int fuse_index)
 	}
 }
 
+/*
+ * ELE fuse map for imx95
+ *
+ * @fuse_index: fuse id
+ *
+ * Return true if fuse id is supported by the ELE Read Common fuse command,
+ * this command is used to read non-security related fuses.
+ */
+static bool imx95_ele_common_fuse_map(unsigned int fuse_index)
+{
+	switch (fuse_index) {
+	case 63:
+	case 128 ... 143:
+	default:
+		return false;
+	}
+}
+
 TEE_Result imx_ocotp_read(unsigned int bank, unsigned int word,
 			  uint32_t *fuse_value)
 {
@@ -140,6 +158,12 @@ TEE_Result imx_ocotp_read(unsigned int bank, unsigned int word,
 					 ELE_CMD_READ_SHADOW);
 }
 
+static const struct ele_instance ele_imx95 = {
+	.nb_banks = 64,
+	.nb_words = 8,
+	.fuse_map = imx95_ele_common_fuse_map,
+};
+
 static const struct ele_instance ele_imx93 = {
 	.nb_banks = 64,
 	.nb_words = 8,
@@ -161,6 +185,9 @@ static TEE_Result imx_ele_fuse_init(void)
 	case SOC_MX93:
 	case SOC_MX91:
 		g_ele = &ele_imx93;
+		break;
+	case SOC_MX95:
+		g_ele = &ele_imx95;
 		break;
 	default:
 		g_ele = NULL;
