@@ -104,9 +104,9 @@ static bool imx8ulp_ele_common_fuse_map(unsigned int fuse_index)
 static bool imx93_ele_common_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
-	case 24 ... 34:
+	case 58:
 	case 63:
-	case 128 ... 144:
+	case 128 ... 143:
 	case 182:
 	case 188:
 		return true;
