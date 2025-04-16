@@ -11,14 +11,14 @@
 #include "imx_mu_platform.h"
 
 #define MU_PAR 0x004
-#define MU_TCR		  0x120
-#define MU_TSR		  0x124
-#define MU_RCR		  0x128
-#define MU_RSR		  0x12C
-#define MU_TR(n)	  (0x200 + 0x4 * (n))
-#define MU_RR(n)	  (0x280 + 0x4 * (n))
-#define MU_TSR_TE(n)	  BIT32(n)
-#define MU_RSR_RF(n)	  BIT32(n)
+#define MU_TCR 0x120
+#define MU_TSR 0x124
+#define MU_RCR 0x128
+#define MU_RSR 0x12C
+#define MU_TR(n) (0x200 + 0x4 * (n))
+#define MU_RR(n) (0x280 + 0x4 * (n))
+#define MU_TSR_TE(n) BIT32(n)
+#define MU_RSR_RF(n) BIT32(n)
 
 #define RR_NUM_MASK GENMASK_32(15, 8)
 #define RR_NUM_SHIFT 8
