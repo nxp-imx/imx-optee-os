@@ -64,6 +64,8 @@ struct get_info_rsp {
 	uint8_t csal_state;
 	uint8_t imem_state;
 	uint8_t unused_2;
+	uint32_t oem_pqc_srkh[16];
+	uint32_t rsvd[8];
 } __packed;
 
 /*
@@ -383,7 +385,7 @@ out:
 	return res;
 }
 
-static TEE_Result imx_ele_global_init(void)
+static TEE_Result __maybe_unused imx_ele_global_init(void)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 
@@ -400,7 +402,6 @@ static TEE_Result imx_ele_global_init(void)
 err:
 	return res;
 }
-driver_init(imx_ele_global_init);
 
 #if defined(CFG_MX93) || defined(CFG_MX91) || defined(CFG_MX95)
 /*
