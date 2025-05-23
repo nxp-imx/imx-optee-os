@@ -210,6 +210,25 @@ static bool imx943_ele_fuse_map(unsigned int fuse_index)
 	}
 }
 
+/*
+ * ELE fuse map for imx952
+ *
+ * @fuse_index: fuse id
+ *
+ * Return true if fuse id is supported by the ELE Read fuse command
+ * or ELE Read Shadow fuse command.
+ */
+static bool imx952_ele_fuse_map(unsigned int fuse_index)
+{
+	switch (fuse_index) {
+	case 59:
+	case 608 ... 639:
+		return true;
+	default:
+		return false;
+	}
+}
+
 TEE_Result imx_ocotp_read(unsigned int read_common_fuse, unsigned int word,
 			  uint32_t *fuse_value)
 {
@@ -275,6 +294,12 @@ static struct ele_instance ele_imx943 = {
 	.fuse_map = imx943_ele_fuse_map,
 };
 
+static struct ele_instance ele_imx952 = {
+	.nb_banks = 103,
+	.nb_words = 8,
+	.fuse_map = imx952_ele_fuse_map,
+};
+
 static TEE_Result imx_ele_fuse_init(void)
 {
 	struct get_info_rsp rsp = {};
@@ -295,6 +320,9 @@ static TEE_Result imx_ele_fuse_init(void)
 		break;
 	case SOC_MX943:
 		g_ele = &ele_imx943;
+		break;
+	case SOC_MX952:
+		g_ele = &ele_imx952;
 		break;
 	default:
 		g_ele = NULL;
