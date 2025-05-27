@@ -36,6 +36,7 @@
 #define ELE_CMD_SESSION_OPEN	    0x10
 #define ELE_CMD_SESSION_CLOSE	    0x11
 #define ELE_CMD_RNG_GET		    0xCD
+#define ELE_CMD_START_RNG 0xA3
 #define ELE_CMD_TRNG_STATE	    0xA4
 #define ELE_CMD_GET_INFO	    0xDA
 #define ELE_CMD_DERIVE_KEY	    0xA9
@@ -555,6 +556,26 @@ static TEE_Result imx_ele_rng_get_trng_state(void)
 }
 
 /*
+ * Initialize ELE RNG context
+ */
+static TEE_Result imx_ele_start_rng(void)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	struct imx_mu_msg msg = {
+		.header.version = ELE_VERSION_BASELINE,
+		.header.size = 1,
+		.header.tag = ELE_REQUEST_TAG,
+		.header.command = ELE_CMD_START_RNG,
+	};
+
+	res = imx_ele_call(&msg);
+	if (res)
+		return res;
+
+	return TEE_SUCCESS;
+}
+
+/*
  * Get random data from the EdgeLock Enclave.
  *
  * This function can be called when the MMU is off or on.
@@ -622,6 +643,9 @@ unsigned long plat_get_aslr_seed(void)
 {
 	uint64_t timeout = timeout_init_us(10 * 1000);
 	unsigned long __aligned(CACHELINE_SIZE) aslr = 0;
+
+	if (imx_ele_start_rng())
+		panic("Start RNG failed");
 
 	/*
 	 * Check the current TRNG state of the ELE. The TRNG must be
