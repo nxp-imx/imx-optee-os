@@ -50,8 +50,8 @@
 #define CACHELINE_SIZE 64
 
 #define ELE_RNG_FLAGS_NO_RESEED 0x0000
-#define ELE_RNG_FLAGS_BLOCK_RESEED 0x0001
-#define ELE_RNG_FLAGS_NON_BLOCK_RESEED 0x0002
+#define ELE_RNG_FLAGS_NON_BLOCK_RESEED 0x0001
+#define ELE_RNG_FLAGS_BLOCK_RESEED 0x0002
 
 register_phys_mem_pgdir(MEM_AREA_IO_SEC, MU_BASE, MU_SIZE);
 
@@ -646,7 +646,7 @@ unsigned long plat_get_aslr_seed(void)
 			panic("ELE RNG is busy");
 
 	if (imx_ele_rng_get_random((uint8_t *)&aslr, sizeof(aslr),
-				   ELE_RNG_FLAGS_BLOCK_RESEED))
+				   ELE_RNG_FLAGS_NO_RESEED))
 		panic("Cannot retrieve random data from ELE");
 
 	return aslr;
