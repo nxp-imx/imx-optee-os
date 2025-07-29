@@ -306,6 +306,7 @@ $(call force,CFG_TZC380,n)
 $(call force,CFG_NXP_CAAM,n)
 CFG_IMX_MU ?= y
 CFG_IMX_ELE ?= y
+CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx943-flavorlist)))
 $(call force,CFG_MX943,y)
 $(call force,CFG_ARM64_core,y)
