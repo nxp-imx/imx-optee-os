@@ -263,6 +263,7 @@ CFG_IMX_MU ?= y
 CFG_IMX_ELE ?= y
 CFG_HWRNG_PTA ?= y
 CFG_HWRNG_QUALITY ?= 1024
+CFG_IMX_TRUSTED_ARM_CE = y
 CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 CFG_IMX_ELE_TEST_PTA ?= n
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx95-flavorlist)))
@@ -279,6 +280,7 @@ CFG_IMX_MU ?= y
 CFG_IMX_ELE ?= y
 CFG_HWRNG_PTA ?= y
 CFG_HWRNG_QUALITY ?= 1024
+CFG_IMX_TRUSTED_ARM_CE = y
 CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx91-flavorlist)))
 $(call force,CFG_MX91,y)
@@ -294,6 +296,7 @@ CFG_IMX_MU ?= y
 CFG_IMX_ELE ?= y
 CFG_HWRNG_PTA ?= y
 CFG_HWRNG_QUALITY ?= 1024
+CFG_IMX_TRUSTED_ARM_CE = y
 CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx943-flavorlist)))
 $(call force,CFG_MX943,y)
@@ -309,6 +312,7 @@ CFG_IMX_MU ?= y
 CFG_IMX_ELE ?= y
 CFG_HWRNG_PTA ?= y
 CFG_HWRNG_QUALITY ?= 1024
+CFG_IMX_TRUSTED_ARM_CE = y
 CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
