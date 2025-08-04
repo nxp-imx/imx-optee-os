@@ -2,7 +2,7 @@
 /*
  * Copyright 2019 Pengutronix
  * All rights reserved.
- * Copyright 2023 NXP
+ * Copyright 2023, 2025 NXP
  *
  * Rouven Czerwinski <entwicklung@pengutronix.de>
  */
@@ -66,6 +66,17 @@ static TEE_Result imx_configure_tzasc(void)
 		uint8_t region = 1;
 
 		tzc_init(addr[i]);
+
+		/*
+		 * It is possible to access memory protected by the TZASC in
+		 * case the DDR installed is smaller than the memory space
+		 * supported by the controller. (Ref: RM, section about the
+		 * TZASC: "Address Mapping in various memory mapping modes").
+		 *
+		 * Without aliasing protection it is possible to use an address
+		 * outside of the DDR ranged and bypass TZASC protection.
+		 */
+		tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
 		region = imx_tzc_auto_configure(CFG_DRAM_BASE, CFG_DDR_SIZE,
 						TZC_ATTR_SP_NS_RW, region);
