@@ -2,7 +2,7 @@
 /*
  * Copyright 2019 Pengutronix
  * All rights reserved.
- * Copyright 2023 NXP
+ * Copyright 2023, 2025 NXP
  *
  * Rouven Czerwinski <entwicklung@pengutronix.de>
  */
@@ -201,6 +201,16 @@ static TEE_Result imx_configure_tzasc(void)
 
 		tzc_init(addr[i]);
 		imx_tzasc_region_init();
+		
+		/* It is possible to access memory protected by the TZASC in
+		 * case the DDR installed is smaller than the memory space
+		 * supported by the controller. (Ref: RM, section about the
+		 * TZASC: "Address Mapping in various memory mapping modes").
+		 *
+		 * Without aliasing protection it is possible to use an address
+		 * outside of the DDR ranged and bypass TZASC protection.
+		 */
+		tzc_configure_region(0, 0x00000000, TZC_ATTR_SP_S_RW);
 
 		/*
 		 * TZC380 is not memory alias aware so an attacker could read
