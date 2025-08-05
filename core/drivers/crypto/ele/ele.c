@@ -68,7 +68,6 @@ struct get_info_rsp {
 	uint32_t oem_srkh[16];
 	uint8_t trng_state;
 	uint8_t csal_state;
-<<<<<<< HEAD
 #if defined(CFG_MX95) || defined(CFG_MX943)
 	uint8_t reserved[2];
 	uint32_t oem_pqc_srkh[16];
@@ -77,12 +76,6 @@ struct get_info_rsp {
 	uint8_t imem_state;
 	uint8_t unused_2;
 #endif
-=======
-	uint8_t imem_state;
-	uint8_t unused_2;
-	uint32_t oem_pqc_srkh[16];
-	uint32_t rsvd[8];
->>>>>>> e0152cdcf (LFOPTEE-431 drivers: ele: update struct get_info_rsp)
 } __packed;
 
 /*
