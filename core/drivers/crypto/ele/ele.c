@@ -43,7 +43,7 @@
 #define ELE_CMD_SAB_INIT	    0x17
 
 #define IMX_ELE_TRNG_STATUS_READY 0x3
-#define IMX_ELE_CSAL_STATUS_READY 0x2
+#define IMX_ELE_RNG_CTX_STATUS_READY 0x2
 
 #define ELE_MU_IRQ 0x0
 
@@ -526,7 +526,7 @@ static TEE_Result imx_ele_rng_get_trng_state(void)
 	struct rng_get_trng_state_msg_rsp {
 		uint32_t rsp_code;
 		uint8_t trng_state;
-		uint8_t csal_state;
+		uint8_t ele_rng_ctx_state;
 	} __packed rsp = { };
 	struct imx_mu_msg msg = {
 		.header.version = ELE_VERSION_BASELINE,
@@ -542,7 +542,7 @@ static TEE_Result imx_ele_rng_get_trng_state(void)
 	memcpy(&rsp, msg.data.u8, sizeof(rsp));
 
 	if (rsp.trng_state != IMX_ELE_TRNG_STATUS_READY ||
-	    rsp.csal_state != IMX_ELE_CSAL_STATUS_READY)
+	    rsp.ele_rng_ctx_state != IMX_ELE_RNG_CTX_STATUS_READY)
 		return TEE_ERROR_BUSY;
 
 	return TEE_SUCCESS;
