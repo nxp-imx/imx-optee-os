@@ -12,9 +12,14 @@
 #define IMX_UID_SIZE sizeof(uint64_t)
 
 /*
- * Read OCOTP shadow register
+ * Read OCOTP fuse register
+ * For Non-ELE platforms, first argument is:-
+ * @bank     Fuse bank number for i.MX6/i.MX7/i.MX8 platform.
  *
- * @bank     Fuse bank number
+ * For ELE based platform, first argument is:-
+ * @read_common_fuse We have replaced bank parameter with read_common_fuse
+ *		     variable, whether user wants to read fuse using
+ *		     READ FUSE (0x97) or READ SHADOW FUSE (0xF3) API.
  * @word     Fuse word number
  * @[out]val Shadow register value
  */

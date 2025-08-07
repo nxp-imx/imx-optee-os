@@ -77,14 +77,17 @@ static TEE_Result imx_ele_read_fuse(unsigned int fuse_index,
  *
  * @fuse_index: fuse id
  *
- * Return true if fuse id is supported by the ELE Read Common fuse command,
- * this command is used to read non-security related fuses.
+ * Return true if fuse id is supported by the ELE Read fuse command
+ * or ELE Read Shadow fuse command.
  */
-static bool imx8ulp_ele_common_fuse_map(unsigned int fuse_index)
+static bool imx8ulp_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
+	case 1:
+	case 2:
 	case 8 ... 23:
 	case 66:
+	case 97:
 	case 192 ... 224:
 	case 256 ... 295:
 	case 392 ... 415:
@@ -99,17 +102,19 @@ static bool imx8ulp_ele_common_fuse_map(unsigned int fuse_index)
  *
  * @fuse_index: fuse id
  *
- * Return true if fuse id is supported by the ELE Read Common fuse command,
- * this command is used to read non-security related fuses.
+ * Return true if fuse id is supported by the ELE Read fuse command
+ * or ELE Read Shadow fuse command.
  */
-static bool imx93_ele_common_fuse_map(unsigned int fuse_index)
+static bool imx93_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
+	case 0 ... 51: /* FSB index */
 	case 58:
 	case 63:
 	case 128 ... 143:
 	case 182:
 	case 188:
+	case 312 ... 511: /* FSB index */
 		return true;
 	default:
 		return false;
@@ -117,18 +122,50 @@ static bool imx93_ele_common_fuse_map(unsigned int fuse_index)
 }
 
 /*
+ * ELE fuse map for imx91
+ *
+ * @fuse_index: fuse id
+ *
+ * Return true if fuse id is supported by the ELE Read fuse command
+ * or ELE Read Shadow fuse command.
+ */
+static bool imx91_ele_fuse_map(unsigned int fuse_index)
+{
+	switch (fuse_index) {
+	case 0 ... 51: /* FSB index */
+	case 55 ... 60:
+	case 62 ... 63:
+	case 128 ... 143:
+	case 97:
+	case 182:
+	case 188:
+	case 312 ... 511: /* FSB index */
+		return true;
+	default:
+		return false;
+	}
+}
+/*
  * ELE fuse map for imx95
  *
  * @fuse_index: fuse id
  *
- * Return true if fuse id is supported by the ELE Read Common fuse command,
- * this command is used to read non-security related fuses.
+ * Return true if fuse id is supported by the ELE Read fuse command
+ * or ELE Read Shadow fuse command.
  */
-static bool imx95_ele_common_fuse_map(unsigned int fuse_index)
+static bool imx95_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
+	case 0 ... 2:
+	case 4:
+	case 6 ... 51:
+	case 56 ... 60:
 	case 63:
 	case 128 ... 143:
+	case 317 ... 318:
+	case 320 ... 326:
+	case 328 ... 391:
+	case 448 ... 607:
 		return true;
 	default:
 		return false;
@@ -140,13 +177,19 @@ static bool imx95_ele_common_fuse_map(unsigned int fuse_index)
  *
  * @fuse_index: fuse id
  *
- * Return true if fuse id is supported by the ELE Read Common fuse command,
- * this command is used to read non-security related fuses.
+ * Return true if fuse id is supported by the ELE Read fuse command
+ * or ELE Read Shadow fuse command.
  */
-static bool imx943_ele_common_fuse_map(unsigned int fuse_index)
+static bool imx943_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
-	case 59:
+	case 0 ... 2:
+	case 4:
+	case 6 ... 11:
+	case 24 ... 35:
+	case 56 ... 60:
+	case 63:
+	case 337 ... 487:
 	case 608 ... 639:
 		return true;
 	default:
@@ -154,7 +197,7 @@ static bool imx943_ele_common_fuse_map(unsigned int fuse_index)
 	}
 }
 
-TEE_Result imx_ocotp_read(unsigned int bank, unsigned int word,
+TEE_Result imx_ocotp_read(unsigned int read_common_fuse, unsigned int word,
 			  uint32_t *fuse_value)
 {
 	unsigned int fuse_index = 0;
@@ -165,12 +208,15 @@ TEE_Result imx_ocotp_read(unsigned int bank, unsigned int word,
 	if (!fuse_value)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	if (bank > g_ele->nb_banks || word > g_ele->nb_words)
+	if (word >= (g_ele->nb_banks * g_ele->nb_words))
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	fuse_index = bank * g_ele->nb_words + word;
+	fuse_index = word;
 
-	if (g_ele->fuse_map(fuse_index))
+	if (!g_ele->fuse_map(fuse_index))
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	if (read_common_fuse)
 		return imx_ele_read_fuse(fuse_index, fuse_value,
 					 ELE_CMD_READ_COMMON);
 	else
@@ -179,27 +225,33 @@ TEE_Result imx_ocotp_read(unsigned int bank, unsigned int word,
 }
 
 static const struct ele_instance ele_imx95 = {
-	.nb_banks = 64,
+	.nb_banks = 77,
 	.nb_words = 8,
-	.fuse_map = imx95_ele_common_fuse_map,
+	.fuse_map = imx95_ele_fuse_map,
 };
 
 static const struct ele_instance ele_imx93 = {
 	.nb_banks = 64,
 	.nb_words = 8,
-	.fuse_map = imx93_ele_common_fuse_map,
+	.fuse_map = imx93_ele_fuse_map,
+};
+
+static const struct ele_instance ele_imx91 = {
+	.nb_banks = 64,
+	.nb_words = 8,
+	.fuse_map = imx91_ele_fuse_map,
 };
 
 static const struct ele_instance ele_imx8ulp = {
 	.nb_banks = 64,
 	.nb_words = 8,
-	.fuse_map = imx8ulp_ele_common_fuse_map,
+	.fuse_map = imx8ulp_ele_fuse_map,
 };
 
 static const struct ele_instance ele_imx943 = {
 	.nb_banks = 103,
 	.nb_words = 8,
-	.fuse_map = imx943_ele_common_fuse_map,
+	.fuse_map = imx943_ele_fuse_map,
 };
 
 static TEE_Result imx_ele_fuse_init(void)
@@ -209,8 +261,10 @@ static TEE_Result imx_ele_fuse_init(void)
 		g_ele = &ele_imx8ulp;
 		break;
 	case SOC_MX93:
-	case SOC_MX91:
 		g_ele = &ele_imx93;
+		break;
+	case SOC_MX91:
+		g_ele = &ele_imx91;
 		break;
 	case SOC_MX95:
 		g_ele = &ele_imx95;
