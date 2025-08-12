@@ -20,7 +20,7 @@
 #define IS_MU_TRUST false
 #endif
 
-static unsigned int mu_spinlock = SPINLOCK_UNLOCK;
+static struct mutex mu_mutex = MUTEX_INITIALIZER;
 
 __weak void imx_mu_plat_init(vaddr_t base __unused)
 {
@@ -159,36 +159,37 @@ static TEE_Result imx_mu_send_msg(vaddr_t base, struct imx_mu_msg *msg)
 
 void imx_mu_init(vaddr_t base)
 {
-	uint32_t exceptions = 0;
-
 	if (!base) {
 		EMSG("Bad MU base address");
 		return;
 	}
 
-	exceptions = cpu_spin_lock_xsave(&mu_spinlock);
+	if (thread_get_id_may_fail() != THREAD_ID_INVALID)
+		mutex_lock(&mu_mutex);
 
 	imx_mu_plat_init(base);
 
-	cpu_spin_unlock_xrestore(&mu_spinlock, exceptions);
+	if (thread_get_id_may_fail() != THREAD_ID_INVALID)
+		mutex_unlock(&mu_mutex);
 }
 
 TEE_Result imx_mu_call(vaddr_t base, struct imx_mu_msg *msg,
 		       bool wait_for_answer)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	uint32_t exceptions = 0;
 
 	if (!base || !msg)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	exceptions = cpu_spin_lock_xsave(&mu_spinlock);
+	if (thread_get_id_may_fail() != THREAD_ID_INVALID)
+		mutex_lock(&mu_mutex);
 
 	res = imx_mu_send_msg(base, msg);
 	if (res == TEE_SUCCESS && wait_for_answer)
 		res = imx_mu_receive_msg(base, msg);
 
-	cpu_spin_unlock_xrestore(&mu_spinlock, exceptions);
+	if (thread_get_id_may_fail() != THREAD_ID_INVALID)
+		mutex_unlock(&mu_mutex);
 
 	return res;
 }
