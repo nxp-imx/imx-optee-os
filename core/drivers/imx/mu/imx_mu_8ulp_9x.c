@@ -26,7 +26,7 @@
 
 static TEE_Result mu_wait_for(vaddr_t addr, uint32_t mask)
 {
-	uint64_t timeout = timeout_init_us(1000);
+	uint64_t timeout = timeout_init_us(100000);
 
 	while (!(io_read32(addr) & mask))
 		if (timeout_elapsed(timeout))
