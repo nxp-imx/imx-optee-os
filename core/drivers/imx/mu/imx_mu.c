@@ -12,7 +12,7 @@
 
 #include "imx_mu_platform.h"
 
-#define RX_TIMEOUT (100 * 1000)
+#define RX_TIMEOUT (10000 * 1000)
 
 #if defined(CFG_MX93) || defined(CFG_MX91)
 #define IS_MU_TRUST (MU_BASE == MU_TRUST_BASE)
