@@ -17,5 +17,5 @@ endif # CFG_CRYPTO_DRIVER
 # use the software RNG instead in OPTEE.
 # But with Kernel ELE driver disabled, Runtime ELE RNG
 # generation can be done.
-CFG_WITH_SOFTWARE_PRNG ?= n
+CFG_WITH_SOFTWARE_PRNG ?= y
 endif # CFG_IMX_ELE
