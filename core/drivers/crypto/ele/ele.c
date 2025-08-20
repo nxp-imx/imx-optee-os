@@ -61,7 +61,7 @@ register_phys_mem_pgdir(MEM_AREA_IO_SEC, MU_BASE, MU_SIZE);
  *
  * @msg MU message to hash
  */
-static uint32_t compute_crc(const struct imx_mu_msg *msg)
+uint32_t compute_crc(struct imx_mu_msg *msg)
 {
 	uint32_t crc = 0;
 	uint8_t i = 0;
