@@ -48,6 +48,7 @@
 #define SOC_LIFECYCLE_CLOSED 0x40UL
 #define SOC_LIFECYCLE_OPEN 0x10UL
 
+#define CRC_WORD_LIMIT 0x4
 /*
  * ELE response code
  */
@@ -101,6 +102,14 @@ static inline size_t size_msg(size_t cmd)
  * @word 32 bits word MU response
  */
 struct response_code get_response_code(uint32_t word);
+
+/*
+ * The CRC for the message is computed xor-ing all the words of the message:
+ * the header and all the words except the word storing the CRC.
+ *
+ * @msg MU message to hash
+ */
+uint32_t compute_crc(struct imx_mu_msg *msg);
 
 /*
  * The CRC is the last word of the message

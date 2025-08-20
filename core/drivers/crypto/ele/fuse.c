@@ -37,6 +37,7 @@ static TEE_Result imx_ele_read_fuse(unsigned int fuse_index,
 				    uint32_t *fuse_value, uint8_t command)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t current_crc = 0;
 
 	struct read_fuse_msg_cmd {
 		uint32_t fuse_index;
@@ -46,6 +47,7 @@ static TEE_Result imx_ele_read_fuse(unsigned int fuse_index,
 	struct read_fuse_rsp {
 		uint32_t rsp_code;
 		uint32_t fuse_value;
+		uint32_t crc;
 	} rsp = {};
 	struct imx_mu_msg msg = {
 		.header.version = ELE_VERSION_BASELINE,
@@ -66,6 +68,16 @@ static TEE_Result imx_ele_read_fuse(unsigned int fuse_index,
 	if (res != TEE_SUCCESS) {
 		EMSG("Failed to read fuse res = %" PRIx32, res);
 		return res;
+	}
+
+	memcpy(&rsp, msg.data.u8, sizeof(rsp));
+
+	if (command == ELE_CMD_READ_COMMON &&
+	    msg.header.size > CRC_WORD_LIMIT) {
+		current_crc = compute_crc(&msg);
+		if (current_crc != rsp.crc)
+			EMSG("CRC differs current_crc = %x rsp.crc = %x",
+			     current_crc, rsp.crc);
 	}
 
 	*fuse_value = rsp.fuse_value;
