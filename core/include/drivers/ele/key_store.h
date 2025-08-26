@@ -15,6 +15,7 @@
  * @auth_nonce: Nonce used as authentication proof for accessing
  *		the key store.
  * @create: Whether to create the key store or load it.
+ * @shared: Whether the key store is shared or regular.
  * @mon_inc: Whether to increment the monotonic counter or not.
  * @sync: Whether to push persistent keys in the NVM(Non Volatile Memory).
  *        Without it, even if the key attribute is set as persistent
@@ -24,8 +25,8 @@
  */
 TEE_Result imx_ele_key_store_open(uint32_t session_handle,
 				  uint32_t key_store_id, uint32_t auth_nonce,
-				  bool create, bool mon_inc, bool sync,
-				  uint32_t *key_store_handle);
+				  bool create, bool shared, bool mon_inc,
+				  bool sync, uint32_t *key_store_handle);
 
 /*
  * Close Key store with EdgeLock Enclave.
