@@ -60,39 +60,6 @@ static const struct gen_key_test_case gen_key_tc[] = {
 		   ELE_ALGO_ECDSA_SHA512, 0),
 };
 
-static TEE_Result get_key_store_handle(uint32_t session_handle,
-				       uint32_t *key_store_handle)
-{
-	uint32_t ele_key_store_handle = 0;
-	TEE_Result res = TEE_ERROR_GENERIC;
-
-	if (!key_store_handle)
-		return TEE_ERROR_BAD_PARAMETERS;
-
-	/*
-	 * Since we have now enabled the NVM manager, we will first try to
-	 * open then Key store because there may be the case that same key
-	 * store is imported from master blob.
-	 * If there is no Key store with the same credentials then, we will
-	 * create a key store.
-	 */
-	res = imx_ele_key_store_open(session_handle, PTA_ELE_KEY_STORE_ID,
-				     PTA_ELE_KEY_STORE_AUTH_NONCE, false, false,
-				     false, &ele_key_store_handle);
-	if (res == TEE_ERROR_ITEM_NOT_FOUND) {
-		res = imx_ele_key_store_open(session_handle,
-					     PTA_ELE_KEY_STORE_ID,
-					     PTA_ELE_KEY_STORE_AUTH_NONCE, true,
-					     false, false,
-					     &ele_key_store_handle);
-	}
-	if (res != TEE_SUCCESS)
-		return res;
-
-	*key_store_handle = ele_key_store_handle;
-	return res;
-}
-
 static TEE_Result ele_generate_delete(const struct gen_key_test_case *tc,
 				      uint32_t key_mgmt_handle)
 {
@@ -154,7 +121,9 @@ pta_ele_test_key_generate_delete(uint32_t param_types,
 		goto out;
 	}
 
-	res = get_key_store_handle(session_handle, &key_store_handle);
+	res = imx_ele_key_store_open(session_handle, PTA_ELE_KEY_STORE_ID,
+				     PTA_ELE_KEY_STORE_AUTH_NONCE, true, true,
+				     false, false, &key_store_handle);
 	if (res != TEE_SUCCESS) {
 		EMSG("Key store open failed");
 		goto session_close;
@@ -340,7 +309,9 @@ pta_ele_test_sign_verify(uint32_t param_types,
 		goto out;
 	}
 
-	res = get_key_store_handle(session_handle, &key_store_handle);
+	res = imx_ele_key_store_open(session_handle, PTA_ELE_KEY_STORE_ID,
+				     PTA_ELE_KEY_STORE_AUTH_NONCE, true, true,
+				     false, false, &key_store_handle);
 	if (res != TEE_SUCCESS) {
 		EMSG("Key store open failed");
 		goto session_close;

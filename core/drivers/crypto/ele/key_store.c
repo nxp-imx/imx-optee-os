@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2023, 2025 NXP
  */
 #include <drivers/ele/ele.h>
 #include <drivers/ele/key_store.h>
@@ -15,11 +15,12 @@
 #define IMX_ELE_KEY_STORE_MAX_UPDATES 100
 
 #define IMX_ELE_KEY_STORE_FLAG_CREATE 0x01
+#define IMX_ELE_KEY_STORE_SHARED 0x04
 
 TEE_Result imx_ele_key_store_open(uint32_t session_handle,
 				  uint32_t key_store_id, uint32_t auth_nonce,
-				  bool create, bool mon_inc, bool sync,
-				  uint32_t *key_store_handle)
+				  bool create, bool shared, bool mon_inc,
+				  bool sync, uint32_t *key_store_handle)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	struct key_store_open_cmd {
@@ -36,6 +37,7 @@ TEE_Result imx_ele_key_store_open(uint32_t session_handle,
 		.auth_nonce = auth_nonce,
 		.rsvd1 = 0,
 		.flags = (create ? IMX_ELE_KEY_STORE_FLAG_CREATE : 0) |
+			 (shared ? IMX_ELE_KEY_STORE_SHARED : 0) |
 			 (mon_inc ? IMX_ELE_FLAG_MON_INC : 0) |
 			 (sync ? IMX_ELE_FLAG_SYNC : 0),
 		.rsvd2 = 0,
@@ -120,8 +122,8 @@ TEE_Result imx_ele_get_global_key_store_handle(uint32_t *key_store_handle)
 
 	res = imx_ele_key_store_open(imx_ele_session_handle,
 				     IMX_ELE_GLOBAL_KEY_STORE_ID,
-				     IMX_ELE_KEY_STORE_AUTH_NONCE, true, false,
-				     false, &imx_ele_key_store_handle);
+				     IMX_ELE_KEY_STORE_AUTH_NONCE, true, true,
+				     false, false, &imx_ele_key_store_handle);
 	if (res != TEE_SUCCESS) {
 		EMSG("Failed to open key store handle");
 		return res;
