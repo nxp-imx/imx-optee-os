@@ -49,8 +49,8 @@
  */
 struct response_code {
 	uint8_t status;
-	uint8_t rating;
-	uint16_t rating_extension;
+	uint8_t indication;
+	uint16_t abort_code;
 } __packed;
 
 static inline size_t size_msg(size_t cmd)

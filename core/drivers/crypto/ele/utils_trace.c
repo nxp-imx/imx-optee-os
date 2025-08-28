@@ -25,9 +25,9 @@ void ele_trace_print_msg(struct imx_mu_msg msg)
 		struct response_code rsp __maybe_unused =
 			get_response_code(msg.data.u32[0]);
 
-		DMSG("Response status: %#" PRIx8 " rating: %#" PRIx8
-		     " rating extension %#" PRIx8,
-		     rsp.status, rsp.rating, rsp.rating_extension);
+		DMSG("Response status: %#" PRIx8 " indication: %#" PRIx8
+		     " abort code %#" PRIx8,
+		     rsp.status, rsp.indication, rsp.abort_code);
 	} else {
 		DMSG("Request:");
 	}
