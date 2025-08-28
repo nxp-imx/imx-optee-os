@@ -44,6 +44,10 @@
 #define ELE_KEY_LIFECYCLE_CLOSED 0x02
 #define ELE_KEY_LIFECYCLE_CLOSED_LOCKED 0x04
 
+/* SoC Lifecycle */
+#define SOC_LIFECYCLE_CLOSED 0x40UL
+#define SOC_LIFECYCLE_OPEN 0x10UL
+
 /*
  * ELE response code
  */
@@ -51,6 +55,32 @@ struct response_code {
 	uint8_t status;
 	uint8_t indication;
 	uint16_t abort_code;
+} __packed;
+
+/*
+ * ELE GET INFO response
+ */
+struct get_info_rsp {
+	uint32_t rsp_code;
+	uint16_t soc_id;
+	uint16_t soc_rev;
+	uint16_t lifecycle;
+	uint8_t sssm_state;
+	uint8_t attest_api_version;
+	uint32_t uid[4];
+	uint32_t sha256_rom_patch[8];
+	uint32_t sha256_firmware[8];
+	uint32_t oem_srkh[16];
+	uint8_t trng_state;
+	uint8_t csal_state;
+#if defined(CFG_MX95) || defined(CFG_MX943)
+	uint8_t reserved[2];
+	uint32_t oem_pqc_srkh[16];
+	uint32_t rsvd[8];
+#else
+	uint8_t imem_state;
+	uint8_t unused_2;
+#endif
 } __packed;
 
 static inline size_t size_msg(size_t cmd)
@@ -100,5 +130,12 @@ TEE_Result imx_ele_session_close(uint32_t session_handle);
  */
 TEE_Result imx_ele_call(struct imx_mu_msg *msg);
 TEE_Result imx_ele_get_global_session_handle(uint32_t *session_handle);
+
+/*
+ * Get device related info from EdgeLock Enclave.
+ *
+ * @rsp GET_INFO returned data get filled in rsp.
+ */
+TEE_Result imx_ele_get_device_info(struct get_info_rsp *rsp);
 
 #endif /* __ELE_H_ */
