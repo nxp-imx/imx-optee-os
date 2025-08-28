@@ -21,9 +21,10 @@ struct ele_instance {
 	unsigned int nb_banks;
 	unsigned int nb_words;
 	bool (*fuse_map)(unsigned int fuse_index);
+	uint16_t lifecycle;
 };
 
-static const struct ele_instance *g_ele;
+static struct ele_instance *g_ele;
 
 /*
  * Read fuse value.
@@ -216,39 +217,43 @@ TEE_Result imx_ocotp_read(unsigned int read_common_fuse, unsigned int word,
 	if (!g_ele->fuse_map(fuse_index))
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	if (read_common_fuse)
+	if (read_common_fuse) {
 		return imx_ele_read_fuse(fuse_index, fuse_value,
 					 ELE_CMD_READ_COMMON);
-	else
-		return imx_ele_read_fuse(fuse_index, fuse_value,
-					 ELE_CMD_READ_SHADOW);
+	} else {
+		if (g_ele->lifecycle == SOC_LIFECYCLE_OPEN)
+			return imx_ele_read_fuse(fuse_index, fuse_value,
+						 ELE_CMD_READ_SHADOW);
+		else
+			return TEE_ERROR_BAD_PARAMETERS;
+	}
 }
 
-static const struct ele_instance ele_imx95 = {
+static struct ele_instance ele_imx95 = {
 	.nb_banks = 77,
 	.nb_words = 8,
 	.fuse_map = imx95_ele_fuse_map,
 };
 
-static const struct ele_instance ele_imx93 = {
+static struct ele_instance ele_imx93 = {
 	.nb_banks = 64,
 	.nb_words = 8,
 	.fuse_map = imx93_ele_fuse_map,
 };
 
-static const struct ele_instance ele_imx91 = {
+static struct ele_instance ele_imx91 = {
 	.nb_banks = 64,
 	.nb_words = 8,
 	.fuse_map = imx91_ele_fuse_map,
 };
 
-static const struct ele_instance ele_imx8ulp = {
+static struct ele_instance ele_imx8ulp = {
 	.nb_banks = 64,
 	.nb_words = 8,
 	.fuse_map = imx8ulp_ele_fuse_map,
 };
 
-static const struct ele_instance ele_imx943 = {
+static struct ele_instance ele_imx943 = {
 	.nb_banks = 103,
 	.nb_words = 8,
 	.fuse_map = imx943_ele_fuse_map,
@@ -256,6 +261,9 @@ static const struct ele_instance ele_imx943 = {
 
 static TEE_Result imx_ele_fuse_init(void)
 {
+	struct get_info_rsp rsp = {};
+	TEE_Result res = TEE_ERROR_GENERIC;
+
 	switch (imx_soc_type()) {
 	case SOC_MX8ULP:
 		g_ele = &ele_imx8ulp;
@@ -276,6 +284,13 @@ static TEE_Result imx_ele_fuse_init(void)
 		g_ele = NULL;
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
+
+	res = imx_ele_get_device_info(&rsp);
+	if (res) {
+		EMSG("Fail to get the SoC lifecycle");
+		return res;
+	}
+	g_ele->lifecycle = rsp.lifecycle;
 
 	return TEE_SUCCESS;
 }
