@@ -69,7 +69,7 @@ static_assert(OCRAM_END > OCRAM_START);
  * cause imx_ele_derive_key need cache aligned key buffer.
  */
 struct symmetric_key {
-	uint8_t key_buffer[TEE_AES_BLOCK_SIZE];
+	uint8_t key_buffer[AES_KEYSIZE_256];
 	uint32_t enc_key[EXPANDED_KEY_SIZE];
 	uint32_t dec_key[EXPANDED_KEY_SIZE];
 	size_t key_size;
