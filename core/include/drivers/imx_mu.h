@@ -5,6 +5,7 @@
 #ifndef __DRIVERS_IMX_MU_H
 #define __DRIVERS_IMX_MU_H
 
+#include <kernel/spinlock.h>
 #include <tee_api_types.h>
 #include <types_ext.h>
 #include <util.h>

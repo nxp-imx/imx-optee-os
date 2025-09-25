@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2023, 2025 NXP
  */
 #include <drivers/imx_mu.h>
 #include <initcall.h>
 #include <io.h>
-#include <kernel/delay.h>
 #include <mm/core_memprot.h>
 
 #include "imx_mu_platform.h"
@@ -23,6 +22,8 @@
 #define RR_NUM_MASK GENMASK_32(15, 8)
 #define RR_NUM_SHIFT 8
 #define TR_NUM_MASK GENMASK_32(7, 0)
+
+static unsigned int mu_spinlock = SPINLOCK_UNLOCK;
 
 static TEE_Result mu_wait_for(vaddr_t addr, uint32_t mask)
 {
@@ -50,15 +51,21 @@ unsigned int imx_mu_plat_get_tx_channel(vaddr_t base)
 	return io_read32(base + MU_PAR) & TR_NUM_MASK;
 }
 
-TEE_Result imx_mu_plat_send(vaddr_t base, unsigned int index, uint32_t msg)
+TEE_Result imx_mu_plat_send(vaddr_t base, unsigned int num, uint32_t *msg)
 {
-	assert(index < imx_mu_plat_get_tx_channel(base));
+	unsigned int i = 0;
+	uint32_t exceptions = 0;
 
 	/* Wait TX register to be empty */
-	if (mu_wait_for(base + MU_TSR, MU_TSR_TE(index)))
+	if (mu_wait_for(base + MU_TSR, GENMASK_32(num - 1, 0)))
 		return TEE_ERROR_BUSY;
 
-	io_write32(base + MU_TR(index), msg);
+	exceptions = cpu_spin_lock_xsave(&mu_spinlock);
+
+	for (i = 0; i < num; i++)
+		io_write32(base + MU_TR(i), msg[i]);
+
+	cpu_spin_unlock_xrestore(&mu_spinlock, exceptions);
 
 	return TEE_SUCCESS;
 }

@@ -14,6 +14,11 @@
 
 #define RX_TIMEOUT (10000 * 1000)
 
+/*
+ * TX channel is 16 for TRUST MU and 8 is for Normal/RT MU
+ */
+#define MU_MAX_TX_CHANNEL 16
+
 #if defined(CFG_MX93) || defined(CFG_MX91)
 #define IS_MU_TRUST (MU_BASE == MU_TRUST_BASE)
 #else
@@ -27,8 +32,8 @@ __weak void imx_mu_plat_init(vaddr_t base __unused)
 }
 
 __weak TEE_Result imx_mu_plat_send(vaddr_t base __unused,
-				   unsigned int index __unused,
-				   uint32_t msg __unused)
+				   unsigned int num __unused,
+				   uint32_t *msg __unused)
 {
 	return TEE_ERROR_NOT_IMPLEMENTED;
 }
@@ -94,11 +99,14 @@ static TEE_Result imx_mu_receive_msg(vaddr_t base, struct imx_mu_msg *msg)
 static TEE_Result imx_mu_send_msg(vaddr_t base, struct imx_mu_msg *msg)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
-	unsigned int count = 0;
 	unsigned int nb_channel = 0;
 	unsigned int start_index = 0;
-	unsigned int end_index = 0;
-	uint32_t word = 0;
+	unsigned int sent = 0;
+	unsigned int remaining_words = 0;
+	unsigned int remaining_slots = 0;
+	uint32_t commands[MU_MAX_TX_CHANNEL] = {};
+	unsigned int i = 0;
+	unsigned int word = 0;
 
 	assert(base && msg);
 
@@ -119,40 +127,49 @@ static TEE_Result imx_mu_send_msg(vaddr_t base, struct imx_mu_msg *msg)
 		word |= SHIFT_U32(((msg->header.size + 1) & GENMASK_32(3, 0)),
 				  16);
 
-		res = imx_mu_plat_send(base, start_index, word);
-		if (res)
-			return res;
+		commands[start_index++] = word;
 
-		start_index++;
 		memcpy(&word, &msg->header, sizeof(uint32_t));
-		res = imx_mu_plat_send(base, start_index, word);
-		if (res)
-			return res;
-
-		start_index++;
-		/*
-		 * TR15 is reserved for special USM commands
-		 */
-		nb_channel = imx_mu_plat_get_tx_channel(base) - 1;
-		end_index = msg->header.size + 1;
-		assert(end_index < nb_channel);
+		commands[start_index++] = word;
 	} else {
 		memcpy(&word, &msg->header, sizeof(uint32_t));
-		res = imx_mu_plat_send(base, start_index, word);
-		if (res)
-			return res;
-
-		start_index++;
-		nb_channel = imx_mu_plat_get_tx_channel(base);
-		end_index = msg->header.size;
+		commands[start_index++] = word;
 	}
 
-	for (count = start_index; count < end_index; count++) {
-		res = imx_mu_plat_send(base, count % nb_channel,
-				       msg->data.u32[count - start_index]);
-		if (res)
+	nb_channel = imx_mu_plat_get_tx_channel(base) - (IS_MU_TRUST ? 1 : 0);
+	remaining_slots = nb_channel - (IS_MU_TRUST ? 2 : 1);
+	remaining_words = msg->header.size - 1;
+
+	/*
+	 * If remaining_words <= remaining_slots, will just fill in
+	 * commands[] array with message data and send it in one
+	 * burst.
+	 * If remaining_words > remaining_slots, need to first send
+	 * messages up to remaining_slots and then again send the
+	 * remaining_words.
+	 */
+	do {
+		unsigned int chunk_size = remaining_words <= remaining_slots ?
+						  remaining_words :
+						  remaining_slots;
+
+		for (i = 0; i < chunk_size; i++)
+			commands[start_index + i] = msg->data.u32[sent + i];
+
+		/*
+		 * This function is platform specific and will differ
+		 * for i.MX8Q/8DXL and i.MX8ULP/i.MX9X platforms
+		 */
+		res = imx_mu_plat_send(base, start_index + chunk_size,
+				       commands);
+		if (res != TEE_SUCCESS)
 			return res;
-	}
+
+		remaining_words -= chunk_size;
+		sent += chunk_size;
+		remaining_slots = nb_channel;
+		start_index = 0;
+	} while (remaining_words > 0);
 
 	return TEE_SUCCESS;
 }
