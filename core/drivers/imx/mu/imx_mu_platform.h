@@ -17,13 +17,13 @@ unsigned int imx_mu_plat_get_rx_channel(vaddr_t base);
 unsigned int imx_mu_plat_get_tx_channel(vaddr_t base);
 
 /*
- * Send a 32bits word via the MU
+ * Send num words via the MU
  *
  * @base: virtual base address of the MU controller
- * @index: MU channel index
- * @[in]msg: word to send
+ * @num: number of words to send
+ * @[in]msg: message to send
  */
-TEE_Result imx_mu_plat_send(vaddr_t base, unsigned int index, uint32_t msg);
+TEE_Result imx_mu_plat_send(vaddr_t base, unsigned int num, uint32_t *msg);
 
 /*
  * Get the 32bits word received by the MU
