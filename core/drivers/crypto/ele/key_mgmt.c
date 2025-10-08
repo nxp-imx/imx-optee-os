@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2023 NXP
+ * Copyright 2023, 2025 NXP
  */
 #include <drivers/ele/ele.h>
 #include <drivers/ele/key_mgmt.h>
@@ -91,11 +91,13 @@ TEE_Result imx_ele_key_mgmt_close(uint32_t key_mgmt_handle)
 }
 
 TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
+				uint8_t *priv_key_addr __maybe_unused,
 				size_t public_key_size, uint16_t key_group,
-				bool sync, bool mon_inc, uint32_t key_lifetime,
-				uint32_t key_usage, uint16_t key_type,
-				size_t key_size, uint32_t permitted_algo,
-				uint32_t key_lifecycle,
+				bool sync, bool mon_inc, bool plain_key,
+				uint32_t key_lifetime, uint32_t key_usage,
+				uint16_t key_type, size_t key_size,
+				uint32_t permitted_algo, uint32_t key_lifecycle,
+				size_t priv_key_size __maybe_unused,
 				uint8_t *public_key_addr,
 				uint32_t *key_identifier)
 {
@@ -105,7 +107,10 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 	struct imx_ele_buf public_key = {};
 	struct gen_key_msg_cmd {
 		uint32_t key_mgmt_handle;
-		uint32_t key_id;
+		union {
+			uint32_t key_id;
+			uint32_t private_key_addr;
+		};
 		uint16_t public_key_size;
 		uint16_t key_group;
 		uint16_t key_type;
@@ -115,7 +120,8 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 		uint32_t permitted_algo;
 		uint32_t key_lifecycle;
 		uint8_t flags;
-		uint8_t reserved[3];
+		uint8_t reserved;
+		uint16_t private_key_size;
 		uint32_t public_key_addr;
 		uint32_t crc;
 	} __packed cmd = {};
@@ -124,8 +130,11 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 		uint32_t rsp_code;
 		uint32_t key_identifier;
 		uint16_t pub_key_size;
-		uint16_t reserved;
+		uint16_t priv_key_size;
 	} rsp = {};
+
+	if (plain_key)
+		return TEE_ERROR_NOT_SUPPORTED;
 
 	if (!key_identifier || !public_key_addr)
 		return TEE_ERROR_BAD_PARAMETERS;
@@ -150,9 +159,10 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 	cmd.key_usage = key_usage;
 	cmd.permitted_algo = permitted_algo;
 	cmd.key_lifecycle = key_lifecycle;
-	cmd.flags = (mon_inc ? IMX_ELE_FLAG_MON_INC : 0) |
+	cmd.flags = IMX_ELE_FLAG_OPAQUE_KEY |
+		    (mon_inc ? IMX_ELE_FLAG_MON_INC : 0) |
 		    (sync ? IMX_ELE_FLAG_SYNC : 0);
-	cmd.public_key_addr = public_key.paddr;
+	cmd.public_key_addr = public_key.paddr_lsb;
 	cmd.crc = 0;
 
 	msg.header.version = ELE_VERSION_HSM;
