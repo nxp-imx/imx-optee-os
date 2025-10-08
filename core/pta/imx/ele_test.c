@@ -27,37 +27,41 @@
 	(ELE_KEY_USAGE_SIGN_MSG | ELE_KEY_USAGE_SIGN_HASH | \
 	 ELE_KEY_USAGE_VERIFY_MSG | ELE_KEY_USAGE_VERIFY_HASH)
 
-#define GEN_KEY_TC(_sz, _psz, _key_gp, _key_type, _key_lt, _perm_alg, _sync)   \
-	{                                                                      \
-		.key_size = (_sz), .public_key_size = (_psz),                  \
-		.key_group = (_key_gp), .key_type = (_key_type),               \
-		.key_lifetime = (_key_lt), .permitted_algorithm = (_perm_alg), \
-		.sync = (_sync),                                               \
+#define GEN_KEY_TC(_sz, _psz, _priv_sz, _key_gp, _key_type, _key_lt, \
+		   _perm_alg, _sync, _plain_key)                     \
+	{                                                            \
+		.key_size = (_sz), .public_key_size = (_psz),        \
+		.priv_key_size = (_priv_sz), .key_group = (_key_gp), \
+		.key_type = (_key_type), .key_lifetime = (_key_lt),  \
+		.permitted_algorithm = (_perm_alg), .sync = (_sync), \
+		.plain_key = (_plain_key),                           \
 	}
 
 struct gen_key_test_case {
 	size_t key_size;
 	size_t public_key_size;
+	size_t priv_key_size;
 	uint32_t key_group;
 	uint32_t key_type;
 	uint32_t key_lifetime;
 	uint32_t permitted_algorithm;
 	uint32_t sync;
+	uint32_t plain_key;
 };
 
 static const struct gen_key_test_case gen_key_tc[] = {
-	GEN_KEY_TC(224, 56, PTA_ELE_KEY_GROUP_VOLATILE,
+	GEN_KEY_TC(224, 56, 28, PTA_ELE_KEY_GROUP_VOLATILE,
 		   ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1, ELE_KEY_LIFETIME_VOLATILE,
-		   ELE_ALGO_ECDSA_SHA224, 0),
-	GEN_KEY_TC(256, 64, PTA_ELE_KEY_GROUP_VOLATILE,
+		   ELE_ALGO_ECDSA_SHA224, 0, 0),
+	GEN_KEY_TC(256, 64, 32, PTA_ELE_KEY_GROUP_VOLATILE,
 		   ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1, ELE_KEY_LIFETIME_VOLATILE,
-		   ELE_ALGO_ECDSA_SHA256, 0),
-	GEN_KEY_TC(384, 96, PTA_ELE_KEY_GROUP_VOLATILE,
+		   ELE_ALGO_ECDSA_SHA256, 0, 0),
+	GEN_KEY_TC(384, 96, 48, PTA_ELE_KEY_GROUP_VOLATILE,
 		   ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1, ELE_KEY_LIFETIME_VOLATILE,
-		   ELE_ALGO_ECDSA_SHA384, 0),
-	GEN_KEY_TC(521, 132, PTA_ELE_KEY_GROUP_VOLATILE,
+		   ELE_ALGO_ECDSA_SHA384, 0, 0),
+	GEN_KEY_TC(521, 132, 66, PTA_ELE_KEY_GROUP_VOLATILE,
 		   ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1, ELE_KEY_LIFETIME_VOLATILE,
-		   ELE_ALGO_ECDSA_SHA512, 0),
+		   ELE_ALGO_ECDSA_SHA512, 0, 0),
 };
 
 static TEE_Result ele_generate_delete(const struct gen_key_test_case *tc,
@@ -65,6 +69,7 @@ static TEE_Result ele_generate_delete(const struct gen_key_test_case *tc,
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint8_t *public_key = NULL;
+	uint8_t *priv_key = NULL;
 	uint32_t key_identifier = 0;
 
 	public_key = calloc(1, tc->public_key_size);
@@ -74,13 +79,22 @@ static TEE_Result ele_generate_delete(const struct gen_key_test_case *tc,
 		goto out;
 	}
 
-	res = imx_ele_generate_key(key_mgmt_handle, tc->public_key_size,
-				   tc->key_group, tc->sync, false,
-				   tc->key_lifetime, PTA_ELE_ECC_KEY_USAGE,
-				   tc->key_type, tc->key_size,
-				   tc->permitted_algorithm,
-				   ELE_KEY_LIFECYCLE_DEVICE, public_key,
-				   &key_identifier);
+	if (tc->plain_key) {
+		priv_key = calloc(1, tc->priv_key_size);
+		if (!priv_key) {
+			EMSG("Private key memory allocation failed");
+			res = TEE_ERROR_OUT_OF_MEMORY;
+			goto out;
+		}
+	}
+
+	res = imx_ele_generate_key(key_mgmt_handle, priv_key,
+				   tc->public_key_size, tc->key_group, tc->sync,
+				   false, tc->plain_key, tc->key_lifetime,
+				   PTA_ELE_ECC_KEY_USAGE, tc->key_type,
+				   tc->key_size, tc->permitted_algorithm,
+				   ELE_KEY_LIFECYCLE_DEVICE, tc->priv_key_size,
+				   public_key, &key_identifier);
 	if (res != TEE_SUCCESS) {
 		EMSG("Key generation failed");
 		goto out;
@@ -92,6 +106,7 @@ static TEE_Result ele_generate_delete(const struct gen_key_test_case *tc,
 		EMSG("Key deletion failed");
 
 out:
+	free(priv_key);
 	free(public_key);
 	return res;
 }
@@ -242,6 +257,7 @@ static TEE_Result ele_gen_del_sign_verify(const struct gen_key_test_case *tc,
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint8_t *public_key = NULL;
+	uint8_t *priv_key = NULL;
 	uint32_t key_identifier = 0;
 	unsigned int error = 0;
 
@@ -252,13 +268,22 @@ static TEE_Result ele_gen_del_sign_verify(const struct gen_key_test_case *tc,
 		goto out;
 	}
 
-	res = imx_ele_generate_key(key_mgmt_handle, tc->public_key_size,
-				   tc->key_group, tc->sync, false,
-				   tc->key_lifetime, PTA_ELE_ECC_KEY_USAGE,
-				   tc->key_type, tc->key_size,
-				   tc->permitted_algorithm,
-				   ELE_KEY_LIFECYCLE_DEVICE, public_key,
-				   &key_identifier);
+	if (tc->plain_key) {
+		priv_key = calloc(1, tc->priv_key_size);
+		if (!priv_key) {
+			EMSG("Private key memory allocation failed");
+			res = TEE_ERROR_OUT_OF_MEMORY;
+			goto out;
+		}
+	}
+
+	res = imx_ele_generate_key(key_mgmt_handle, priv_key,
+				   tc->public_key_size, tc->key_group, tc->sync,
+				   false, tc->plain_key, tc->key_lifetime,
+				   PTA_ELE_ECC_KEY_USAGE, tc->key_type,
+				   tc->key_size, tc->permitted_algorithm,
+				   ELE_KEY_LIFECYCLE_DEVICE, tc->priv_key_size,
+				   public_key, &key_identifier);
 	if (res != TEE_SUCCESS) {
 		EMSG("Key generation failed");
 		goto out;
@@ -279,7 +304,9 @@ static TEE_Result ele_gen_del_sign_verify(const struct gen_key_test_case *tc,
 		EMSG("Key deletion failed");
 
 out:
+	free(priv_key);
 	free(public_key);
+
 	if (error && !res)
 		res = TEE_ERROR_GENERIC;
 	return res;

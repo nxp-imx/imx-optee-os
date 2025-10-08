@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright NXP 2023
+ * Copyright NXP 2023, 2025
  */
 
 #ifndef __KEY_MGMT_H__
@@ -43,6 +43,8 @@ TEE_Result imx_ele_key_mgmt_close(uint32_t key_mgmt_handle);
  * Generate a Key be it Asymmetric or Symmetric
  *
  * @key_mgmt_handle: EdgeLock Enclave key management handle
+ * @priv_key_addr: LSB of the address in the requester space where to store
+ *		   the private key.
  * @public_key_size: Size in bytes of the output where to store the generated
  *		     Key. It must be 0 if a symmetric key is generated.
  *		     If the size is different than 0, EdgeLock Enclave will
@@ -53,6 +55,7 @@ TEE_Result imx_ele_key_mgmt_close(uint32_t key_mgmt_handle);
  *        at the key creation (generation, importation), the key will
  *        not be stored in the NVM.
  * @mon_inc: Whether to increment the monotonic counter or not.
+ * @plain_key: Whether the key generated is plain or not.
  * @key_lifetime: Lifetime of the key (Volatile or Persistent)
  * @key_usage: Defines cryptographic operations that key can execute.
  * @key_type: Defines Key type
@@ -60,16 +63,18 @@ TEE_Result imx_ele_key_mgmt_close(uint32_t key_mgmt_handle);
  * @permitted_algo: Defines algorithms in which key can be used.
  * @key_lifecycle: Defines in which device lifecycle the key is usable
  *		   OPEN, CLOSED, CLOSED and LOCKED
+ * @priv_key_size: Output buffer size for storing Private key.
  * @public_key_addr: In case of Asymmetric Key, address to where Edgelock
  *		Enclave will copy the Public Key.
  * @key_identifier: Identifier of the generated key
  */
 TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
-				size_t public_key_size, uint16_t key_group,
-				bool sync, bool mon_inc, uint32_t key_lifetime,
+				uint8_t *priv_key_addr, size_t public_key_size,
+				uint16_t key_group, bool sync, bool mon_inc,
+				bool plain_key, uint32_t key_lifetime,
 				uint32_t key_usage, uint16_t key_type,
 				size_t key_size, uint32_t permitted_algo,
-				uint32_t key_lifecycle,
+				uint32_t key_lifecycle, size_t priv_key_size,
 				uint8_t *public_key_addr,
 				uint32_t *key_identifier);
 
