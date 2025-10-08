@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2023 NXP
+ * Copyright 2023, 2025 NXP
  */
 #ifndef __ACIPHER_H__
 #define __ACIPHER_H__
@@ -46,6 +46,7 @@ TEE_Result imx_ele_sig_gen_close(uint32_t sig_gen_handle);
  *
  * @sig_gen_handle: edgelock enclave signature generation handle
  * @key_identifier: identifier of key to be used for operation
+ * @priv_key_size: Private key size to perform the signature
  * @message: data on which signature will be generated
  * @message_size: message size
  * @signature: generated signature
@@ -53,15 +54,19 @@ TEE_Result imx_ele_sig_gen_close(uint32_t sig_gen_handle);
  * @signature_scheme: signature scheme to be used for signature generation
  * @message_type: whethere passed message is digest or actual message
  *		  (ELE_SIG_GEN_MSG_TYPE_MESSAGE/ELE_SIG_GEN_MSG_TYPE_HASH)
+ * @plain_key: whether key passed is plain or opaque
+ * @key_type: type of key
+ * @key_size_bits: Keypair security size in bits
  */
 TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 				      uint32_t key_identifier,
+				      size_t priv_key_size,
 				      const uint8_t *message,
 				      size_t message_size, uint8_t *signature,
 				      size_t signature_size,
 				      uint32_t signature_scheme,
-				      uint8_t message_type);
-
+				      uint8_t message_type, bool plain_key,
+				      uint32_t key_type, size_t key_size_bits);
 /*
  * Open a signature verification flow
  *
