@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2023 NXP
+ * Copyright 2023, 2025 NXP
  */
 #include <drivers/ele/ele.h>
 #include <drivers/ele/memutils.h>
@@ -96,11 +96,14 @@ TEE_Result imx_ele_sig_gen_close(uint32_t sig_gen_handle)
 
 TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 				      uint32_t key_identifier,
+				      size_t priv_key_size __maybe_unused,
 				      const uint8_t *message,
 				      size_t message_size, uint8_t *signature,
 				      size_t signature_size,
 				      uint32_t signature_scheme,
-				      uint8_t message_type)
+				      uint8_t message_type, bool plain_key,
+				      uint32_t key_type __maybe_unused,
+				      size_t key_size_bits __maybe_unused)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	struct imx_ele_buf msg = {};
@@ -109,7 +112,10 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 
 	struct signature_generate_msg_cmd {
 		uint32_t sig_gen_handle;
-		uint32_t key_identifier;
+		union {
+			uint32_t key_id;
+			uint32_t private_key_addr;
+		};
 		uint32_t message;
 		uint32_t signature;
 		uint32_t message_size;
@@ -117,8 +123,15 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 		uint8_t flags;
 		uint8_t rsvd;
 		uint32_t signature_scheme;
+		uint16_t salt_len;
+		uint16_t key_type;
+		uint16_t priv_key_size;
+		uint16_t keypair_sec_size;
 		uint32_t crc;
 	} __packed cmd = {};
+
+	if (plain_key)
+		return TEE_ERROR_NOT_SUPPORTED;
 
 	if (!message || !signature || !message_size || !signature_size)
 		return TEE_ERROR_BAD_PARAMETERS;
@@ -136,14 +149,15 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 	}
 
 	cmd.sig_gen_handle = sig_gen_handle;
-	cmd.key_identifier = key_identifier;
-	cmd.message = msg.paddr;
-	cmd.signature = sig.paddr;
+	cmd.key_id = key_identifier;
+	cmd.message = msg.paddr_lsb;
+	cmd.signature = sig.paddr_lsb;
 	cmd.message_size = (uint16_t)msg.size;
 	cmd.signature_size = (uint16_t)sig.size;
-	cmd.flags = message_type;
+	cmd.flags = message_type | IMX_ELE_FLAG_OPAQUE_KEY;
 	cmd.rsvd = 0;
 	cmd.signature_scheme = signature_scheme;
+	cmd.salt_len = 0;
 	cmd.crc = 0;
 
 	mu_msg.header.version = ELE_VERSION_HSM;
@@ -299,6 +313,8 @@ TEE_Result imx_ele_signature_verification(uint32_t sig_verify_handle,
 		uint8_t flags;
 		uint8_t rsvd[3];
 		uint32_t signature_scheme;
+		uint16_t salt_len;
+		uint8_t rsvd2[2];
 		uint32_t crc;
 	} __packed cmd = {};
 
@@ -330,9 +346,9 @@ TEE_Result imx_ele_signature_verification(uint32_t sig_verify_handle,
 	}
 
 	cmd.sig_verify_handle = sig_verify_handle;
-	cmd.key = public_key.paddr;
-	cmd.message = msg.paddr;
-	cmd.signature = sig.paddr;
+	cmd.key = public_key.paddr_lsb;
+	cmd.message = msg.paddr_lsb;
+	cmd.signature = sig.paddr_lsb;
 	cmd.message_size = (uint32_t)msg.size;
 	cmd.signature_size = (uint16_t)sig.size;
 	cmd.key_size = (uint16_t)public_key.size;
@@ -340,6 +356,7 @@ TEE_Result imx_ele_signature_verification(uint32_t sig_verify_handle,
 	cmd.key_type = key_type;
 	cmd.flags = message_type;
 	cmd.signature_scheme = signature_scheme;
+	cmd.salt_len = 0;
 	cmd.crc = 0;
 
 	mu_msg.header.version = ELE_VERSION_HSM;

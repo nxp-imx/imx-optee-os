@@ -185,8 +185,9 @@ static const char test_data[] = "The quick brown fox jumps over the lazy dog";
 static TEE_Result ele_sign_verify(uint32_t session_handle,
 				  uint32_t key_store_handle,
 				  uint32_t key_identifier, uint8_t *public_key,
-				  size_t public_key_size, size_t key_size_bits,
-				  uint32_t key_type, uint32_t sig_scheme)
+				  size_t public_key_size, size_t priv_key_size,
+				  size_t key_size_bits, uint32_t key_type,
+				  uint32_t sig_scheme, uint32_t plain_key)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	uint32_t sig_gen_handle = 0;
@@ -212,10 +213,11 @@ static TEE_Result ele_sign_verify(uint32_t session_handle,
 		goto out;
 	}
 
-	res = imx_ele_signature_generate(sig_gen_handle, key_identifier, data,
-					 data_size, signature, signature_size,
-					 sig_scheme,
-					 ELE_SIG_GEN_MSG_TYPE_MESSAGE);
+	res = imx_ele_signature_generate(sig_gen_handle, key_identifier,
+					 priv_key_size, data, data_size,
+					 signature, signature_size, sig_scheme,
+					 ELE_SIG_GEN_MSG_TYPE_MESSAGE,
+					 plain_key, key_type, key_size_bits);
 	if (res != TEE_SUCCESS)
 		EMSG("Signature generation failed");
 
@@ -290,9 +292,10 @@ static TEE_Result ele_gen_del_sign_verify(const struct gen_key_test_case *tc,
 	}
 
 	res = ele_sign_verify(session_handle, key_store_handle, key_identifier,
-			      public_key, tc->public_key_size, tc->key_size,
+			      public_key, tc->public_key_size,
+			      tc->priv_key_size, tc->key_size,
 			      ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1,
-			      tc->permitted_algorithm);
+			      tc->permitted_algorithm, tc->plain_key);
 	if (res != TEE_SUCCESS) {
 		EMSG("Sign Verify test failed");
 		error = 1;
