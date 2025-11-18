@@ -75,10 +75,11 @@ bool __weak caam_hal_rng_pr_enabled(vaddr_t baseaddr)
 	return (io_caam_read32(baseaddr + RNG_STA) & bitmask) == bitmask;
 }
 
-enum caam_status caam_hal_rng_kick(vaddr_t baseaddr, uint32_t inc_delay)
+enum caam_status caam_hal_rng_kick(vaddr_t baseaddr,
+				   uint32_t ent_delay_multiple)
 {
 	uint32_t val = 0;
-	uint32_t ent_delay = TRNG_SDCTL_ENT_DLY_MIN + inc_delay;
+	uint32_t ent_delay = TRNG_SDCTL_ENT_DLY_MIN * ent_delay_multiple;
 
 	if (ent_delay > TRNG_SDCTL_ENT_DLY_MAX)
 		return CAAM_OUT_OF_BOUND;
