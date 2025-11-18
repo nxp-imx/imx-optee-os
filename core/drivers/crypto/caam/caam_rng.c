@@ -211,7 +211,7 @@ enum caam_status caam_rng_instantiation(void)
 	uint32_t sh_status = 0;
 	uint32_t nb_sh = 0;
 	uint32_t sh_mask = 0;
-	uint32_t inc_delay = 0;
+	uint32_t ent_delay_multiple = 1;
 
 	RNG_TRACE("RNG Instantation");
 
@@ -276,14 +276,14 @@ enum caam_status caam_rng_instantiation(void)
 
 		if (sh_status == 0) {
 			retstatus = caam_hal_rng_kick(rng_privdata->baseaddr,
-						      inc_delay);
+						      ent_delay_multiple);
 			RNG_TRACE("RNG Kick (inc=%" PRIu32 ") ret 0x%08x",
-				  inc_delay, retstatus);
+				  ent_delay_multiple, retstatus);
 			if (retstatus != CAAM_NO_ERROR) {
 				retstatus = CAAM_FAILURE;
 				goto end_inst;
 			}
-			inc_delay += 200;
+			ent_delay_multiple = ent_delay_multiple * 2;
 		}
 
 		prepare_inst_desc(nb_sh, sh_status, desc);
