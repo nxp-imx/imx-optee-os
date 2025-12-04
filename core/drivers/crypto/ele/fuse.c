@@ -236,8 +236,12 @@ TEE_Result imx_ocotp_read(unsigned int read_common_fuse, unsigned int word,
 		if (g_ele->lifecycle == SOC_LIFECYCLE_OPEN)
 			return imx_ele_read_fuse(fuse_index, fuse_value,
 						 ELE_CMD_READ_SHADOW);
+		/*
+		 * In closed lifecycle, it is restricted to read the fuse via
+		 * Read Shadow Fuse command.
+		 */
 		else
-			return TEE_ERROR_BAD_PARAMETERS;
+			return TEE_ERROR_ACCESS_DENIED;
 	}
 }
 
