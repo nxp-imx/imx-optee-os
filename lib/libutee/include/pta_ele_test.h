@@ -23,4 +23,11 @@
  */
 #define PTA_ELE_CMD_TEST_SIGN_VERIFY 1
 
+/*
+ * Test Plain Key Generation, Signing and verification operation.
+ */
+#define PTA_ELE_CMD_TEST_PLAINKEY_GENERATE 2
+#define PTA_ELE_CMD_TEST_SIGN_GENERATE 3
+#define PTA_ELE_CMD_TEST_VERIFICATION 4
+
 #endif /* PTA_ELE_TEST_H */
