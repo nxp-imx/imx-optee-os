@@ -46,6 +46,7 @@ TEE_Result imx_ele_sig_gen_close(uint32_t sig_gen_handle);
  *
  * @sig_gen_handle: edgelock enclave signature generation handle
  * @key_identifier: identifier of key to be used for operation
+ * @priv_key: private key to be used for signature
  * @priv_key_size: Private key size to perform the signature
  * @message: data on which signature will be generated
  * @message_size: message size
@@ -60,6 +61,7 @@ TEE_Result imx_ele_sig_gen_close(uint32_t sig_gen_handle);
  */
 TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 				      uint32_t key_identifier,
+				      const uint8_t *priv_key,
 				      size_t priv_key_size,
 				      const uint8_t *message,
 				      size_t message_size, uint8_t *signature,

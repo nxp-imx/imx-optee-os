@@ -35,6 +35,7 @@
 #define ELE_KEY_GROUP_PERSISTENT 1
 
 /* Key Store and Key Gen Flags */
+#define IMX_ELE_FLAG_PLAINTEXT_KEY 0x8
 #define IMX_ELE_FLAG_OPAQUE_KEY 0x00
 #define IMX_ELE_FLAG_SYNC 0x80
 #define IMX_ELE_FLAG_MON_INC 0x20

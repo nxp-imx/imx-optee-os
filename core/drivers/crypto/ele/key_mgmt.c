@@ -91,13 +91,12 @@ TEE_Result imx_ele_key_mgmt_close(uint32_t key_mgmt_handle)
 }
 
 TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
-				uint8_t *priv_key_addr __maybe_unused,
-				size_t public_key_size, uint16_t key_group,
-				bool sync, bool mon_inc, bool plain_key,
-				uint32_t key_lifetime, uint32_t key_usage,
-				uint16_t key_type, size_t key_size,
-				uint32_t permitted_algo, uint32_t key_lifecycle,
-				size_t priv_key_size __maybe_unused,
+				uint8_t *priv_key_addr, size_t public_key_size,
+				uint16_t key_group, bool sync, bool mon_inc,
+				bool plain_key, uint32_t key_lifetime,
+				uint32_t key_usage, uint16_t key_type,
+				size_t key_size, uint32_t permitted_algo,
+				uint32_t key_lifecycle, size_t priv_key_size,
 				uint8_t *public_key_addr,
 				uint32_t *key_identifier)
 {
@@ -105,6 +104,7 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 
 	struct imx_mu_msg msg = {};
 	struct imx_ele_buf public_key = {};
+	struct imx_ele_buf private_key = {};
 	struct gen_key_msg_cmd {
 		uint32_t key_mgmt_handle;
 		union {
@@ -133,10 +133,7 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 		uint16_t priv_key_size;
 	} rsp = {};
 
-	if (plain_key)
-		return TEE_ERROR_NOT_SUPPORTED;
-
-	if (!key_identifier || !public_key_addr)
+	if (plain_key && (!priv_key_addr && !public_key_addr))
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	/* MONOTONIC counter increment flag can only be set with SYNC flag */
@@ -149,17 +146,28 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 		return res;
 	}
 
-	cmd.key_mgmt_handle = key_mgmt_handle;
-	cmd.key_id = 0;
+	if (!plain_key) {
+		cmd.key_mgmt_handle = key_mgmt_handle;
+		cmd.key_id = 0;
+		cmd.key_group = key_group;
+		cmd.key_lifetime = key_lifetime;
+		cmd.key_usage = key_usage;
+		cmd.permitted_algo = permitted_algo;
+		cmd.key_lifecycle = key_lifecycle;
+	} else {
+		res = imx_ele_buf_alloc(&private_key, NULL, priv_key_size);
+		if (res != TEE_SUCCESS) {
+			EMSG("Private key memory allocation failed");
+			return res;
+		}
+		cmd.private_key_addr = private_key.paddr_lsb;
+		cmd.private_key_size = (uint16_t)private_key.size;
+	}
+
 	cmd.public_key_size = (uint16_t)public_key.size;
-	cmd.key_group = key_group;
 	cmd.key_type = key_type;
 	cmd.key_size = (uint16_t)key_size;
-	cmd.key_lifetime = key_lifetime;
-	cmd.key_usage = key_usage;
-	cmd.permitted_algo = permitted_algo;
-	cmd.key_lifecycle = key_lifecycle;
-	cmd.flags = IMX_ELE_FLAG_OPAQUE_KEY |
+	cmd.flags = (plain_key ? IMX_ELE_FLAG_PLAINTEXT_KEY : 0) |
 		    (mon_inc ? IMX_ELE_FLAG_MON_INC : 0) |
 		    (sync ? IMX_ELE_FLAG_SYNC : 0);
 	cmd.public_key_addr = public_key.paddr_lsb;
@@ -185,12 +193,23 @@ TEE_Result imx_ele_generate_key(uint32_t key_mgmt_handle,
 		goto out;
 	}
 
-	memcpy(&rsp, msg.data.u8, sizeof(rsp));
-
-	*key_identifier = rsp.key_identifier;
+	if (plain_key) {
+		res = imx_ele_buf_copy(&private_key, priv_key_addr,
+				       priv_key_size);
+		if (res != TEE_SUCCESS) {
+			EMSG("Private key copy failed");
+			goto out;
+		}
+	} else {
+		memcpy(&rsp, msg.data.u8, sizeof(rsp));
+		*key_identifier = rsp.key_identifier;
+	}
 
 out:
 	imx_ele_buf_free(&public_key);
+	if (plain_key)
+		imx_ele_buf_free(&private_key);
+
 	return res;
 }
 
