@@ -96,18 +96,20 @@ TEE_Result imx_ele_sig_gen_close(uint32_t sig_gen_handle)
 
 TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 				      uint32_t key_identifier,
-				      size_t priv_key_size __maybe_unused,
+				      const uint8_t *priv_key,
+				      size_t priv_key_size,
 				      const uint8_t *message,
 				      size_t message_size, uint8_t *signature,
 				      size_t signature_size,
 				      uint32_t signature_scheme,
 				      uint8_t message_type, bool plain_key,
-				      uint32_t key_type __maybe_unused,
-				      size_t key_size_bits __maybe_unused)
+				      uint32_t key_type,
+				      size_t key_size_bits)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	struct imx_ele_buf msg = {};
 	struct imx_ele_buf sig = {};
+	struct imx_ele_buf private_key = {};
 	struct imx_mu_msg mu_msg = {};
 
 	struct signature_generate_msg_cmd {
@@ -130,10 +132,10 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 		uint32_t crc;
 	} __packed cmd = {};
 
-	if (plain_key)
-		return TEE_ERROR_NOT_SUPPORTED;
-
 	if (!message || !signature || !message_size || !signature_size)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	if (plain_key && !priv_key)
 		return TEE_ERROR_BAD_PARAMETERS;
 
 	res = imx_ele_buf_alloc(&msg, message, message_size);
@@ -154,12 +156,25 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 	cmd.signature = sig.paddr_lsb;
 	cmd.message_size = (uint16_t)msg.size;
 	cmd.signature_size = (uint16_t)sig.size;
-	cmd.flags = message_type | IMX_ELE_FLAG_OPAQUE_KEY;
+	cmd.flags = message_type | (plain_key ? IMX_ELE_FLAG_PLAINTEXT_KEY : 0);
 	cmd.rsvd = 0;
 	cmd.signature_scheme = signature_scheme;
 	cmd.salt_len = 0;
 	cmd.crc = 0;
 
+	if (plain_key) {
+		res = imx_ele_buf_alloc(&private_key, priv_key, priv_key_size);
+		if (res != TEE_SUCCESS) {
+			EMSG("Private key memory allocation failed");
+			goto out;
+		}
+		cmd.private_key_addr = private_key.paddr_lsb;
+		cmd.priv_key_size = (uint16_t)private_key.size;
+		cmd.key_type = key_type;
+		cmd.keypair_sec_size = key_size_bits;
+	} else {
+		cmd.key_id = key_identifier;
+	}
 	mu_msg.header.version = ELE_VERSION_HSM;
 	mu_msg.header.size = SIZE_MSG_32(cmd);
 	mu_msg.header.tag = ELE_REQUEST_TAG;
@@ -171,7 +186,7 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 	res = imx_ele_call(&mu_msg);
 	if (res != TEE_SUCCESS) {
 		EMSG("Failed to generate signature res = %" PRIx32, res);
-		return res;
+		goto out;
 	}
 
 	res = imx_ele_buf_copy(&sig, signature, signature_size);
@@ -179,6 +194,8 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 		EMSG("Signature copy failed");
 
 out:
+	if (plain_key)
+		imx_ele_buf_free(&private_key);
 	imx_ele_buf_free(&msg);
 	imx_ele_buf_free(&sig);
 	return TEE_SUCCESS;
