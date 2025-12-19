@@ -17,6 +17,7 @@
 
 #define PTA_NAME "ele_test.pta"
 
+#define PLAIN_KEY 1
 #define PTA_ELE_KEY_STORE_ID 0x1234
 #define PTA_ELE_KEY_STORE_AUTH_NONCE 0x1234
 
@@ -213,7 +214,10 @@ static TEE_Result ele_sign_verify(uint32_t session_handle,
 		goto out;
 	}
 
-	res = imx_ele_signature_generate(sig_gen_handle, key_identifier,
+	/*
+	 * Passing private key as NULL for opaque key.
+	 */
+	res = imx_ele_signature_generate(sig_gen_handle, key_identifier, NULL,
 					 priv_key_size, data, data_size,
 					 signature, signature_size, sig_scheme,
 					 ELE_SIG_GEN_MSG_TYPE_MESSAGE,
@@ -383,6 +387,156 @@ out:
 	return res;
 }
 
+static TEE_Result pta_ele_test_verification(uint32_t param_types,
+					    TEE_Param params[TEE_NUM_PARAMS])
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint8_t *pub_key = NULL;
+	size_t pub_key_size = 0;
+	uint8_t *signature = NULL;
+	size_t signature_size = 0;
+	uint8_t *data = NULL;
+	size_t data_size = 0;
+	uint32_t sig_scheme = 0;
+	uint32_t key_size = 0;
+	uint32_t session_handle = 0;
+	uint32_t sig_verify_handle = 0;
+	uint32_t exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT,
+						   TEE_PARAM_TYPE_MEMREF_INPUT,
+						   TEE_PARAM_TYPE_MEMREF_INPUT,
+						   TEE_PARAM_TYPE_VALUE_INPUT);
+
+	if (param_types != exp_param_types)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	pub_key = params[0].memref.buffer;
+	pub_key_size = params[0].memref.size;
+	data = params[1].memref.buffer;
+	data_size = params[1].memref.size;
+	signature = params[2].memref.buffer;
+	signature_size = params[2].memref.size;
+	sig_scheme = params[3].value.a;
+	key_size = params[3].value.b;
+
+	res = imx_ele_session_open(&session_handle);
+	if (res != TEE_SUCCESS) {
+		EMSG("Session open failed");
+		return res;
+	}
+
+	res = imx_ele_sig_verify_open(session_handle, &sig_verify_handle);
+	if (res != TEE_SUCCESS) {
+		EMSG("Signature verification service flow open failed");
+		goto session_close;
+	}
+
+	res = imx_ele_signature_verification(sig_verify_handle, pub_key, data,
+					     data_size, signature,
+					     signature_size, pub_key_size,
+					     key_size,
+					     ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1,
+					     sig_scheme,
+					     ELE_SIG_GEN_MSG_TYPE_MESSAGE);
+	if (res != TEE_SUCCESS)
+		EMSG("Signature verification failed");
+
+	res = imx_ele_sig_verify_close(sig_verify_handle);
+	if (res != TEE_SUCCESS)
+		EMSG("Signature verification flow close failed");
+
+session_close:
+	res = imx_ele_session_close(session_handle);
+	if (res != TEE_SUCCESS)
+		EMSG("Session Close failed");
+
+	return res;
+}
+
+static TEE_Result pta_ele_test_sign_gen(uint32_t param_types,
+					TEE_Param params[TEE_NUM_PARAMS])
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint8_t *priv_key = NULL;
+	size_t priv_key_size = 0;
+	uint8_t *signature = NULL;
+	size_t signature_size = 0;
+	uint8_t *data = NULL;
+	size_t data_size = 0;
+	uint32_t sig_scheme = 0;
+	uint32_t key_size = 0;
+	uint32_t exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT,
+						   TEE_PARAM_TYPE_MEMREF_INPUT,
+						   TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						   TEE_PARAM_TYPE_VALUE_INPUT);
+
+	if (param_types != exp_param_types)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	priv_key = params[0].memref.buffer;
+	priv_key_size = params[0].memref.size;
+	data = params[1].memref.buffer;
+	data_size = params[1].memref.size;
+	signature = params[2].memref.buffer;
+	signature_size = params[2].memref.size;
+	sig_scheme = params[3].value.a;
+	key_size = params[3].value.b;
+
+	/*
+	 * For plain key, passing signature generation handle and key
+	 * id as 0, as they are reserved.
+	 */
+	res = imx_ele_signature_generate(0, 0, priv_key, priv_key_size,
+					 data, data_size, signature,
+					 signature_size, sig_scheme,
+					 ELE_SIG_GEN_MSG_TYPE_MESSAGE,
+					 PLAIN_KEY,
+					 ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1,
+					 key_size);
+	if (res != TEE_SUCCESS)
+		EMSG("Signature generation failed");
+
+	return res;
+}
+
+static TEE_Result pta_ele_test_plainkey_gen(uint32_t param_types,
+					    TEE_Param params[TEE_NUM_PARAMS])
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint8_t *priv_key = NULL;
+	size_t priv_key_size = 0;
+	uint8_t *pub_key = NULL;
+	size_t pub_key_size = 0;
+	uint32_t key_size = 0;
+	uint32_t exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_INPUT,
+						   TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						   TEE_PARAM_TYPE_MEMREF_OUTPUT,
+						   TEE_PARAM_TYPE_NONE);
+
+	if (param_types != exp_param_types)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	key_size = params[0].value.a;
+	pub_key = params[1].memref.buffer;
+	pub_key_size = params[1].memref.size;
+	priv_key = params[2].memref.buffer;
+	priv_key_size = params[2].memref.size;
+
+	/*
+	 * For plain key generation, passing key mgmt handle, key group,
+	 * sync, mon_inc flag, key lifecycle, permitted algo & key identifier
+	 * as 0 or NULL, as these are reserved fields for plain key.
+	 */
+	res = imx_ele_generate_key(0, priv_key, pub_key_size, 0, 0, 0,
+				   PLAIN_KEY, 0, 0,
+				   ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1, key_size,
+				   0, 0, priv_key_size, pub_key, NULL);
+
+	if (res != TEE_SUCCESS)
+		EMSG("Plain Key generation failed");
+
+	return res;
+}
+
 static TEE_Result pta_ele_test_invoke_cmd(void *sess_ctx __unused,
 					  uint32_t cmd_id, uint32_t param_types,
 					  TEE_Param params[TEE_NUM_PARAMS])
@@ -392,6 +546,12 @@ static TEE_Result pta_ele_test_invoke_cmd(void *sess_ctx __unused,
 		return pta_ele_test_key_generate_delete(param_types, params);
 	case PTA_ELE_CMD_TEST_SIGN_VERIFY:
 		return pta_ele_test_sign_verify(param_types, params);
+	case PTA_ELE_CMD_TEST_PLAINKEY_GENERATE:
+		return pta_ele_test_plainkey_gen(param_types, params);
+	case PTA_ELE_CMD_TEST_SIGN_GENERATE:
+		return pta_ele_test_sign_gen(param_types, params);
+	case PTA_ELE_CMD_TEST_VERIFICATION:
+		return pta_ele_test_verification(param_types, params);
 	default:
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
