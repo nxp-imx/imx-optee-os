@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2023, 2025 NXP
+ * Copyright 2023, 2025-2026 NXP
  */
 #include <drivers/ele_extension.h>
 #include <drivers/ele/ele.h>
@@ -221,8 +221,19 @@ static bool imx943_ele_fuse_map(unsigned int fuse_index)
 static bool imx952_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
-	case 59:
-	case 608 ... 639:
+	case 0 ... 2:
+	case 4:
+	case 6 ... 23:
+	case 25:
+	case 27:
+	case 33 ... 51:
+	case 56 ... 60:
+	case 63:
+	case 128 ... 143:
+	case 317 ... 318:
+	case 320 ... 326:
+	case 328 ... 391:
+	case 448 ... 607:
 		return true;
 	default:
 		return false;
@@ -295,7 +306,7 @@ static struct ele_instance ele_imx943 = {
 };
 
 static struct ele_instance ele_imx952 = {
-	.nb_banks = 103,
+	.nb_banks = 77,
 	.nb_words = 8,
 	.fuse_map = imx952_ele_fuse_map,
 };
