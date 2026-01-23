@@ -53,6 +53,9 @@
 #elif defined(CFG_MX943)
 #define OCRAM_START 0x204BC000
 #define OCRAM_END 0x204C0000
+#elif defined(CFG_MX952)
+#define OCRAM_START 0x204BC000
+#define OCRAM_END 0x204C0000
 #else
 #error "Platform not supported"
 #endif
