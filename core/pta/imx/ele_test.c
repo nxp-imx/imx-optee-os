@@ -17,7 +17,6 @@
 
 #define PTA_NAME "ele_test.pta"
 
-#define PLAIN_KEY 1
 #define PTA_ELE_KEY_STORE_ID 0x1234
 #define PTA_ELE_KEY_STORE_AUTH_NONCE 0x1234
 

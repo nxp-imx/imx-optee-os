@@ -50,6 +50,9 @@
 #define SOC_LIFECYCLE_CLOSED 0x40UL
 #define SOC_LIFECYCLE_OPEN 0x10UL
 
+/* Plain key flag */
+#define PLAIN_KEY 1
+
 #define CRC_WORD_LIMIT 0x4
 /*
  * ELE response code
