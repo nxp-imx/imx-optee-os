@@ -200,9 +200,14 @@ static bool imx943_ele_fuse_map(unsigned int fuse_index)
 	case 4:
 	case 6 ... 11:
 	case 24 ... 35:
+	case 52 ... 53:
 	case 56 ... 60:
 	case 63:
+	case 88 ... 119:
+	case 144 ... 167:
 	case 337 ... 487:
+	case 528 ... 531:
+	case 533 ... 534:
 	case 608 ... 639:
 		return true;
 	default:
