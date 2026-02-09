@@ -318,7 +318,7 @@ static struct ele_instance ele_imx952 = {
 
 static TEE_Result imx_ele_fuse_init(void)
 {
-	struct get_info_rsp rsp = {};
+	uint16_t lifecycle = 0;
 	TEE_Result res = TEE_ERROR_GENERIC;
 
 	switch (imx_soc_type()) {
@@ -345,12 +345,11 @@ static TEE_Result imx_ele_fuse_init(void)
 		return TEE_ERROR_NOT_SUPPORTED;
 	}
 
-	res = imx_ele_get_device_info(&rsp);
-	if (res) {
-		EMSG("Fail to get the SoC lifecycle");
+	res = imx_ele_get_device_lifecycle(&lifecycle);
+	if (res)
 		return res;
-	}
-	g_ele->lifecycle = rsp.lifecycle;
+
+	g_ele->lifecycle = lifecycle;
 
 	return TEE_SUCCESS;
 }
