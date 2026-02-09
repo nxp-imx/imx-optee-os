@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright NXP 2025
+ * Copyright NXP 2025-2026
  */
 
 #ifndef __ELE_H_
@@ -148,5 +148,12 @@ TEE_Result imx_ele_get_global_session_handle(uint32_t *session_handle);
  * @rsp GET_INFO returned data get filled in rsp.
  */
 TEE_Result imx_ele_get_device_info(struct get_info_rsp *rsp);
+
+/*
+ * Get device lifecycle from EdgeLock Enclave.
+ *
+ * @lifecycle Device lifecycle gets filled.
+ */
+TEE_Result imx_ele_get_device_lifecycle(uint16_t *lifecycle);
 
 #endif /* __ELE_H_ */

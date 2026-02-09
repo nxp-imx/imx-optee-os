@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2022-2023, 2025 NXP
+ * Copyright 2022-2023, 2025-2026 NXP
  */
 #include <drivers/ele_extension.h>
 #include <drivers/ele/ele.h>
@@ -392,6 +392,25 @@ out:
 	imx_ele_buf_free(&output);
 
 	return res;
+}
+
+TEE_Result imx_ele_get_device_lifecycle(uint16_t *lifecycle)
+{
+	struct get_info_rsp rsp = {};
+	TEE_Result res = TEE_ERROR_GENERIC;
+
+	if (!lifecycle)
+		return TEE_ERROR_BAD_PARAMETERS;
+
+	res = imx_ele_get_device_info(&rsp);
+	if (res) {
+		EMSG("Fail to get the SoC lifecycle");
+		return res;
+	}
+
+	*lifecycle = rsp.lifecycle;
+
+	return TEE_SUCCESS;
 }
 
 int tee_otp_get_die_id(uint8_t *buffer, size_t len)
