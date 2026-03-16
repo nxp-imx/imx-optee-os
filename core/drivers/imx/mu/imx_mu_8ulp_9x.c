@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2022-2023, 2025 NXP
+ * Copyright 2022-2023, 2025-2026 NXP
  */
 #include <drivers/imx_mu.h>
 #include <initcall.h>
@@ -29,11 +29,11 @@ static TEE_Result mu_wait_for(vaddr_t addr, uint32_t mask)
 {
 	uint64_t timeout = timeout_init_us(100000);
 
-	while (!(io_read32(addr) & mask))
+	while (!((io_read32(addr) & mask) == mask))
 		if (timeout_elapsed(timeout))
 			break;
 
-	if (io_read32(addr) & mask)
+	if ((io_read32(addr) & mask) == mask)
 		return TEE_SUCCESS;
 	else
 		return TEE_ERROR_BUSY;
