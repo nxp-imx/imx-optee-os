@@ -122,8 +122,6 @@ static TEE_Result pm_enter(uint32_t pm_hint)
 {
 	enum caam_status ret = CAAM_BUSY;
 
-	PWR_TRACE("CAAM power mode %" PRIu32 " entry", pm_hint);
-
 	if (pm_hint == PM_HINT_CLOCK_STATE) {
 		ret = caam_jr_halt();
 	} else if (pm_hint == PM_HINT_CONTEXT_STATE) {
