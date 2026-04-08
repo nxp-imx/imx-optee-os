@@ -201,10 +201,8 @@ void imx_snvs_shutdown(void)
 {
 	vaddr_t base = core_mmu_get_va(SNVS_BASE, MEM_AREA_IO_SEC, SNVS_SIZE);
 
-	io_write32(base + SNVS_LPCR,
-		   SNVS_LPCR_TOP_MASK |
-		   SNVS_LPCR_DP_EN_MASK |
-		   SNVS_LPCR_SRTC_ENV_MASK);
+	io_setbits32(base + SNVS_LPCR,
+		     SNVS_LPCR_TOP_MASK | SNVS_LPCR_DP_EN_MASK);
 }
 
 static TEE_Result snvs_set_npswa_en(void)
