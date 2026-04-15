@@ -23,6 +23,9 @@
 #define ELE_KEY_TYPE_ECC_KEY_PAIR_SECP_R1 0x7112
 #define ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1 0x4112
 
+/* RSA key type */
+#define ELE_KEY_TYPE_RSA_KEY_PAIR 0x7001
+#define ELE_KEY_TYPE_RSA_PUB_KEY 0x4001
 /*
  * Open a Key Management session with EdgeLock Enclave.
  *

@@ -9,6 +9,7 @@
 #include <drivers/ele/sign_verify.h>
 #include <drivers/imx_mu.h>
 #include <ecc.h>
+#include <rsa.h>
 #include <initcall.h>
 #include <kernel/boot.h>
 #include <kernel/delay.h>
@@ -484,6 +485,9 @@ static TEE_Result imx_ele_global_init(void)
 	if (res)
 		EMSG("ELE ECC driver registration failed");
 
+	res = imx_ele_rsa_init();
+	if (res)
+		EMSG("ELE RSA driver registration failed");
 	return res;
 }
 
