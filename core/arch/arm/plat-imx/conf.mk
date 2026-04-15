@@ -287,6 +287,9 @@ CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 CFG_IMX_ELE_TEST_PTA ?= n
 CFG_IMX_ELE_ECC_DRV ?= y
 CFG_NXP_ELE_ECC_DRV_FALLBACK ?= y
+# Disabled RSA driver on iMX93/91 because of Trust MU issue.
+CFG_IMX_ELE_RSA_DRV ?= n
+CFG_NXP_ELE_RSA_DRV_FALLBACK ?= n
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx95-flavorlist)))
 $(call force,CFG_MX95,y)
 $(call force,CFG_ARM64_core,y)
@@ -303,6 +306,8 @@ CFG_IMX_TRUSTED_ARM_CE = y
 CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 CFG_IMX_ELE_ECC_DRV ?= y
 CFG_NXP_ELE_ECC_DRV_FALLBACK ?= y
+CFG_IMX_ELE_RSA_DRV ?= y
+CFG_NXP_ELE_RSA_DRV_FALLBACK ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx91-flavorlist)))
 $(call force,CFG_MX91,y)
 $(call force,CFG_ARM64_core,y)
@@ -319,6 +324,9 @@ CFG_IMX_TRUSTED_ARM_CE = y
 CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 CFG_IMX_ELE_ECC_DRV ?= y
 CFG_NXP_ELE_ECC_DRV_FALLBACK ?= y
+# Disabled RSA driver on iMX93/91 because of Trust MU issue.
+CFG_IMX_ELE_RSA_DRV ?= n
+CFG_NXP_ELE_RSA_DRV_FALLBACK ?= n
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx943-flavorlist)))
 $(call force,CFG_MX943,y)
 $(call force,CFG_ARM64_core,y)
@@ -335,6 +343,8 @@ CFG_IMX_TRUSTED_ARM_CE = y
 CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 CFG_IMX_ELE_ECC_DRV ?= y
 CFG_NXP_ELE_ECC_DRV_FALLBACK ?= y
+CFG_IMX_ELE_RSA_DRV ?= y
+CFG_NXP_ELE_RSA_DRV_FALLBACK ?= y
 else ifneq (,$(filter $(PLATFORM_FLAVOR),$(mx952-flavorlist)))
 $(call force,CFG_MX952,y)
 $(call force,CFG_ARM64_core,y)
@@ -351,6 +361,8 @@ CFG_IMX_TRUSTED_ARM_CE = y
 CFG_IN_TREE_EARLY_TAS += trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c
 CFG_IMX_ELE_ECC_DRV ?= y
 CFG_NXP_ELE_ECC_DRV_FALLBACK ?= y
+CFG_IMX_ELE_RSA_DRV ?= y
+CFG_NXP_ELE_RSA_DRV_FALLBACK ?= y
 else
 $(error Unsupported PLATFORM_FLAVOR "$(PLATFORM_FLAVOR)")
 endif
