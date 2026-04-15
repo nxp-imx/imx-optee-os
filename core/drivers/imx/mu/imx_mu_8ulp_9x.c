@@ -23,11 +23,17 @@
 #define RR_NUM_SHIFT 8
 #define TR_NUM_MASK GENMASK_32(7, 0)
 
+/*
+ * Timeout has been increased because of RSA Driver.
+ * As RSA operations takes more time.
+ */
+#define MU_TIMEOUT 60000000
+
 static unsigned int mu_spinlock = SPINLOCK_UNLOCK;
 
 static TEE_Result mu_wait_for(vaddr_t addr, uint32_t mask)
 {
-	uint64_t timeout = timeout_init_us(100000);
+	uint64_t timeout = timeout_init_us(MU_TIMEOUT);
 
 	while (!((io_read32(addr) & mask) == mask))
 		if (timeout_elapsed(timeout))
