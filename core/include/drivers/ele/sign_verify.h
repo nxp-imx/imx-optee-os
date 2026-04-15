@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright 2023, 2025 NXP
+ * Copyright 2023, 2025-2026 NXP
  */
-#ifndef __ACIPHER_H__
-#define __ACIPHER_H__
+#ifndef __SIGN_VERIFY_H__
+#define __SIGN_VERIFY_H__
 
 #include <drivers/ele/memutils.h>
 #include <stddef.h>
@@ -58,6 +58,7 @@ TEE_Result imx_ele_sig_gen_close(uint32_t sig_gen_handle);
  * @plain_key: whether key passed is plain or opaque
  * @key_type: type of key
  * @key_size_bits: Keypair security size in bits
+ * @salt len: Length of salt
  */
 TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 				      uint32_t key_identifier,
@@ -68,7 +69,8 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 				      size_t signature_size,
 				      uint32_t signature_scheme,
 				      uint8_t message_type, bool plain_key,
-				      uint32_t key_type, size_t key_size_bits);
+				      uint32_t key_type, size_t key_size_bits,
+				      uint16_t salt_len);
 /*
  * Open a signature verification flow
  *
@@ -100,6 +102,7 @@ TEE_Result imx_ele_sig_verify_close(uint32_t sig_verify_handle);
  * @signature_scheme: signature scheme to be used for signature generation
  * @message_type: whether passed message is digest or actual message
  *		  (ELE_SIG_GEN_MSG_TYPE_MESSAGE/ELE_SIG_GEN_MSG_TYPE_HASH)
+ * @salt len: Length of salt
  */
 TEE_Result imx_ele_signature_verification(uint32_t sig_verify_handle,
 					  const uint8_t *key,
@@ -111,6 +114,7 @@ TEE_Result imx_ele_signature_verification(uint32_t sig_verify_handle,
 					  size_t key_security_size,
 					  uint16_t key_type,
 					  uint32_t signature_scheme,
-					  uint8_t message_type);
+					  uint8_t message_type,
+					  uint16_t salt_len);
 
-#endif /* __ACIPHER_H__ */
+#endif /* __SIGN_VERIFY_H__ */

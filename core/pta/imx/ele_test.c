@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2023, 2025 NXP
+ * Copyright 2023, 2025-2026 NXP
  */
 
 #include <drivers/ele/ele.h>
@@ -195,6 +195,7 @@ static TEE_Result ele_sign_verify(uint32_t session_handle,
 	uint8_t *signature = NULL;
 	uint8_t *data = (uint8_t *)test_data;
 	unsigned int data_size = sizeof(test_data) - 1;
+	uint16_t salt_len = 0;
 
 	/*
 	 * Public key size and signature size is same for ECC key type
@@ -220,7 +221,8 @@ static TEE_Result ele_sign_verify(uint32_t session_handle,
 					 priv_key_size, data, data_size,
 					 signature, signature_size, sig_scheme,
 					 ELE_SIG_GEN_MSG_TYPE_MESSAGE,
-					 plain_key, key_type, key_size_bits);
+					 plain_key, key_type, key_size_bits,
+					 salt_len);
 	if (res != TEE_SUCCESS)
 		EMSG("Signature generation failed");
 
@@ -242,7 +244,8 @@ static TEE_Result ele_sign_verify(uint32_t session_handle,
 					     signature_size, public_key_size,
 					     key_size_bits, key_type,
 					     sig_scheme,
-					     ELE_SIG_GEN_MSG_TYPE_MESSAGE);
+					     ELE_SIG_GEN_MSG_TYPE_MESSAGE,
+					     salt_len);
 	if (res != TEE_SUCCESS)
 		EMSG("Signature verification failed");
 
@@ -400,6 +403,7 @@ static TEE_Result pta_ele_test_verification(uint32_t param_types,
 	uint32_t key_size = 0;
 	uint32_t session_handle = 0;
 	uint32_t sig_verify_handle = 0;
+	uint16_t salt_len = 0;
 	uint32_t exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT,
 						   TEE_PARAM_TYPE_MEMREF_INPUT,
 						   TEE_PARAM_TYPE_MEMREF_INPUT,
@@ -435,7 +439,8 @@ static TEE_Result pta_ele_test_verification(uint32_t param_types,
 					     key_size,
 					     ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1,
 					     sig_scheme,
-					     ELE_SIG_GEN_MSG_TYPE_MESSAGE);
+					     ELE_SIG_GEN_MSG_TYPE_MESSAGE,
+					     salt_len);
 	if (res != TEE_SUCCESS)
 		EMSG("Signature verification failed");
 
@@ -463,6 +468,7 @@ static TEE_Result pta_ele_test_sign_gen(uint32_t param_types,
 	size_t data_size = 0;
 	uint32_t sig_scheme = 0;
 	uint32_t key_size = 0;
+	uint16_t salt_len = 0;
 	uint32_t exp_param_types = TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT,
 						   TEE_PARAM_TYPE_MEMREF_INPUT,
 						   TEE_PARAM_TYPE_MEMREF_OUTPUT,
@@ -490,7 +496,7 @@ static TEE_Result pta_ele_test_sign_gen(uint32_t param_types,
 					 ELE_SIG_GEN_MSG_TYPE_MESSAGE,
 					 PLAIN_KEY,
 					 ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1,
-					 key_size);
+					 key_size, salt_len);
 	if (res != TEE_SUCCESS)
 		EMSG("Signature generation failed");
 

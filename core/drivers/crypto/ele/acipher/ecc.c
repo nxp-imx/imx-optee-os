@@ -229,6 +229,7 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 	uint8_t *priv_key = NULL;
 	size_t priv_key_size = 0;
 	size_t d_size = 0;
+	uint16_t salt_len = 0;
 
 	if (!sdata) {
 		EMSG("sdata is not valid");
@@ -278,7 +279,7 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 					 signature_len, sig_scheme,
 					 ELE_SIG_GEN_MSG_TYPE_DIGEST, PLAIN_KEY,
 					 ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1,
-					 key_size_bits);
+					 key_size_bits, salt_len);
 
 	if (res != TEE_SUCCESS) {
 		EMSG("Signature generation failed");
@@ -303,6 +304,7 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 	uint8_t *public_key = NULL;
 	size_t x_size = 0;
 	size_t y_size = 0;
+	uint16_t salt_len = 0;
 
 	if (!sdata) {
 		EMSG("sdata is not valid");
@@ -352,7 +354,8 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 					     public_key_size, key_size_bits,
 					     ELE_KEY_TYPE_ECC_PUB_KEY_SECP_R1,
 					     sig_scheme,
-					     ELE_SIG_GEN_MSG_TYPE_DIGEST);
+					     ELE_SIG_GEN_MSG_TYPE_DIGEST,
+					     salt_len);
 
 	if (res != TEE_SUCCESS)
 		EMSG("Signature verification failed");

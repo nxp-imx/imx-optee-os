@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2023, 2025 NXP
+ * Copyright 2023, 2025-2026 NXP
  */
 #include <drivers/ele/ele.h>
 #include <drivers/ele/memutils.h>
@@ -104,7 +104,8 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 				      uint32_t signature_scheme,
 				      uint8_t message_type, bool plain_key,
 				      uint32_t key_type,
-				      size_t key_size_bits)
+				      size_t key_size_bits,
+				      uint16_t salt_len)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	struct imx_ele_buf msg = {};
@@ -159,7 +160,7 @@ TEE_Result imx_ele_signature_generate(uint32_t sig_gen_handle,
 	cmd.flags = message_type | (plain_key ? IMX_ELE_FLAG_PLAINTEXT_KEY : 0);
 	cmd.rsvd = 0;
 	cmd.signature_scheme = signature_scheme;
-	cmd.salt_len = 0;
+	cmd.salt_len = salt_len;
 	cmd.crc = 0;
 
 	if (plain_key) {
@@ -309,7 +310,8 @@ TEE_Result imx_ele_signature_verification(uint32_t sig_verify_handle,
 					  size_t key_security_size,
 					  uint16_t key_type,
 					  uint32_t signature_scheme,
-					  uint8_t message_type)
+					  uint8_t message_type,
+					  uint16_t salt_len)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
 	struct imx_mu_msg mu_msg = {};
@@ -373,7 +375,7 @@ TEE_Result imx_ele_signature_verification(uint32_t sig_verify_handle,
 	cmd.key_type = key_type;
 	cmd.flags = message_type;
 	cmd.signature_scheme = signature_scheme;
-	cmd.salt_len = 0;
+	cmd.salt_len = salt_len;
 	cmd.crc = 0;
 
 	mu_msg.header.version = ELE_VERSION_HSM;
