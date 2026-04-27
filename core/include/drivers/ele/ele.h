@@ -53,6 +53,9 @@
 /* Plain key flag */
 #define PLAIN_KEY 1
 
+/* Asymmetric operation flag */
+#define IMX_ELE_FLAG_DECRYPT 0x00
+#define IMX_ELE_FLAG_ENCRYPT 0x01
 #define CRC_WORD_LIMIT 0x4
 /*
  * ELE response code

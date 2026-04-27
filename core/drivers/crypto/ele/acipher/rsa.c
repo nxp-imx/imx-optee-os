@@ -7,6 +7,7 @@
 #include <drivers/ele/key_mgmt.h>
 #include <drivers/ele/memutils.h>
 #include <drivers/ele/sign_verify.h>
+#include <drivers/ele/asym_cipher.h>
 #include <drvcrypt.h>
 #include <drvcrypt_acipher.h>
 #include <rsa.h>
@@ -122,6 +123,40 @@ static uint16_t calculate_salt_len(uint32_t tee_algo)
 	return salt_len;
 }
 
+/*
+ * Map TEE RSA encryption algorithm to ELE encryption scheme
+ */
+static TEE_Result tee_algo_to_ele_enc_scheme(uint32_t tee_algo,
+					     uint32_t *ele_scheme)
+{
+	switch (tee_algo) {
+	case TEE_ALG_RSAES_PKCS1_V1_5:
+		*ele_scheme = ELE_ALGO_RSA_PKCS1_V15_CRYPT;
+		break;
+	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA1:
+		*ele_scheme = ELE_ALGO_RSA_OAEP_SHA1;
+		break;
+	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA224:
+		*ele_scheme = ELE_ALGO_RSA_OAEP_SHA224;
+		break;
+	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA256:
+		*ele_scheme = ELE_ALGO_RSA_OAEP_SHA256;
+		break;
+	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA384:
+		*ele_scheme = ELE_ALGO_RSA_OAEP_SHA384;
+		break;
+	case TEE_ALG_RSAES_PKCS1_OAEP_MGF1_SHA512:
+		*ele_scheme = ELE_ALGO_RSA_OAEP_SHA512;
+		break;
+	default:
+		DMSG("RSA encryption algorithm %#" PRIx32 " not supported",
+		     tee_algo);
+		return TEE_ERROR_NOT_IMPLEMENTED;
+	}
+
+	return TEE_SUCCESS;
+}
+
 static TEE_Result gen_fallback(struct rsa_keypair *key, size_t key_size)
 {
 	if (!IS_ENABLED(CFG_NXP_ELE_RSA_DRV_FALLBACK))
@@ -154,6 +189,40 @@ static TEE_Result verify_fallback(struct drvcrypt_rsa_ssa *p)
 					       p->message.length,
 					       p->signature.data,
 					       p->signature.length);
+}
+
+static TEE_Result encrypt_fallback(struct drvcrypt_rsa_ed *rsa_data)
+{
+	if (!IS_ENABLED(CFG_NXP_ELE_RSA_DRV_FALLBACK))
+		return TEE_ERROR_NOT_IMPLEMENTED;
+
+	DMSG("ELE: debug: RSA software fallback: ENCRYPT");
+	return sw_crypto_acipher_rsaes_encrypt(rsa_data->algo,
+					       rsa_data->key.key,
+					       rsa_data->label.data,
+					       rsa_data->label.length,
+					       rsa_data->mgf_algo,
+					       rsa_data->message.data,
+					       rsa_data->message.length,
+					       rsa_data->cipher.data,
+					       &rsa_data->cipher.length);
+}
+
+static TEE_Result decrypt_fallback(struct drvcrypt_rsa_ed *rsa_data)
+{
+	if (!IS_ENABLED(CFG_NXP_ELE_RSA_DRV_FALLBACK))
+		return TEE_ERROR_NOT_IMPLEMENTED;
+
+	DMSG("ELE: debug: RSA software fallback: DECRYPT");
+	return sw_crypto_acipher_rsaes_decrypt(rsa_data->algo,
+					       rsa_data->key.key,
+					       rsa_data->label.data,
+					       rsa_data->label.length,
+					       rsa_data->mgf_algo,
+					       rsa_data->cipher.data,
+					       rsa_data->cipher.length,
+					       rsa_data->message.data,
+					       &rsa_data->message.length);
 }
 
 static TEE_Result alloc_keypair_fallback(struct rsa_keypair *s,
@@ -425,6 +494,230 @@ static TEE_Result do_verify(struct drvcrypt_rsa_ssa *sdata)
 	return res;
 }
 
+/*
+ * Encrypt data using RSA public key
+ */
+static TEE_Result do_encrypt(struct drvcrypt_rsa_ed *edata)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t enc_scheme = 0;
+	struct rsa_public_key *key = NULL;
+	size_t key_size_bits = 0;
+	size_t modulus_size = 0;
+	uint8_t *modulus = NULL;
+	uint32_t pub_exp = 0;
+	size_t label_len = 0;
+	uint8_t *label = NULL;
+
+	if (!edata || !edata->key.key || !edata->message.data ||
+	    !edata->cipher.data || !edata->message.length) {
+		EMSG("Invalid encrypt data parameters");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	if (edata->rsa_id == DRVCRYPT_RSA_NOPAD) {
+		if (!IS_ENABLED(CFG_NXP_ELE_RSA_DRV_FALLBACK))
+			return TEE_ERROR_NOT_IMPLEMENTED;
+
+		DMSG("ELE: RSA NOPAD software fallback");
+		return sw_crypto_acipher_rsanopad_encrypt(edata->key.key,
+							  edata->message.data,
+							  edata->message.length,
+							  edata->cipher.data,
+							  &edata->cipher.length
+							 );
+	}
+
+	key = (struct rsa_public_key *)edata->key.key;
+	key_size_bits = crypto_bignum_num_bits(key->n);
+
+	res = validate_rsa_key_size(key_size_bits);
+	if (res)
+		return encrypt_fallback(edata);
+
+	res = tee_algo_to_ele_enc_scheme(edata->algo, &enc_scheme);
+	if (res)
+		return encrypt_fallback(edata);
+
+	/*
+	 * Verify public exponent is 65537
+	 */
+	crypto_bignum_bn2bin(key->e, (uint8_t *)&pub_exp);
+	if (pub_exp != RSA_PUBLIC_EXPONENT) {
+		DMSG("ELE only supports public exponent 65537, got %u",
+		     pub_exp);
+		return encrypt_fallback(edata);
+	}
+
+	modulus_size = key_size_bits / 8;
+
+	/*
+	 * Validate output buffer size
+	 */
+	if (edata->cipher.length < modulus_size) {
+		EMSG("Output buffer too small: %zu < %zu", edata->cipher.length,
+		     modulus_size);
+		edata->cipher.length = modulus_size;
+		return TEE_ERROR_SHORT_BUFFER;
+	}
+
+	modulus = calloc(1, modulus_size);
+	if (!modulus) {
+		EMSG("Modulus allocation failed");
+		return TEE_ERROR_OUT_OF_MEMORY;
+	}
+
+	/*
+	 * Convert modulus to binary
+	 */
+	crypto_bignum_bn2bin(key->n, modulus);
+
+	/*
+	 * Handle OAEP label if present
+	 */
+	if (edata->label.data && edata->label.length > 0) {
+		label = edata->label.data;
+		label_len = edata->label.length;
+	}
+
+	/*
+	 * Encrypt using ELE
+	 * For plain key encryption:
+	 * - asym_enc_handle = 0 (reserved for plain keys)
+	 * - key = modulus (public key)
+	 * - key_type = ELE_KEY_TYPE_RSA_PUB_KEY
+	 * - encrypt = true
+	 */
+	res = imx_ele_asym_operate(0, modulus, modulus_size,
+				   edata->message.data, edata->message.length,
+				   edata->cipher.data, &edata->cipher.length,
+				   label, label_len, enc_scheme, true,
+				   ELE_KEY_TYPE_RSA_PUB_KEY, key_size_bits);
+	if (res != TEE_SUCCESS) {
+		EMSG("RSA encryption failed");
+		goto out;
+	}
+out:
+	free(modulus);
+	return res;
+}
+
+/*
+ * Decrypt data using RSA private key
+ */
+static TEE_Result do_decrypt(struct drvcrypt_rsa_ed *edata)
+{
+	TEE_Result res = TEE_ERROR_GENERIC;
+	uint32_t enc_scheme = 0;
+	struct rsa_keypair *key = NULL;
+	size_t key_size_bits = 0;
+	size_t modulus_size = 0;
+	size_t priv_exp_size = 0;
+	uint8_t *priv_key_combined = NULL;
+	size_t label_len = 0;
+	uint8_t *label = NULL;
+
+	if (!edata || !edata->key.key || !edata->cipher.data ||
+	    !edata->message.data || !edata->cipher.length) {
+		EMSG("Invalid decrypt data parameters");
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	/*
+	 * Handle RSA NOPAD separately - use software fallback
+	 */
+	if (edata->rsa_id == DRVCRYPT_RSA_NOPAD) {
+		if (!IS_ENABLED(CFG_NXP_ELE_RSA_DRV_FALLBACK))
+			return TEE_ERROR_NOT_IMPLEMENTED;
+
+		DMSG("ELE: RSA NOPAD software fallback");
+		return sw_crypto_acipher_rsanopad_decrypt(edata->key.key,
+							  edata->cipher.data,
+							  edata->cipher.length,
+							  edata->message.data,
+							  &edata->message.length
+							 );
+	}
+
+	key = (struct rsa_keypair *)edata->key.key;
+	key_size_bits = crypto_bignum_num_bits(key->n);
+
+	res = validate_rsa_key_size(key_size_bits);
+	if (res)
+		return decrypt_fallback(edata);
+
+	res = tee_algo_to_ele_enc_scheme(edata->algo, &enc_scheme);
+	if (res)
+		return decrypt_fallback(edata);
+
+	modulus_size = key_size_bits / 8;
+	priv_exp_size = modulus_size;
+
+	/*
+	 * Validate cipher size
+	 */
+	if (edata->cipher.length != modulus_size) {
+		EMSG("Invalid cipher size: %zu != %zu", edata->cipher.length,
+		     modulus_size);
+		return TEE_ERROR_BAD_PARAMETERS;
+	}
+
+	if (edata->message.length > modulus_size) {
+		edata->message.length = modulus_size;
+		DMSG("Setting message.length to modulus_size=%zu",
+		     edata->message.length);
+	}
+
+	/*
+	 * For decryption with plain key:
+	 * Private key format: private_exponent || modulus
+	 * Total size: priv_exp_size + modulus_size
+	 */
+	priv_key_combined = calloc(1, priv_exp_size + modulus_size);
+	if (!priv_key_combined) {
+		EMSG("Combined private key allocation failed");
+		res = TEE_ERROR_OUT_OF_MEMORY;
+		goto out;
+	}
+
+	/*
+	 * Convert private exponent and modulus to binary
+	 */
+	crypto_bignum_bn2bin(key->d, priv_key_combined);
+	crypto_bignum_bn2bin(key->n, priv_key_combined + priv_exp_size);
+
+	/*
+	 * Handle OAEP label if present
+	 */
+	if (edata->label.data && edata->label.length > 0) {
+		label = edata->label.data;
+		label_len = edata->label.length;
+	}
+
+	/*
+	 * Decrypt using ELE
+	 * For plain key decryption:
+	 * - asym_enc_handle = 0 (reserved for plain keys)
+	 * - key = private_exponent || modulus
+	 * - key_type = ELE_KEY_TYPE_RSA
+	 * - encrypt = false
+	 */
+	res = imx_ele_asym_operate(0, priv_key_combined,
+				   priv_exp_size + modulus_size,
+				   edata->cipher.data, edata->cipher.length,
+				   edata->message.data, &edata->message.length,
+				   label, label_len, enc_scheme, false,
+				   ELE_KEY_TYPE_RSA_KEY_PAIR, key_size_bits);
+	if (res != TEE_SUCCESS && res != TEE_ERROR_SHORT_BUFFER) {
+		EMSG("RSA decryption failed");
+		goto out;
+	}
+
+out:
+	free(priv_key_combined);
+	return res;
+}
+
 static TEE_Result do_allocate_keypair(struct rsa_keypair *key, size_t size_bits)
 {
 	TEE_Result res = TEE_ERROR_GENERIC;
@@ -580,8 +873,8 @@ static struct drvcrypt_rsa driver_rsa = {
 	.free_publickey = do_free_publickey,
 	.free_keypair = do_free_keypair,
 	.gen_keypair = do_gen_keypair,
-	.encrypt = NULL,
-	.decrypt = NULL,
+	.encrypt = do_encrypt,
+	.decrypt = do_decrypt,
 	.optional.ssa_sign = do_sign,
 	.optional.ssa_verify = do_verify,
 };
