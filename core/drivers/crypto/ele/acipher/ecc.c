@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright NXP 2023, 2026
+ * Copyright 2023, 2026 NXP
  */
 
 #include <drivers/ele/ele.h>
@@ -228,6 +228,7 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 	size_t key_size = 0;
 	uint8_t *priv_key = NULL;
 	size_t priv_key_size = 0;
+	size_t d_size = 0;
 
 	if (!sdata) {
 		EMSG("sdata is not valid");
@@ -258,7 +259,13 @@ static TEE_Result do_sign(struct drvcrypt_sign_data *sdata)
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
 
-	crypto_bignum_bn2bin(key->d, priv_key);
+	/*
+	 * This is added to handle cases where the bignum representation
+	 * is smaller than the expected key size (e.g., when leading zeros
+	 * are stripped)
+	 */
+	d_size = crypto_bignum_num_bytes(key->d);
+	crypto_bignum_bn2bin(key->d, priv_key + priv_key_size - d_size);
 
 	/*
 	 * For plain key, passing signature generation handle and key
@@ -294,6 +301,8 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 	struct ecc_public_key *key = NULL;
 	size_t public_key_size = 0;
 	uint8_t *public_key = NULL;
+	size_t x_size = 0;
+	size_t y_size = 0;
 
 	if (!sdata) {
 		EMSG("sdata is not valid");
@@ -323,8 +332,17 @@ static TEE_Result do_verify(struct drvcrypt_sign_data *sdata)
 		return TEE_ERROR_OUT_OF_MEMORY;
 	}
 
-	crypto_bignum_bn2bin(key->x, public_key);
-	crypto_bignum_bn2bin(key->y, public_key + key_size);
+	/*
+	 * This is added to handle cases where the bignum representation
+	 * is smaller than the expected key size (e.g., when leading zeros
+	 * are stripped)
+	 */
+	x_size = crypto_bignum_num_bytes(key->x);
+	crypto_bignum_bn2bin(key->x, public_key + key_size - x_size);
+
+	y_size = crypto_bignum_num_bytes(key->y);
+	crypto_bignum_bn2bin(key->y,
+			     public_key + key_size + (key_size - y_size));
 
 	res = imx_ele_signature_verification(0, public_key,
 					     sdata->message.data,
