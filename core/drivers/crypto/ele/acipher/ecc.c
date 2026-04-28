@@ -384,6 +384,7 @@ static TEE_Result do_allocate_keypair(struct ecc_keypair *key, uint32_t type,
 out:
 	crypto_bignum_free(&key->d);
 	crypto_bignum_free(&key->x);
+	crypto_bignum_free(&key->y);
 
 	return TEE_ERROR_OUT_OF_MEMORY;
 }
@@ -423,6 +424,7 @@ static TEE_Result do_allocate_publickey(struct ecc_public_key *key,
 
 out:
 	crypto_bignum_free(&key->x);
+	crypto_bignum_free(&key->y);
 
 	return TEE_ERROR_OUT_OF_MEMORY;
 }
