@@ -72,16 +72,16 @@ static TEE_Result get_key_size_and_algo(uint32_t curve, uint32_t tee_algo,
 		return res;
 
 	switch (tee_algo) {
-	case TEE_ALG_ECDSA_P224:
+	case TEE_ALG_ECDSA_SHA224:
 		ele_algo = ELE_ALGO_ECDSA_SHA224;
 		break;
-	case TEE_ALG_ECDSA_P256:
+	case TEE_ALG_ECDSA_SHA256:
 		ele_algo = ELE_ALGO_ECDSA_SHA256;
 		break;
-	case TEE_ALG_ECDSA_P384:
+	case TEE_ALG_ECDSA_SHA384:
 		ele_algo = ELE_ALGO_ECDSA_SHA384;
 		break;
-	case TEE_ALG_ECDSA_P521:
+	case TEE_ALG_ECDSA_SHA512:
 		ele_algo = ELE_ALGO_ECDSA_SHA512;
 		break;
 	default:
