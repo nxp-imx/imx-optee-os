@@ -103,7 +103,7 @@ static TEE_Result get_key_size_and_algo(uint32_t curve, uint32_t tee_algo,
 			goto err;
 		break;
 	case ELE_ALGO_ECDSA_SHA512:
-		if (!(bits == 512 && digest_size == TEE_SHA512_HASH_SIZE))
+		if (!(bits == 521 && digest_size == TEE_SHA512_HASH_SIZE))
 			goto err;
 		break;
 	default:
