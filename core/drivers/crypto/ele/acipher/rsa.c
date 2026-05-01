@@ -253,6 +253,17 @@ static TEE_Result do_gen_keypair(struct rsa_keypair *key, size_t size_bits)
 		return TEE_ERROR_BAD_PARAMETERS;
 	}
 
+	/*
+	 * RSA 4096, 3072 key generation with ELE takes a lot of
+	 * time and sometime leads to issue. So, falling back to
+	 * software for RSA 4096,3072 Key Generation only.
+	 *
+	 * RSA Encryption/Decryption/Signing/Verification is still
+	 * offloaded to ELE.
+	 */
+	if (size_bits == 4096 || size_bits == 3072)
+		return gen_fallback(key, size_bits);
+
 	res = validate_rsa_key_size(size_bits);
 	if (res)
 		return gen_fallback(key, size_bits);
