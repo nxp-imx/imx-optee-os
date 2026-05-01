@@ -139,6 +139,7 @@ enum ele_status {
 	ELE_FW_PING_FAILURE = 0x1A,
 	ELE_KEY_NOT_SUPPORTED,
 	ELE_CANT_DEL_PERM_KEY,
+	ELE_SHORT_BUFFER,
 	ELE_FASTBOOT_DISABLE = 0x90,
 	ELE_FASTBOOT_ILLEGAL,
 	ELE_GEN_FW_AUTH_FAILURE,
@@ -211,6 +212,8 @@ static TEE_Result ele_status_to_tee_result(uint32_t word)
 	case ELE_INTERNAL_OUT_OF_MEMORY:
 	case ELE_OUT_OF_MEMORY:
 		return TEE_ERROR_OUT_OF_MEMORY;
+	case ELE_SHORT_BUFFER:
+		return TEE_ERROR_SHORT_BUFFER;
 	case ELE_UNALIGNED_PAYLOAD:
 	case ELE_WRONG_SIZE:
 	case ELE_BAD_PAYLOAD:
@@ -752,4 +755,4 @@ TEE_Result imx_ele_derive_key(const uint8_t *ctx __unused,
 {
 	return TEE_ERROR_NOT_IMPLEMENTED;
 }
-#endif /* CFG_MX93 || CFG_MX91 || CFG_MX95 || CFG_MX943 */
+#endif /* CFG_MX93 || CFG_MX91 || CFG_MX95 || CFG_MX943 || CFG_MX952 */
