@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2025 NXP
+ * Copyright 2025-2026 NXP
  */
 #include <drivers/ele/memutils.h>
 #include <io.h>
@@ -59,14 +59,18 @@ void imx_ele_buf_free(struct imx_ele_buf *ele_buf)
 TEE_Result imx_ele_buf_copy(struct imx_ele_buf *ele_buf, uint8_t *buf,
 			    size_t size)
 {
+	size_t copy_size = 0;
+
 	if (!ele_buf || !buf || !size)
 		return TEE_ERROR_BAD_PARAMETERS;
 
-	if (size < ele_buf->size)
-		return TEE_ERROR_SHORT_BUFFER;
+	/*
+	 * Copy the minimum of requested size and available data
+	 */
+	copy_size = MIN(size, ele_buf->size);
 
 	imx_ele_buf_cache_op(TEE_CACHEINVALIDATE, ele_buf);
-	memcpy(buf, ele_buf->data, ele_buf->size);
+	memcpy(buf, ele_buf->data, copy_size);
 
 	return TEE_SUCCESS;
 }
