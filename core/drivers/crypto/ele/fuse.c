@@ -122,8 +122,9 @@ static bool imx93_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
 	case 0 ... 51: /* FSB index */
-	case 58:
-	case 63:
+	case 55 ... 60:
+	case 62 ... 63:
+	case 97:
 	case 128 ... 143:
 	case 182:
 	case 188:
@@ -148,8 +149,8 @@ static bool imx91_ele_fuse_map(unsigned int fuse_index)
 	case 0 ... 51: /* FSB index */
 	case 55 ... 60:
 	case 62 ... 63:
-	case 128 ... 143:
 	case 97:
+	case 128 ... 143:
 	case 182:
 	case 188:
 	case 312 ... 511: /* FSB index */
@@ -169,12 +170,9 @@ static bool imx91_ele_fuse_map(unsigned int fuse_index)
 static bool imx95_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
-	case 0 ... 2:
-	case 4:
-	case 6 ... 51:
-	case 56 ... 60:
-	case 63:
-	case 128 ... 143:
+	case 0:
+	case 7:
+	case 9 ... 51:
 	case 317 ... 318:
 	case 320 ... 326:
 	case 328 ... 391:
@@ -196,19 +194,13 @@ static bool imx95_ele_fuse_map(unsigned int fuse_index)
 static bool imx943_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
-	case 0 ... 2:
-	case 4:
-	case 6 ... 11:
-	case 24 ... 35:
-	case 52 ... 53:
-	case 56 ... 60:
-	case 63:
-	case 88 ... 119:
-	case 144 ... 167:
-	case 337 ... 487:
-	case 528 ... 531:
-	case 533 ... 534:
-	case 608 ... 639:
+	case 0:
+	case 7:
+	case 9 ... 51:
+	case 52 ... 167:
+	case 525 ... 526:
+	case 528 ... 534:
+	case 536 ... 815:
 		return true;
 	default:
 		return false;
@@ -226,15 +218,9 @@ static bool imx943_ele_fuse_map(unsigned int fuse_index)
 static bool imx952_ele_fuse_map(unsigned int fuse_index)
 {
 	switch (fuse_index) {
-	case 0 ... 2:
-	case 4:
-	case 6 ... 23:
-	case 25:
-	case 27:
-	case 33 ... 51:
-	case 56 ... 60:
-	case 63:
-	case 128 ... 143:
+	case 0:
+	case 7:
+	case 9 ... 51:
 	case 317 ... 318:
 	case 320 ... 326:
 	case 328 ... 391:
