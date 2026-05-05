@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright 2023 NXP
+ * Copyright 2023, 2026 NXP
  */
 #include <assert.h>
 #include <drivers/ele/ele.h>
@@ -10,28 +10,20 @@
 
 void ele_trace_print_msg(struct imx_mu_msg msg)
 {
+	size_t dump_size = 0;
 	unsigned int i = 0;
+
+	if (msg.header.tag == ELE_RESPONSE_TAG)
+		DMSG("Response:");
+	else
+		DMSG("Request:");
 
 	DMSG("Header version %#" PRIx8 " size %#" PRIx8 " tag %#" PRIx8
 	     " command %#" PRIx8,
 	     msg.header.version, msg.header.size, msg.header.tag,
 	     msg.header.command);
 
-	/*
-	 * If the given message is response message, the first 4 bytes of the
-	 * message are status codes.
-	 */
-	if (msg.header.tag == ELE_RESPONSE_TAG) {
-		struct response_code rsp __maybe_unused =
-			get_response_code(msg.data.u32[0]);
-
-		DMSG("Response status: %#" PRIx8 " indication: %#" PRIx8
-		     " abort code %#" PRIx8,
-		     rsp.status, rsp.indication, rsp.abort_code);
-	} else {
-		DMSG("Request:");
-	}
-
-	for (i = 0; i < msg.header.size; i++)
+	dump_size = (size_t)msg.header.size - 1;
+	for (i = 0; i < dump_size; i++)
 		DMSG("\t[%u] %#010" PRIx32, i, msg.data.u32[i]);
 }
