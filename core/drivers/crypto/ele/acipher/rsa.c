@@ -551,6 +551,14 @@ static TEE_Result do_encrypt(struct drvcrypt_rsa_ed *edata)
 		return encrypt_fallback(edata);
 
 	/*
+	 * ELE doesn't support cross digests.
+	 * So, performing software fallback when MGF algo is not equal to
+	 * the message hash algo.
+	 */
+	if (edata->mgf_algo != edata->hash_algo)
+		return encrypt_fallback(edata);
+
+	/*
 	 * Verify public exponent is 65537
 	 */
 	crypto_bignum_bn2bin(key->e, (uint8_t *)&pub_exp);
@@ -659,6 +667,14 @@ static TEE_Result do_decrypt(struct drvcrypt_rsa_ed *edata)
 
 	res = tee_algo_to_ele_enc_scheme(edata->algo, &enc_scheme);
 	if (res)
+		return decrypt_fallback(edata);
+
+	/*
+	 * ELE doesn't support cross digests.
+	 * So, performing software fallback when MGF hash algo is not equal to
+	 * the message hash algo.
+	 */
+	if (edata->mgf_algo != edata->hash_algo)
 		return decrypt_fallback(edata);
 
 	modulus_size = key_size_bits / 8;
