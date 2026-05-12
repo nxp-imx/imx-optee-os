@@ -358,7 +358,7 @@ static TEE_Result do_sign(struct drvcrypt_rsa_ssa *sdata)
 	}
 
 	key = (struct rsa_keypair *)sdata->key.key;
-	key_size_bits = crypto_bignum_num_bits(key->n);
+	key_size_bits = sdata->key.n_size * 8;
 
 	res = validate_rsa_key_size(key_size_bits);
 	if (res)
@@ -374,7 +374,7 @@ static TEE_Result do_sign(struct drvcrypt_rsa_ssa *sdata)
 	 */
 	salt_len = calculate_salt_len(sdata->algo);
 
-	modulus_size = key_size_bits / 8;
+	modulus_size = sdata->key.n_size;
 	priv_exp_size = modulus_size;
 
 	/*
@@ -445,7 +445,7 @@ static TEE_Result do_verify(struct drvcrypt_rsa_ssa *sdata)
 	}
 
 	key = (struct rsa_public_key *)sdata->key.key;
-	key_size_bits = crypto_bignum_num_bits(key->n);
+	key_size_bits = sdata->key.n_size * 8;
 
 	res = validate_rsa_key_size(key_size_bits);
 	if (res)
@@ -471,7 +471,7 @@ static TEE_Result do_verify(struct drvcrypt_rsa_ssa *sdata)
 		return verify_fallback(sdata);
 	}
 
-	modulus_size = key_size_bits / 8;
+	modulus_size = sdata->key.n_size;
 
 	modulus = calloc(1, modulus_size);
 	if (!modulus) {
@@ -540,7 +540,7 @@ static TEE_Result do_encrypt(struct drvcrypt_rsa_ed *edata)
 	}
 
 	key = (struct rsa_public_key *)edata->key.key;
-	key_size_bits = crypto_bignum_num_bits(key->n);
+	key_size_bits = edata->key.n_size * 8;
 
 	res = validate_rsa_key_size(key_size_bits);
 	if (res)
@@ -568,7 +568,7 @@ static TEE_Result do_encrypt(struct drvcrypt_rsa_ed *edata)
 		return encrypt_fallback(edata);
 	}
 
-	modulus_size = key_size_bits / 8;
+	modulus_size = edata->key.n_size;
 
 	/*
 	 * Validate output buffer size
@@ -659,7 +659,7 @@ static TEE_Result do_decrypt(struct drvcrypt_rsa_ed *edata)
 	}
 
 	key = (struct rsa_keypair *)edata->key.key;
-	key_size_bits = crypto_bignum_num_bits(key->n);
+	key_size_bits = edata->key.n_size * 8;
 
 	res = validate_rsa_key_size(key_size_bits);
 	if (res)
@@ -677,7 +677,7 @@ static TEE_Result do_decrypt(struct drvcrypt_rsa_ed *edata)
 	if (edata->mgf_algo != edata->hash_algo)
 		return decrypt_fallback(edata);
 
-	modulus_size = key_size_bits / 8;
+	modulus_size = edata->key.n_size;
 	priv_exp_size = modulus_size;
 
 	/*
