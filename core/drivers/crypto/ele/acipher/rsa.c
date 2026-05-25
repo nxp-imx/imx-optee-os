@@ -349,6 +349,8 @@ static TEE_Result do_sign(struct drvcrypt_rsa_ssa *sdata)
 	size_t priv_exp_size = 0;
 	uint8_t *priv_key_combined = NULL;
 	uint16_t salt_len = 0;
+	size_t d_size = 0;
+	size_t n_size = 0;
 
 	if (!sdata || !sdata->key.key || !sdata->message.data ||
 	    !sdata->signature.data || !sdata->message.length ||
@@ -391,9 +393,15 @@ static TEE_Result do_sign(struct drvcrypt_rsa_ssa *sdata)
 
 	/*
 	 * Convert private exponent and modulus to binary
+	 * Write with proper zero-padding (big-endian format)
 	 */
-	crypto_bignum_bn2bin(key->d, priv_key_combined);
-	crypto_bignum_bn2bin(key->n, priv_key_combined + priv_exp_size);
+	d_size = crypto_bignum_num_bytes(key->d);
+	crypto_bignum_bn2bin(key->d,
+			     priv_key_combined + (priv_exp_size - d_size));
+
+	n_size = crypto_bignum_num_bytes(key->n);
+	crypto_bignum_bn2bin(key->n, priv_key_combined + priv_exp_size +
+					     (modulus_size - n_size));
 
 	/*
 	 * Generate signature using ELE
@@ -436,6 +444,7 @@ static TEE_Result do_verify(struct drvcrypt_rsa_ssa *sdata)
 	uint8_t *modulus = NULL;
 	uint32_t pub_exp = 0;
 	uint16_t salt_len = 0;
+	size_t n_size = 0;
 
 	if (!sdata || !sdata->key.key || !sdata->message.data ||
 	    !sdata->signature.data || !sdata->message.length ||
@@ -480,9 +489,12 @@ static TEE_Result do_verify(struct drvcrypt_rsa_ssa *sdata)
 	}
 
 	/*
-	 * Convert modulus to binary
+	 * Convert the modulus (n) to binary format
+	 * The modulus is right-aligned in the buffer to ensure
+	 * proper padding
 	 */
-	crypto_bignum_bn2bin(key->n, modulus);
+	n_size = crypto_bignum_num_bytes(key->n);
+	crypto_bignum_bn2bin(key->n, modulus + (modulus_size - n_size));
 
 	/*
 	 * Verify signature using ELE
@@ -519,6 +531,7 @@ static TEE_Result do_encrypt(struct drvcrypt_rsa_ed *edata)
 	uint32_t pub_exp = 0;
 	size_t label_len = 0;
 	uint8_t *label = NULL;
+	size_t n_size = 0;
 
 	if (!edata || !edata->key.key || !edata->message.data ||
 	    !edata->cipher.data || !edata->message.length) {
@@ -587,9 +600,11 @@ static TEE_Result do_encrypt(struct drvcrypt_rsa_ed *edata)
 	}
 
 	/*
-	 * Convert modulus to binary
+	 * Convert modulus to binary format with proper padding
+	 * The modulus is right-aligned in the buffer
 	 */
-	crypto_bignum_bn2bin(key->n, modulus);
+	n_size = crypto_bignum_num_bytes(key->n);
+	crypto_bignum_bn2bin(key->n, modulus + (modulus_size - n_size));
 
 	/*
 	 * Handle OAEP label if present
@@ -635,6 +650,8 @@ static TEE_Result do_decrypt(struct drvcrypt_rsa_ed *edata)
 	uint8_t *priv_key_combined = NULL;
 	size_t label_len = 0;
 	uint8_t *label = NULL;
+	size_t d_size = 0;
+	size_t n_size = 0;
 
 	if (!edata || !edata->key.key || !edata->cipher.data ||
 	    !edata->message.data || !edata->cipher.length) {
@@ -708,10 +725,20 @@ static TEE_Result do_decrypt(struct drvcrypt_rsa_ed *edata)
 	}
 
 	/*
-	 * Convert private exponent and modulus to binary
+	 * Copy private exponent (d) to the combined buffer
+	 * Right-aligned within the required 0 padding at start
 	 */
-	crypto_bignum_bn2bin(key->d, priv_key_combined);
-	crypto_bignum_bn2bin(key->n, priv_key_combined + priv_exp_size);
+	d_size = crypto_bignum_num_bytes(key->d);
+	crypto_bignum_bn2bin(key->d,
+			     priv_key_combined + (priv_exp_size - d_size));
+
+	/*
+	 * Copy modulus (n) to the combined buffer after private exponent
+	 * Right-aligned within the required 0 padding at start
+	 */
+	n_size = crypto_bignum_num_bytes(key->n);
+	crypto_bignum_bn2bin(key->n, priv_key_combined + priv_exp_size +
+					     (modulus_size - n_size));
 
 	/*
 	 * Handle OAEP label if present
