@@ -533,6 +533,11 @@ static enum caam_status caam_ae_do_oneshot(struct caam_ae_ctx *caam_ctx,
 	if (src) {
 		caam_desc_fifo_load(desc, src, CLASS_1, MSG, LAST_C1);
 		caam_dmaobj_cache_push(src);
+	} else {
+		/*
+		 * Zero-length message: still required for protocol completion
+		 */
+		caam_desc_add_word(desc, FIFO_LD_IMM(CLASS_1, MSG, LAST_C1, 0));
 	}
 
 	/* Store the output data if any */
