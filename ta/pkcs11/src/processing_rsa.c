@@ -647,7 +647,6 @@ static enum pkcs11_rc tee2pkcs_rsa_attributes(struct obj_attrs **pub_head,
 {
 	enum pkcs11_rc rc = PKCS11_CKR_GENERAL_ERROR;
 	void *a_ptr = NULL;
-	bool has_crt = false;
 
 	rc = tee2pkcs_add_attribute(pub_head, PKCS11_CKA_MODULUS, tee_obj,
 				    TEE_ATTR_RSA_MODULUS);
@@ -693,33 +692,30 @@ static enum pkcs11_rc tee2pkcs_rsa_attributes(struct obj_attrs **pub_head,
 
 	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIME_1, tee_obj,
 				    TEE_ATTR_RSA_PRIME1);
-	if (rc == PKCS11_CKR_OK) {
-		has_crt = true;
-	} else {
+	if (rc == PKCS11_RV_NOT_FOUND) {
 		DMSG("CRT parameters unavailable, using standard RSA");
-		rc = PKCS11_CKR_OK;
+		return PKCS11_CKR_OK;
+	} else if (rc != PKCS11_CKR_OK) {
+		return rc;
+	}
+
+	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIME_2, tee_obj,
+				    TEE_ATTR_RSA_PRIME2);
+	if (rc)
 		goto out;
-	}
 
-	if (has_crt) {
-		rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_PRIME_2,
-					    tee_obj, TEE_ATTR_RSA_PRIME2);
-		if (rc)
-			goto out;
+	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EXPONENT_1, tee_obj,
+				    TEE_ATTR_RSA_EXPONENT1);
+	if (rc)
+		goto out;
 
-		rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EXPONENT_1,
-					    tee_obj, TEE_ATTR_RSA_EXPONENT1);
-		if (rc)
-			goto out;
+	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EXPONENT_2, tee_obj,
+				    TEE_ATTR_RSA_EXPONENT2);
+	if (rc)
+		goto out;
 
-		rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_EXPONENT_2,
-					    tee_obj, TEE_ATTR_RSA_EXPONENT2);
-		if (rc)
-			goto out;
-
-		rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_COEFFICIENT,
-					    tee_obj, TEE_ATTR_RSA_COEFFICIENT);
-	}
+	rc = tee2pkcs_add_attribute(priv_head, PKCS11_CKA_COEFFICIENT, tee_obj,
+				    TEE_ATTR_RSA_COEFFICIENT);
 out:
 	return rc;
 }
