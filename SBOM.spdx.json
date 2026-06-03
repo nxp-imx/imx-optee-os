@@ -2,13 +2,13 @@
   "SPDXID": "SPDXRef-DOCUMENT",
   "spdxVersion": "SPDX-2.3",
   "creationInfo": {
-    "created": "2026-01-20T09:32:34Z",
+    "created": "2026-06-02T06:08:42Z",
     "creators": [
       "Organization: NXP"
     ],
     "licenseListVersion": "3.26"
   },
-  "name": "imx-optee-os-LF_6.18.2_IMX952_ER",
+  "name": "imx-optee-os-lf-6.18.20-2.0.0",
   "dataLicense": "CC0-1.0",
   "hasExtractedLicensingInfos": [
     {
@@ -22,22 +22,22 @@
       "extractedText": "NONE"
     }
   ],
-  "documentNamespace": "https://nxp.com/spdx/65af5932-7c46-4c2f-8de5-2f3e9ba479f6",
+  "documentNamespace": "https://nxp.com/spdx/ab023a42-a6c0-4d69-b953-06870f24b00a",
   "packages": [
     {
-      "SPDXID": "SPDXRef-package-65af5932-7c46-4c2f-8de5-2f3e9ba479f6",
+      "SPDXID": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
       "name": "imx-optee-os",
-      "versionInfo": "LF_6.18.2_IMX952_ER",
-      "licenseConcluded": "(BSD-2-Clause)",
-      "licenseDeclared": "(BSD-2-Clause)",
-      "downloadLocation": "https://github.com/nxp-imx/imx-optee-os -b lf-6.18.2-imx952-er1",
+      "versionInfo": "lf-6.18.20-2.0.0",
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause",
+      "downloadLocation": "https://github.com/nxp-imx/imx-optee-os -b lf-6.18.20-2.0.0",
       "originator": "Organization: NXP",
       "supplier": "NOASSERTION",
       "externalRefs": [],
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-840163f8-e84a-497a-abd4-1009fa8a38c9",
+      "SPDXID": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---840163f8-e84a-497a-abd4-1009fa8a38c9",
       "name": "compiler-rt",
       "versionInfo": "20.1.3",
       "licenseConcluded": "LicenseRef-728b0ffa-c74d-4995-8d14-e41ecd468b7a",
@@ -50,13 +50,13 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-2c65cf68-1799-42e2-bab0-50ee674c8b9b",
+      "SPDXID": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---2c65cf68-1799-42e2-bab0-50ee674c8b9b",
       "name": "device-tree-compiler",
       "versionInfo": "1.5.1",
       "licenseConcluded": "BSD-2-Clause",
       "licenseDeclared": "GPL-2.0-or-later",
       "homepage": "http://git.jdl.com/gitweb/?p=dtc.git",
-      "downloadLocation": "https://bodhi.fedoraproject.org/updates/libfdt-devel-1.5.1-1.fc32",
+      "downloadLocation": "NOASSERTION",
       "originator": "Organization: fedora",
       "supplier": "NOASSERTION",
       "externalRefs": [
@@ -74,13 +74,13 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-49ea2e98-94bb-40e1-852b-ff51098623ad",
+      "SPDXID": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---49ea2e98-94bb-40e1-852b-ff51098623ad",
       "name": "libcryptx-perl",
       "versionInfo": "0.081",
       "licenseConcluded": "BSD-2-Clause",
       "licenseDeclared": "(Artistic-1.0-Perl AND GPL-1.0-or-later)",
       "homepage": "https://metacpan.org/release/CryptX",
-      "downloadLocation": "https://metacpan.org/release/MIK/CryptX-0.081",
+      "downloadLocation": "NOASSERTION",
       "originator": "Organization: cpan",
       "supplier": "NOASSERTION",
       "externalRefs": [
@@ -98,7 +98,7 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-7a2d3674-01a2-485d-bb72-c7d4e3b9525b",
+      "SPDXID": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---7a2d3674-01a2-485d-bb72-c7d4e3b9525b",
       "name": "LibTomCrypt",
       "versionInfo": "1.18.2",
       "licenseConcluded": "BSD-2-Clause",
@@ -137,9 +137,9 @@
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-fea2dbed-9f9b-4b25-92a4-808a7bec9a49",
+      "SPDXID": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---e536d8ef-a2e1-4d12-9bb2-705d1166e06f",
       "name": "mbed TLS",
-      "versionInfo": "v3.6.4",
+      "versionInfo": "v3.6.5",
       "licenseConcluded": "Apache-2.0",
       "licenseDeclared": "Apache-2.0",
       "homepage": "https://www.trustedfirmware.org/",
@@ -149,56 +149,80 @@
       "externalRefs": [
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:arm:mbed_tls:3.6.4:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:a:arm:mbed_tls:3.6.5:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:mbed:mbedtls:3.6.4:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:a:mbed:mbedtls:3.6.5:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:o:arm:mbed_tls:3.6.4:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:o:arm:mbed_tls:3.6.5:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         }
       ],
       "filesAnalyzed": false
     },
     {
-      "SPDXID": "SPDXRef-package-834ac854-8350-40ab-98b2-b56c880a8e6c",
-      "name": "optee",
-      "versionInfo": "4.8.0",
-      "licenseConcluded": "BSD-2-Clause",
-      "licenseDeclared": "NOASSERTION",
-      "homepage": "https://github.com/OP-TEE/optee_os",
+      "SPDXID": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---8ebe163c-3b50-4710-af25-f9cc47799f15",
+      "name": "open62541-sys",
+      "versionInfo": "0.5.1",
+      "licenseConcluded": "MPL-2.0",
+      "licenseDeclared": "MPL-2.0",
+      "homepage": "https://github.com/HMIProject/open62541-sys",
       "downloadLocation": "NOASSERTION",
-      "originator": "Organization: op-tee",
+      "originator": "Organization: crates",
       "supplier": "NOASSERTION",
       "externalRefs": [
         {
           "referenceCategory": "OTHER",
-          "referenceLocator": "439f2c25-73ec-4c7b-bc9f-603bfe297908",
+          "referenceLocator": "9c2c2118-1142-42dc-9aab-1ac429b409a9",
           "referenceType": "BlackDuck-ComponentOrigin"
         },
         {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cargo/open62541-sys@0.5.1",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---34ddbe46-5470-4bc8-bd2e-ba2a1825b722",
+      "name": "optee",
+      "versionInfo": "4.10.0",
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "(((BSD-2-Clause OR GPL-2.0-only) AND (BSD-2-Clause OR GPL-2.0-or-later) AND (BSD-3-Clause OR GPL-2.0-only) AND (BSD-2-Clause AND MIT) AND (BSD-3-Clause OR GPL-2.0-or-later) AND (MIT OR GPL-2.0-only) AND (BSD-3-Clause AND BSD-2-Clause) AND (MIT OR GPL-2.0-or-later) AND (BSD-2-Clause AND MIT-CMU) AND (BSD-2-Clause AND Unlicense)) AND (BSD-3-Clause AND BSD-2-Clause AND MIT AND ISC AND Zlib AND Unlicense AND Apache-2.0 AND BSD-Source-Code AND BSL-1.0))",
+      "homepage": "https://github.com/OP-TEE/optee_os",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: debian",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:a:linaro:op-tee:4.8.0:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:a:linaro:op-tee:4.10.0:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:o:linaro:op-tee:4.8.0:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:o:linaro:op-tee:4.10.0:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
         },
         {
           "referenceCategory": "SECURITY",
-          "referenceLocator": "cpe:2.3:o:op-tee:op-tee_os:4.8.0:*:*:*:*:*:*:*",
+          "referenceLocator": "cpe:2.3:o:op-tee:op-tee_os:4.10.0:*:*:*:*:*:*:*",
           "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "e89ba6dd-8805-4dd6-a9bd-c7ccaea3be35",
+          "referenceType": "BlackDuck-ComponentOrigin"
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
-          "referenceLocator": "pkg:github/OP-TEE/optee_os@4.8.0",
+          "referenceLocator": "pkg:deb/debian/optee-os@4.10.0-1",
           "referenceType": "purl"
         }
       ],
@@ -209,37 +233,47 @@
     {
       "spdxElementId": "SPDXRef-DOCUMENT",
       "relationshipType": "DESCRIBES",
-      "relatedSpdxElement": "SPDXRef-package-65af5932-7c46-4c2f-8de5-2f3e9ba479f6"
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a"
     },
     {
-      "spdxElementId": "SPDXRef-package-65af5932-7c46-4c2f-8de5-2f3e9ba479f6",
+      "spdxElementId": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-2c65cf68-1799-42e2-bab0-50ee674c8b9b"
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---2c65cf68-1799-42e2-bab0-50ee674c8b9b"
     },
     {
-      "spdxElementId": "SPDXRef-package-65af5932-7c46-4c2f-8de5-2f3e9ba479f6",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-49ea2e98-94bb-40e1-852b-ff51098623ad"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-65af5932-7c46-4c2f-8de5-2f3e9ba479f6",
-      "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-7a2d3674-01a2-485d-bb72-c7d4e3b9525b"
-    },
-    {
-      "spdxElementId": "SPDXRef-package-65af5932-7c46-4c2f-8de5-2f3e9ba479f6",
+      "spdxElementId": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
       "relationshipType": "CONTAINS",
-      "relatedSpdxElement": "SPDXRef-package-834ac854-8350-40ab-98b2-b56c880a8e6c"
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---34ddbe46-5470-4bc8-bd2e-ba2a1825b722"
     },
     {
-      "spdxElementId": "SPDXRef-package-65af5932-7c46-4c2f-8de5-2f3e9ba479f6",
+      "spdxElementId": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
       "relationshipType": "DYNAMIC_LINK",
-      "relatedSpdxElement": "SPDXRef-package-840163f8-e84a-497a-abd4-1009fa8a38c9"
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---34ddbe46-5470-4bc8-bd2e-ba2a1825b722"
     },
     {
-      "spdxElementId": "SPDXRef-package-65af5932-7c46-4c2f-8de5-2f3e9ba479f6",
+      "spdxElementId": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---49ea2e98-94bb-40e1-852b-ff51098623ad"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---7a2d3674-01a2-485d-bb72-c7d4e3b9525b"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---840163f8-e84a-497a-abd4-1009fa8a38c9"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---8ebe163c-3b50-4710-af25-f9cc47799f15"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a",
       "relationshipType": "CONTAINS",
-      "relatedSpdxElement": "SPDXRef-package-fea2dbed-9f9b-4b25-92a4-808a7bec9a49"
+      "relatedSpdxElement": "SPDXRef-package-ab023a42-a6c0-4d69-b953-06870f24b00a---e536d8ef-a2e1-4d12-9bb2-705d1166e06f"
     }
   ]
 }
